@@ -27,7 +27,7 @@
     "tw-animate-css": "latest"
   },
   "devDependencies": {
-    "@types/node": "^22",
+    "@types/node": "catalog:",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "postcss": "^8.5",
