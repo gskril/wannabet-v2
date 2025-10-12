@@ -4,6 +4,13 @@ node_modules/
 # next.js
 .next/
 out/
+bundle/
+
+# Hardhat
+contracts/cache/
+contracts/artifacts/
+contracts/types
+contracts/coverage
 
 # production
 build/
@@ -27,3 +34,4 @@ next-env.d.ts
 
 # misc
 .DS_Store
+

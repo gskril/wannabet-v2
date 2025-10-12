@@ -1,13 +1,19 @@
-"use client"
+'use client'
 
-import type React from "react"
+import type React from 'react'
+import { useState } from 'react'
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
+import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 
 interface CreateBetDialogProps {
   open?: boolean
@@ -15,10 +21,10 @@ interface CreateBetDialogProps {
 }
 
 export function CreateBetDialog({ open, onOpenChange }: CreateBetDialogProps) {
-  const [description, setDescription] = useState("")
-  const [amount, setAmount] = useState("")
-  const [counterparty, setCounterparty] = useState("")
-  const [expiresAt, setExpiresAt] = useState("")
+  const [description, setDescription] = useState('')
+  const [amount, setAmount] = useState('')
+  const [counterparty, setCounterparty] = useState('')
+  const [expiresAt, setExpiresAt] = useState('')
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -26,10 +32,10 @@ export function CreateBetDialog({ open, onOpenChange }: CreateBetDialogProps) {
     console.log({ description, amount, counterparty, expiresAt })
     onOpenChange?.(false)
     // Reset form
-    setDescription("")
-    setAmount("")
-    setCounterparty("")
-    setExpiresAt("")
+    setDescription('')
+    setAmount('')
+    setCounterparty('')
+    setExpiresAt('')
   }
 
   return (
@@ -38,7 +44,8 @@ export function CreateBetDialog({ open, onOpenChange }: CreateBetDialogProps) {
         <DialogHeader>
           <DialogTitle>Create New Bet</DialogTitle>
           <DialogDescription>
-            Create a peer-to-peer bet on Ethereum. Set your terms and wait for someone to accept.
+            Create a peer-to-peer bet on Ethereum. Set your terms and wait for
+            someone to accept.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -69,7 +76,9 @@ export function CreateBetDialog({ open, onOpenChange }: CreateBetDialogProps) {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="counterparty">Counterparty Address (Optional)</Label>
+            <Label htmlFor="counterparty">
+              Counterparty Address (Optional)
+            </Label>
             <Input
               id="counterparty"
               type="text"
@@ -77,7 +86,9 @@ export function CreateBetDialog({ open, onOpenChange }: CreateBetDialogProps) {
               value={counterparty}
               onChange={(e) => setCounterparty(e.target.value)}
             />
-            <p className="text-xs text-muted-foreground">Leave empty to allow anyone to accept the bet</p>
+            <p className="text-muted-foreground text-xs">
+              Leave empty to allow anyone to accept the bet
+            </p>
           </div>
 
           <div className="space-y-2">
@@ -92,7 +103,11 @@ export function CreateBetDialog({ open, onOpenChange }: CreateBetDialogProps) {
           </div>
 
           <div className="flex justify-end gap-3 pt-4">
-            <Button type="button" variant="outline" onClick={() => onOpenChange?.(false)}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange?.(false)}
+            >
               Cancel
             </Button>
             <Button type="submit">Create Bet</Button>

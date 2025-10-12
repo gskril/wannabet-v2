@@ -1,14 +1,16 @@
-"use client"
+'use client'
 
-import { useState } from "react"
-import type { Bet } from "@/lib/types"
-import { formatAddress } from "@/lib/dummy-data"
-import { BetStatusBadge } from "./bet-status-badge"
-import { BetDetailDialog } from "./bet-detail-dialog"
-import { formatDistanceToNow } from "date-fns"
-import { Card } from "@/components/ui/card"
-import { UserAvatar } from "./user-avatar"
-import { ArrowRight, Coins } from "lucide-react"
+import { formatDistanceToNow } from 'date-fns'
+import { ArrowRight, Coins } from 'lucide-react'
+import { useState } from 'react'
+
+import { Card } from '@/components/ui/card'
+import { formatAddress } from '@/lib/dummy-data'
+import type { Bet } from '@/lib/types'
+
+import { BetDetailDialog } from './bet-detail-dialog'
+import { BetStatusBadge } from './bet-status-badge'
+import { UserAvatar } from './user-avatar'
 
 interface BetsTableProps {
   bets: Bet[]
@@ -29,7 +31,7 @@ export function BetsTable({ bets }: BetsTableProps) {
         {bets.map((bet) => (
           <Card
             key={bet.id}
-            className="p-4 cursor-pointer hover:bg-muted/30 transition-colors"
+            className="hover:bg-muted/30 cursor-pointer p-4 transition-colors"
             onClick={() => handleBetClick(bet)}
           >
             <div className="flex gap-3">
@@ -37,22 +39,28 @@ export function BetsTable({ bets }: BetsTableProps) {
               <UserAvatar address={bet.creator} size="md" />
 
               {/* Content */}
-              <div className="flex-1 min-w-0 space-y-2">
+              <div className="min-w-0 flex-1 space-y-2">
                 {/* Header with creator and status */}
                 <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-semibold text-sm">{formatAddress(bet.creator)}</span>
-                      <span className="text-muted-foreground text-sm">created a bet</span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-sm font-semibold">
+                        {formatAddress(bet.creator)}
+                      </span>
+                      <span className="text-muted-foreground text-sm">
+                        created a bet
+                      </span>
                       {bet.acceptedBy && (
                         <>
-                          <ArrowRight className="h-3 w-3 text-muted-foreground" />
+                          <ArrowRight className="text-muted-foreground h-3 w-3" />
                           <UserAvatar address={bet.acceptedBy} size="sm" />
-                          <span className="font-semibold text-sm">{formatAddress(bet.acceptedBy)}</span>
+                          <span className="text-sm font-semibold">
+                            {formatAddress(bet.acceptedBy)}
+                          </span>
                         </>
                       )}
                     </div>
-                    <p className="text-xs text-muted-foreground mt-0.5">
+                    <p className="text-muted-foreground mt-0.5 text-xs">
                       {formatDistanceToNow(bet.createdAt, { addSuffix: true })}
                     </p>
                   </div>
@@ -60,17 +68,23 @@ export function BetsTable({ bets }: BetsTableProps) {
                 </div>
 
                 {/* Bet description */}
-                <p className="text-sm text-pretty leading-relaxed">{bet.description}</p>
+                <p className="text-pretty text-sm leading-relaxed">
+                  {bet.description}
+                </p>
 
                 {/* Amount and metadata */}
                 <div className="flex items-center gap-4 pt-1">
                   <div className="flex items-center gap-1.5">
-                    <Coins className="h-4 w-4 text-primary" />
-                    <span className="font-semibold text-primary text-sm">{bet.amount} ETH</span>
+                    <Coins className="text-primary h-4 w-4" />
+                    <span className="text-primary text-sm font-semibold">
+                      {bet.amount} ETH
+                    </span>
                   </div>
-                  {bet.status === "open" && (
-                    <span className="text-xs text-muted-foreground">
-                      {bet.counterparty ? `Waiting for ${formatAddress(bet.counterparty)}` : "Open to anyone"}
+                  {bet.status === 'open' && (
+                    <span className="text-muted-foreground text-xs">
+                      {bet.counterparty
+                        ? `Waiting for ${formatAddress(bet.counterparty)}`
+                        : 'Open to anyone'}
                     </span>
                   )}
                 </div>
@@ -80,7 +94,11 @@ export function BetsTable({ bets }: BetsTableProps) {
         ))}
       </div>
 
-      <BetDetailDialog bet={selectedBet} open={dialogOpen} onOpenChange={setDialogOpen} />
+      <BetDetailDialog
+        bet={selectedBet}
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+      />
     </>
   )
 }

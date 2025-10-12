@@ -5,7 +5,8 @@
     "dev:shared": "pnpm --filter shared dev",
     "build": "pnpm recursive run build",
     "build:web": "pnpm --filter web build",
-    "build:shared": "pnpm --filter shared build"
+    "build:shared": "pnpm --filter shared build",
+    "prettier": "prettier --ignore-path .gitignore --write ./**/*.{ts,tsx,json,md}"
   },
   "packageManager": "pnpm@10.18.0",
   "engines": {
