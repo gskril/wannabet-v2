@@ -1,0 +1,6 @@
+packages:
+  - web
+  - shared
+
+catalog:
+  typescript: ^5
