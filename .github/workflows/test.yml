@@ -2,6 +2,8 @@ name: Contract Tests
 
 on:
   push:
+    paths:
+      - 'contracts/**'
 
 jobs:
   test:
