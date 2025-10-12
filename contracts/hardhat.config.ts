@@ -5,6 +5,9 @@ import { configVariable } from "hardhat/config";
 
 const config: HardhatUserConfig = {
   plugins: [hardhatToolboxViemPlugin],
+  paths: {
+    sources: "src",
+  },
   solidity: {
     profiles: {
       default: {
