@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.28;
 
-import {BetFactory} from "./BetFactory.sol";
+import {BetFactory} from "../src/BetFactory.sol";
 import {Test} from "forge-std/Test.sol";
 
 contract BetFactoryTest is Test {

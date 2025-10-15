@@ -14,7 +14,7 @@
   "importOrderSortSpecifiers": true,
   "overrides": [
     {
-      "files": "contracts/src/*.sol",
+      "files": "contracts/**/*.sol",
       "options": {
         "tabWidth": 4,
         "singleQuote": false
