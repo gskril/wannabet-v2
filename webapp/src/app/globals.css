@@ -1,0 +1,25 @@
+@import 'tailwindcss';
+:root {
+  --background: #fefce8; /* light amber (tailwind amber-50) */
+  --foreground: #171717;
+
+  --primary: #fbbf24; /* amber-400 */
+  --accent: #38bdf8; /* sky-400 */
+  --border: #e5e5e5; /* zinc-200 */
+  --card: #ffffff;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-primary: var(--primary);
+  --color-accent: var(--accent);
+  --color-border: var(--border);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  @apply bg-background text-foreground font-sans;
+}
