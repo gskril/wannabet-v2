@@ -43,9 +43,10 @@ export const DUMMY_BETS: Bet[] = [
   {
     id: '1',
     description: 'Bob will lose 10 lbs by October 1st',
-    creator: FARCASTER_USERS[5678],
-    counterparty: FARCASTER_USERS[1234],
-    amount: '0.5',
+    maker: FARCASTER_USERS[5678],
+    taker: FARCASTER_USERS[1234],
+    judge: FARCASTER_USERS[3],
+    amount: '50',
     status: 'active',
     createdAt: new Date('2025-01-10'),
     expiresAt: new Date('2025-10-01'),
@@ -56,9 +57,10 @@ export const DUMMY_BETS: Bet[] = [
   {
     id: '2',
     description: 'Dan will ship a new feature before Varun does',
-    creator: FARCASTER_USERS[3],
-    counterparty: FARCASTER_USERS[2],
-    amount: '1.2',
+    maker: FARCASTER_USERS[3],
+    taker: FARCASTER_USERS[2],
+    judge: FARCASTER_USERS[6841],
+    amount: '120',
     status: 'active',
     createdAt: new Date('2025-01-15'),
     expiresAt: new Date('2025-02-15'),
@@ -69,9 +71,10 @@ export const DUMMY_BETS: Bet[] = [
   {
     id: '3',
     description: 'Ted will finish his side project by end of month',
-    creator: FARCASTER_USERS[6841],
-    counterparty: FARCASTER_USERS[3],
-    amount: '0.8',
+    maker: FARCASTER_USERS[6841],
+    taker: FARCASTER_USERS[3],
+    judge: FARCASTER_USERS[2],
+    amount: '80',
     status: 'open',
     createdAt: new Date('2025-01-08'),
     expiresAt: new Date('2025-01-31'),
@@ -82,9 +85,10 @@ export const DUMMY_BETS: Bet[] = [
   {
     id: '4',
     description: 'Alice will go to the gym 5 days this week',
-    creator: FARCASTER_USERS[1234],
-    counterparty: FARCASTER_USERS[5678],
-    amount: '0.3',
+    maker: FARCASTER_USERS[1234],
+    taker: FARCASTER_USERS[5678],
+    judge: FARCASTER_USERS[3],
+    amount: '30',
     status: 'completed',
     createdAt: new Date('2025-01-06'),
     expiresAt: new Date('2025-01-12'),
@@ -95,9 +99,10 @@ export const DUMMY_BETS: Bet[] = [
   {
     id: '5',
     description: 'Varun will beat Dan in a coding challenge',
-    creator: FARCASTER_USERS[2],
-    counterparty: null,
-    amount: '2.0',
+    maker: FARCASTER_USERS[2],
+    taker: null,
+    judge: FARCASTER_USERS[6841],
+    amount: '200',
     status: 'open',
     createdAt: new Date('2025-01-12'),
     expiresAt: new Date('2025-02-01'),
@@ -108,9 +113,10 @@ export const DUMMY_BETS: Bet[] = [
   {
     id: '6',
     description: 'Bob will read 3 books before Alice reads 2',
-    creator: FARCASTER_USERS[5678],
-    counterparty: FARCASTER_USERS[1234],
-    amount: '1.5',
+    maker: FARCASTER_USERS[5678],
+    taker: FARCASTER_USERS[1234],
+    judge: FARCASTER_USERS[2],
+    amount: '150',
     status: 'active',
     createdAt: new Date('2025-01-03'),
     expiresAt: new Date('2025-03-01'),
@@ -121,9 +127,10 @@ export const DUMMY_BETS: Bet[] = [
   {
     id: '7',
     description: 'Ted will run a 5K faster than Dan',
-    creator: FARCASTER_USERS[6841],
-    counterparty: FARCASTER_USERS[3],
-    amount: '0.4',
+    maker: FARCASTER_USERS[6841],
+    taker: FARCASTER_USERS[3],
+    judge: FARCASTER_USERS[1234],
+    amount: '40',
     status: 'completed',
     createdAt: new Date('2024-12-28'),
     expiresAt: new Date('2025-01-15'),
@@ -134,9 +141,10 @@ export const DUMMY_BETS: Bet[] = [
   {
     id: '8',
     description: 'Alice will cook dinner 4 times this week',
-    creator: FARCASTER_USERS[1234],
-    counterparty: null,
-    amount: '0.6',
+    maker: FARCASTER_USERS[1234],
+    taker: null,
+    judge: FARCASTER_USERS[3],
+    amount: '60',
     status: 'open',
     createdAt: new Date('2025-01-15'),
     expiresAt: new Date('2025-01-22'),
@@ -147,9 +155,10 @@ export const DUMMY_BETS: Bet[] = [
   {
     id: '9',
     description: 'Bob will wake up before 6am every day for a week',
-    creator: FARCASTER_USERS[5678],
-    counterparty: FARCASTER_USERS[2],
-    amount: '1.0',
+    maker: FARCASTER_USERS[5678],
+    taker: FARCASTER_USERS[2],
+    judge: FARCASTER_USERS[6841],
+    amount: '100',
     status: 'active',
     createdAt: new Date('2025-01-14'),
     expiresAt: new Date('2025-01-21'),
@@ -160,9 +169,10 @@ export const DUMMY_BETS: Bet[] = [
   {
     id: '10',
     description: 'Dan will get 1000 new followers before Varun',
-    creator: FARCASTER_USERS[3],
-    counterparty: null,
-    amount: '0.75',
+    maker: FARCASTER_USERS[3],
+    taker: null,
+    judge: FARCASTER_USERS[1234],
+    amount: '75',
     status: 'open',
     createdAt: new Date('2025-01-14'),
     expiresAt: new Date('2025-03-01'),
@@ -247,8 +257,8 @@ export function getUserStats(fid: number): UserStats {
 export function getBetsByUser(fid: number): Bet[] {
   return DUMMY_BETS.filter(
     (bet) =>
-      bet.creator.fid === fid ||
+      bet.maker.fid === fid ||
       bet.acceptedBy?.fid === fid ||
-      bet.counterparty?.fid === fid
+      bet.taker?.fid === fid
   )
 }

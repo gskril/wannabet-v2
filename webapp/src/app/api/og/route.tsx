@@ -24,10 +24,10 @@ export async function GET(request: NextRequest) {
         ${bet.description.length > 80 ? bet.description.substring(0, 80) + '...' : bet.description}
       </text>
       <text x="50" y="400" font-family="Arial, sans-serif" font-size="64" fill="#fbbf24" font-weight="bold">
-        ${bet.amount} ETH
+        ${bet.amount} USDC
       </text>
       <text x="50" y="500" font-family="Arial, sans-serif" font-size="28" fill="#a3a3a3">
-        by @${bet.creator.username}
+        by @${bet.maker.username}
       </text>
       <rect x="50" y="600" width="200" height="80" rx="10" fill="${
         bet.status === 'open'

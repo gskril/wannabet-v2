@@ -42,10 +42,10 @@ export async function generateMetadata({
 
   return {
     title: `${bet.description} - WannaBet`,
-    description: `${bet.creator.displayName} is betting ${bet.amount} ETH`,
+    description: `${bet.maker.displayName} is betting ${bet.amount} USDC`,
     openGraph: {
       title: bet.description,
-      description: `${bet.creator.displayName} is betting ${bet.amount} ETH`,
+      description: `${bet.maker.displayName} is betting ${bet.amount} USDC`,
       images: [imageUrl],
     },
     other: {

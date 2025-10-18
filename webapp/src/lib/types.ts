@@ -11,9 +11,10 @@ export interface FarcasterUser {
 export interface Bet {
   id: string
   description: string
-  creator: FarcasterUser
-  counterparty: FarcasterUser | null // null means open to anyone
-  amount: string // in ETH
+  maker: FarcasterUser // bet creator (smart contract terminology)
+  taker: FarcasterUser | null // specific opponent, null means open to anyone (smart contract terminology)
+  judge: FarcasterUser | null // who decides the outcome
+  amount: string // in USDC
   status: BetStatus
   createdAt: Date
   expiresAt: Date
@@ -28,7 +29,7 @@ export interface UserStats {
   activeBets: number
   wonBets: number
   lostBets: number
-  totalWagered: string // in ETH
-  totalWon: string // in ETH
+  totalWagered: string // in USDC
+  totalWon: string // in USDC
   winRate: number
 }

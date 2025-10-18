@@ -7,46 +7,29 @@ export function SdkProvider({ children }: { children: React.ReactNode }) {
   const [isReady, setIsReady] = useState(false)
 
   useEffect(() => {
-    const initSdk = async () => {
-      const startTime = Date.now()
+    // ALWAYS show app after 1 second, no matter what
+    const timer = setTimeout(() => {
+      setIsReady(true)
+    }, 1000)
 
-      try {
-        // Set a max timeout for SDK initialization
-        const timeoutPromise = new Promise((resolve) => {
-          setTimeout(() => {
-            console.log('⏱️ SDK timeout - loading app in standalone mode')
-            resolve({ client: null })
-          }, 1000)
-        })
-
-        // Race between SDK context and timeout
-        const context = await Promise.race([sdk.context, timeoutPromise])
-        console.log('Farcaster SDK Context:', context)
-
-        // Only call ready() if we're actually in a Farcaster client
-        if (context && (context as any).client) {
-          await sdk.actions.ready()
+    // Try to init SDK in parallel (best effort, non-blocking)
+    sdk.context
+      .then((context) => {
+        if (context && context.client) {
+          sdk.actions.ready()
           console.log('✓ Farcaster SDK initialized')
         } else {
-          console.log('ℹ Running in standalone mode (not in Farcaster)')
+          console.log('ℹ Running in standalone mode')
         }
-      } catch (error) {
-        console.error('Failed to initialize Farcaster SDK:', error)
-      } finally {
-        // Ensure minimum 1 second display time for loading screen
-        const elapsedTime = Date.now() - startTime
-        const remainingTime = Math.max(0, 1000 - elapsedTime)
+      })
+      .catch((err) => {
+        console.log('SDK init failed (expected in browser):', err)
+      })
 
-        setTimeout(() => {
-          setIsReady(true)
-        }, remainingTime)
-      }
-    }
-
-    initSdk()
+    return () => clearTimeout(timer)
   }, [])
 
-  // Show a minimal loading state while SDK initializes
+  // Show loading screen with BettingMutt
   if (!isReady) {
     return (
       <div

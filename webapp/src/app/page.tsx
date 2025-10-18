@@ -15,8 +15,9 @@ export default function HomePage() {
   return (
     <div className="bg-background min-h-screen pb-20 sm:pb-4">
       <main className="container mx-auto px-4 py-6 md:py-8">
-        <div className="mb-6 md:mb-8">
-          <div className="mb-4 flex items-center gap-3">
+        {/* Hero Section */}
+        <div className="mb-8 md:mb-12">
+          <div className="mb-6 flex items-center gap-3">
             <img
               src="/img/bettingmutt.png"
               alt="WannaBet"
@@ -26,54 +27,57 @@ export default function HomePage() {
               <h1 className="text-balance text-3xl font-bold md:text-4xl">
                 WannaBet?
               </h1>
-              <p className="text-muted-foreground text-pretty text-sm md:text-base">
-                Challenge your friends. Put money where your mouth is.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 md:mb-8 lg:grid-cols-3">
-          <div className="bg-card rounded-lg border p-4 md:p-6">
-            <div className="flex items-center gap-3">
-              <div className="bg-primary/20 flex h-10 w-10 items-center justify-center rounded-lg">
-                <TrendingUp className="text-primary h-5 w-5" />
-              </div>
-              <div>
-                <p className="text-muted-foreground text-xs md:text-sm">
-                  Total Bets
-                </p>
-                <p className="text-xl font-bold md:text-2xl">{totalBets}</p>
-              </div>
             </div>
           </div>
 
-          <div className="bg-card rounded-lg border p-4 md:p-6">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-yellow-500/20">
-                <Users className="h-5 w-5 text-yellow-500" />
-              </div>
-              <div>
-                <p className="text-muted-foreground text-xs md:text-sm">
-                  Active Bets
-                </p>
-                <p className="text-xl font-bold md:text-2xl">{activeBets}</p>
-              </div>
-            </div>
-          </div>
+          {/* Marketing Copy */}
+          <div className="bg-card rounded-lg border p-6 shadow-sm md:p-8">
+            <p className="mb-6 text-pretty text-lg leading-relaxed md:text-xl">
+              Challenge friends. Make bets onchain. Pick a judge to settle it.
+            </p>
 
-          <div className="bg-card rounded-lg border p-4 sm:col-span-2 md:p-6 lg:col-span-1">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-500/20">
-                <Coins className="h-5 w-5 text-green-500" />
-              </div>
-              <div>
-                <p className="text-muted-foreground text-xs md:text-sm">
-                  Total Volume
-                </p>
-                <p className="text-xl font-bold md:text-2xl">
-                  {totalVolume} ETH
-                </p>
+            <div className="space-y-4">
+              <h2 className="text-2xl font-semibold md:text-3xl">
+                How it works
+              </h2>
+
+              <div className="grid gap-3 sm:grid-cols-2 md:gap-4">
+                <div className="flex items-start gap-3 rounded-lg bg-gradient-to-br from-purple-500/10 to-blue-500/10 p-4">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-purple-500/20 font-semibold text-purple-600 dark:text-purple-400">
+                    1
+                  </div>
+                  <div>
+                    <h3 className="font-semibold">Create a bet</h3>
+                    <p className="text-muted-foreground text-sm">
+                      Set the terms, stake, and judge.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 rounded-lg bg-gradient-to-br from-blue-500/10 to-cyan-500/10 p-4">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-500/20 font-semibold text-blue-600 dark:text-blue-400">
+                    2
+                  </div>
+                  <div>
+                    <h3 className="font-semibold">Opponent Acceepts</h3>
+                    <p className="text-muted-foreground text-sm">
+                      Opponent accepts the bet by depositing bet amount.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 rounded-lg bg-gradient-to-br from-cyan-500/10 to-green-500/10 p-4 sm:col-span-2">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-green-500/20 font-semibold text-green-600 dark:text-green-400">
+                    3
+                  </div>
+                  <div>
+                    <h3 className="font-semibold">Judge Settles</h3>
+                    <p className="text-muted-foreground text-sm">
+                      After the bet end date, the judge picks the winner and the
+                      payouts are distributed.
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

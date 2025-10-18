@@ -82,7 +82,7 @@ export default async function ProfilePage({
             </CardHeader>
             <CardContent>
               <p className="text-2xl font-bold">{stats.totalWagered}</p>
-              <p className="text-muted-foreground text-xs">ETH</p>
+              <p className="text-muted-foreground text-xs">USDC</p>
             </CardContent>
           </Card>
 
@@ -95,7 +95,7 @@ export default async function ProfilePage({
             </CardHeader>
             <CardContent>
               <p className="text-2xl font-bold">{stats.totalWon}</p>
-              <p className="text-muted-foreground text-xs">ETH</p>
+              <p className="text-muted-foreground text-xs">USDC</p>
             </CardContent>
           </Card>
         </div>

@@ -7,7 +7,7 @@ import type { FarcasterUser } from '@/lib/types'
 
 interface UserAvatarProps {
   user: FarcasterUser
-  size?: 'sm' | 'md' | 'lg'
+  size?: 'sm' | 'md' | 'lg' | 'xl'
   clickable?: boolean
 }
 
@@ -20,6 +20,7 @@ export function UserAvatar({
     sm: 'h-8 w-8',
     md: 'h-10 w-10',
     lg: 'h-16 w-16',
+    xl: 'h-24 w-24',
   }
 
   const avatar = (

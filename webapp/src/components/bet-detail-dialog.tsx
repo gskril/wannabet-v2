@@ -1,16 +1,12 @@
 'use client'
 
 import { format } from 'date-fns'
-import { Calendar, Coins, Trophy } from 'lucide-react'
+import { Calendar, ChevronDown, ChevronUp, Coins, Trophy } from 'lucide-react'
+import { useState } from 'react'
 
 import { BetStatusBadge } from '@/components/bet-status-badge'
 import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader } from '@/components/ui/dialog'
 import { UserAvatar } from '@/components/user-avatar'
 import type { Bet } from '@/lib/types'
 
@@ -25,6 +21,8 @@ export function BetDetailDialog({
   open,
   onOpenChange,
 }: BetDetailDialogProps) {
+  const [timelineExpanded, setTimelineExpanded] = useState(false)
+
   const handleAcceptBet = () => {
     console.log('Accept bet:', bet.id)
     // TODO: Implement bet acceptance
@@ -33,143 +31,152 @@ export function BetDetailDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
+      <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
         <DialogHeader>
-          <div className="flex-1 space-y-3">
+          {/* Status Badge - Minimal in top right */}
+          <div className="absolute right-6 top-6">
             <BetStatusBadge status={bet.status} />
+          </div>
 
-            {/* VS Header */}
+          {/* Hero Bet Description */}
+          <div className="px-4 py-8 text-center">
+            <h2 className="text-3xl font-bold leading-tight tracking-tight md:text-4xl">
+              {bet.description}
+            </h2>
+          </div>
+        </DialogHeader>
+
+        <div className="space-y-8 px-2">
+          {/* Players Section with Floating Amount */}
+          <div className="relative">
             {bet.acceptedBy ? (
-              <div className="flex items-center justify-center gap-4">
+              <div className="flex items-start justify-center gap-10">
+                {/* Player 1 */}
                 <div className="flex flex-col items-center gap-2">
-                  <UserAvatar user={bet.creator} size="lg" clickable={false} />
-                  <div className="text-center">
-                    <p className="font-bold">{bet.creator.displayName}</p>
-                    <p className="text-muted-foreground text-sm">
-                      @{bet.creator.username}
-                    </p>
+                  <UserAvatar user={bet.maker} size="lg" clickable={false} />
+                  <p className="font-semibold">{bet.maker.displayName}</p>
+                </div>
+
+                {/* VS + Amount Badge */}
+                <div className="flex flex-col items-center gap-2">
+                  <span className="text-muted-foreground/40 text-xl font-light">
+                    vs
+                  </span>
+                  {/* Floating Amount Badge */}
+                  <div className="bg-muted/30 flex items-center gap-2 rounded-full border px-3 py-1 shadow-sm">
+                    <Coins className="text-muted-foreground h-3 w-3" />
+                    <span className="text-xs font-medium">
+                      {bet.amount} USDC
+                    </span>
                   </div>
                 </div>
-                <span className="text-primary text-3xl font-bold">VS</span>
+
+                {/* Player 2 */}
                 <div className="flex flex-col items-center gap-2">
                   <UserAvatar
                     user={bet.acceptedBy}
                     size="lg"
                     clickable={false}
                   />
-                  <div className="text-center">
-                    <p className="font-bold">{bet.acceptedBy.displayName}</p>
-                    <p className="text-muted-foreground text-sm">
-                      @{bet.acceptedBy.username}
-                    </p>
-                  </div>
+                  <p className="font-semibold">{bet.acceptedBy.displayName}</p>
                 </div>
               </div>
             ) : (
-              <div className="flex flex-col items-center gap-2">
-                <UserAvatar user={bet.creator} size="lg" clickable={false} />
-                <div className="text-center">
-                  <p className="font-bold">{bet.creator.displayName}</p>
-                  <p className="text-muted-foreground text-sm">
-                    @{bet.creator.username}
-                  </p>
-                  <p className="text-primary mt-1 text-sm font-medium">
-                    Looking for opponent
-                  </p>
+              <div className="flex flex-col items-center gap-4">
+                <div className="flex flex-col items-center gap-2">
+                  <UserAvatar user={bet.maker} size="lg" clickable={false} />
+                  <p className="font-semibold">{bet.maker.displayName}</p>
+                </div>
+
+                {/* Amount Badge for Open Bet */}
+                <div className="bg-muted/30 flex items-center gap-2 rounded-full border px-3 py-1 shadow-sm">
+                  <Coins className="text-muted-foreground h-3 w-3" />
+                  <span className="text-xs font-medium">{bet.amount} USDC</span>
+                </div>
+
+                {/* Challenge Status - Minimal */}
+                <p className="text-muted-foreground text-xs">
+                  {bet.taker
+                    ? `Waiting for @${bet.taker.username} to accept`
+                    : 'Open challenge'}
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Winner Section - Compact */}
+          {bet.winner && (
+            <div className="flex items-center justify-center gap-3 rounded-xl border bg-green-500/5 px-4 py-3">
+              <Trophy className="h-4 w-4 text-yellow-500" />
+              <UserAvatar user={bet.winner} size="sm" />
+              <div>
+                <p className="text-sm font-medium">{bet.winner.displayName}</p>
+                <p className="text-muted-foreground text-xs">Winner</p>
+              </div>
+            </div>
+          )}
+
+          {/* Judge Section - Minimal */}
+          {bet.judge && (
+            <div className="flex items-center justify-center gap-2">
+              <UserAvatar user={bet.judge} size="sm" />
+              <p className="text-muted-foreground text-sm">
+                Judge:{' '}
+                <span className="text-foreground font-medium">
+                  {bet.judge.displayName}
+                </span>
+              </p>
+            </div>
+          )}
+
+          {/* Timeline - Collapsible */}
+          <div className="border-t pt-6">
+            <button
+              onClick={() => setTimelineExpanded(!timelineExpanded)}
+              className="text-muted-foreground hover:text-foreground flex w-full items-center justify-center gap-2 text-sm transition-colors"
+            >
+              <Calendar className="h-3.5 w-3.5" />
+              <span>Timeline</span>
+              {timelineExpanded ? (
+                <ChevronUp className="h-3.5 w-3.5" />
+              ) : (
+                <ChevronDown className="h-3.5 w-3.5" />
+              )}
+            </button>
+
+            {timelineExpanded && (
+              <div className="mt-4 space-y-2 text-xs">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Created</span>
+                  <span className="font-medium">
+                    {format(bet.createdAt, 'MMM d, yyyy')}
+                  </span>
+                </div>
+                {bet.acceptedAt && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Accepted</span>
+                    <span className="font-medium">
+                      {format(bet.acceptedAt, 'MMM d, yyyy')}
+                    </span>
+                  </div>
+                )}
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Expires</span>
+                  <span className="font-medium">
+                    {format(bet.expiresAt, 'MMM d, yyyy')}
+                  </span>
                 </div>
               </div>
             )}
-
-            <DialogTitle className="text-center text-xl">
-              {bet.description}
-            </DialogTitle>
           </div>
-        </DialogHeader>
-
-        <div className="space-y-6">
-          {/* Amount */}
-          <div className="bg-muted/50 flex items-center gap-3 rounded-lg border p-4">
-            <div className="bg-primary/10 flex h-10 w-10 items-center justify-center rounded-full">
-              <Coins className="text-primary h-5 w-5" />
-            </div>
-            <div>
-              <p className="text-muted-foreground text-sm">Bet Amount</p>
-              <p className="text-2xl font-bold">{bet.amount} ETH</p>
-            </div>
-          </div>
-
-          {/* Challenge Status */}
-          {!bet.acceptedBy && (
-            <div className="text-muted-foreground flex items-center justify-center rounded-lg border border-dashed bg-amber-50 p-6 text-center text-sm">
-              {bet.counterparty
-                ? `Waiting for @${bet.counterparty.username} to accept the challenge`
-                : '💪 Open challenge - anyone can accept!'}
-            </div>
-          )}
-
-          {/* Timeline */}
-          <div className="space-y-3">
-            <div className="flex items-center gap-2 text-sm font-medium">
-              <Calendar className="h-4 w-4" />
-              <span>Timeline</span>
-            </div>
-
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Created</span>
-                <span className="font-medium">
-                  {format(bet.createdAt, 'MMM d, yyyy')}
-                </span>
-              </div>
-              {bet.acceptedAt && (
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Accepted</span>
-                  <span className="font-medium">
-                    {format(bet.acceptedAt, 'MMM d, yyyy')}
-                  </span>
-                </div>
-              )}
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Expires</span>
-                <span className="font-medium">
-                  {format(bet.expiresAt, 'MMM d, yyyy')}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Winner */}
-          {bet.winner && (
-            <div className="space-y-3">
-              <div className="flex items-center gap-2 text-sm font-medium">
-                <Trophy className="h-4 w-4" />
-                <span>Winner</span>
-              </div>
-
-              <div className="flex items-center gap-3 rounded-lg border bg-green-500/10 p-3">
-                <UserAvatar user={bet.winner} size="md" />
-                <div className="flex-1">
-                  <p className="font-medium">{bet.winner.displayName}</p>
-                  <p className="text-muted-foreground text-sm">
-                    @{bet.winner.username}
-                  </p>
-                </div>
-                <Trophy className="h-5 w-5 text-yellow-500" />
-              </div>
-            </div>
-          )}
 
           {/* Actions */}
-          {bet.status === 'open' && !bet.counterparty && (
-            <Button onClick={handleAcceptBet} className="w-full" size="lg">
-              Accept Bet ({bet.amount} ETH)
-            </Button>
-          )}
-
-          {bet.status === 'active' && (
-            <Button variant="outline" className="w-full" size="lg" disabled>
-              View on Etherscan (Coming Soon)
-            </Button>
+          {bet.status === 'open' && !bet.taker && (
+            <div className="pb-2">
+              <Button onClick={handleAcceptBet} className="w-full" size="lg">
+                Accept Bet ({bet.amount} USDC)
+              </Button>
+            </div>
           )}
         </div>
       </DialogContent>
