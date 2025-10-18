@@ -1,7 +1,7 @@
 'use client'
 
 import { Coins, Plus } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -16,6 +16,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { UserAvatar } from '@/components/user-avatar'
 import { UserSearch } from '@/components/user-search'
+import { useAuth } from '@/lib/auth-context'
 import type { FarcasterUser } from '@/lib/types'
 
 type DateOption = '1day' | '1week'
@@ -47,16 +48,8 @@ const COMMON_ACTIONS = [
   'get 1000 new followers',
 ]
 
-// Mock current user for demo (in real app, this comes from auth)
-const MOCK_CURRENT_USER: FarcasterUser = {
-  fid: 12345,
-  username: 'slobo',
-  displayName: 'Slobo',
-  pfpUrl: 'https://i.imgur.com/placeholder.jpg',
-  bio: 'Current user',
-}
-
 export function CreateBetDialog() {
+  const { user: currentUser, isAuthenticated } = useAuth()
   const [open, setOpen] = useState(false)
   const [step, setStep] = useState(1)
   const [formData, setFormData] = useState<FormData>({
@@ -70,6 +63,24 @@ export function CreateBetDialog() {
   })
 
   const [showActionSuggestions, setShowActionSuggestions] = useState(false)
+
+  // Listen for hash changes to open dialog from bottom nav
+  useEffect(() => {
+    const handleHashChange = () => {
+      if (window.location.hash === '#create') {
+        setOpen(true)
+        // Clear the hash without adding to history
+        history.replaceState(null, '', window.location.pathname)
+      }
+    }
+
+    // Check on mount
+    handleHashChange()
+
+    // Listen for changes
+    window.addEventListener('hashchange', handleHashChange)
+    return () => window.removeEventListener('hashchange', handleHashChange)
+  }, [])
 
   const handleReset = () => {
     setStep(1)
@@ -87,7 +98,7 @@ export function CreateBetDialog() {
   // Get the display text for subject
   const getSubjectText = (): string => {
     if (formData.subject === 'maker') {
-      return MOCK_CURRENT_USER.displayName
+      return displayUser.displayName
     } else if (formData.subject === 'taker' && formData.takerUser) {
       return formData.takerUser.displayName
     } else if (
@@ -189,6 +200,15 @@ export function CreateBetDialog() {
       day: 'numeric',
       year: 'numeric',
     })
+  }
+
+  // For testing: Use authenticated user if available, otherwise use a mock user
+  const displayUser = currentUser || {
+    fid: 0,
+    username: 'testuser',
+    displayName: 'Test User',
+    pfpUrl: '/img/bettingmutt.png',
+    bio: 'Testing mode - open in Farcaster for real auth',
   }
 
   return (
@@ -360,12 +380,12 @@ export function CreateBetDialog() {
                     }`}
                   >
                     <UserAvatar
-                      user={MOCK_CURRENT_USER}
+                      user={displayUser}
                       size="sm"
                       clickable={false}
                     />
                     <span className="truncate text-sm font-semibold">
-                      {MOCK_CURRENT_USER.displayName}
+                      {displayUser.displayName}
                     </span>
                   </button>
 

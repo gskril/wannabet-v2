@@ -1,0 +1,9 @@
+{
+  "name": "WannaBet",
+  "shortName": "WannaBet",
+  "manifestVersion": "1",
+  "iconUrl": "/img/bettingmutt.png",
+  "splashImageUrl": "/img/bettingmutt.png",
+  "splashBackgroundColor": "#fefce8",
+  "homeUrl": "/"
+}

@@ -1,12 +1,12 @@
 'use client'
 
 import { Search } from 'lucide-react'
-import { useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { UserAvatar } from '@/components/user-avatar'
-import { FARCASTER_USERS } from '@/lib/dummy-data'
+import { searchUsers } from '@/lib/neynar'
 import type { FarcasterUser } from '@/lib/types'
 
 interface UserSearchProps {
@@ -30,41 +30,108 @@ export function UserSearch({
 }: UserSearchProps) {
   const [isFocused, setIsFocused] = useState(false)
   const [searchQuery, setSearchQuery] = useState(value)
+  const [users, setUsers] = useState<FarcasterUser[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+  const [selectedUser, setSelectedUser] = useState<FarcasterUser | undefined>()
 
-  // Get available users (excluding any specified FIDs)
-  const availableUsers = Object.values(FARCASTER_USERS).filter(
-    (user) => !excludeFids.includes(user.fid)
-  )
+  // Use ref to track the last search query to prevent duplicate requests
+  const lastSearchRef = useRef<string>('')
+  const abortControllerRef = useRef<AbortController | null>(null)
 
-  // Filter users based on search query
-  const filteredUsers =
-    searchQuery.trim().length > 0
-      ? availableUsers.filter(
-          (user) =>
-            user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            user.displayName
-              .toLowerCase()
-              .includes(searchQuery.toLowerCase()) ||
-            user.fid.toString().includes(searchQuery)
+  // Memoize the search function to prevent re-creation
+  const performSearch = useCallback(
+    async (query: string) => {
+      const trimmedQuery = query.trim()
+
+      // Don't search if query is too short or same as last search
+      if (
+        !trimmedQuery ||
+        trimmedQuery.length < 2 ||
+        lastSearchRef.current === trimmedQuery
+      ) {
+        return
+      }
+
+      // Cancel any in-flight request
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+      }
+
+      // Create new abort controller for this request
+      abortControllerRef.current = new AbortController()
+      lastSearchRef.current = trimmedQuery
+
+      setIsLoading(true)
+      try {
+        const results = await searchUsers(trimmedQuery)
+        const filtered = results.filter(
+          (user) => !excludeFids.includes(user.fid)
         )
-      : availableUsers.slice(0, 5) // Show first 5 users by default
-
-  const selectedUser = availableUsers.find(
-    (user) =>
-      user.username === value ||
-      user.fid.toString() === value ||
-      `@${user.username}` === value
+        setUsers(filtered.slice(0, 10))
+      } catch (error) {
+        // Only log if not an abort error
+        if (error instanceof Error && error.name !== 'AbortError') {
+          console.error('Search error:', error)
+        }
+        setUsers([])
+      } finally {
+        setIsLoading(false)
+        abortControllerRef.current = null
+      }
+    },
+    [excludeFids]
   )
+
+  // Debounced search effect
+  useEffect(() => {
+    if (!searchQuery.trim() || searchQuery.trim().length < 2) {
+      setUsers([])
+      lastSearchRef.current = ''
+      return
+    }
+
+    const timeoutId = setTimeout(() => {
+      performSearch(searchQuery)
+    }, 500) // 500ms debounce (increased from 300ms)
+
+    return () => {
+      clearTimeout(timeoutId)
+      // Cancel any in-flight request when effect cleans up
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+      }
+    }
+  }, [searchQuery, performSearch])
+
+  // Check if current value matches a known user
+  useEffect(() => {
+    const cleanValue = value.replace('@', '').trim()
+    const matchedUser = users.find(
+      (user) =>
+        user.username === cleanValue || user.fid.toString() === cleanValue
+    )
+    setSelectedUser(matchedUser)
+  }, [value, users])
 
   const handleUserSelect = (user: FarcasterUser) => {
-    setSearchQuery(`@${user.username}`)
-    onChange(`@${user.username}`, user)
+    const username = `@${user.username}`
+    setSearchQuery(username)
+    setSelectedUser(user)
+    onChange(username, user)
     setIsFocused(false)
+    // Clear search results after selection
+    setUsers([])
+    lastSearchRef.current = username
   }
 
   const handleInputChange = (newValue: string) => {
     setSearchQuery(newValue)
-    onChange(newValue)
+    onChange(newValue, undefined)
+    if (!newValue.trim()) {
+      setSelectedUser(undefined)
+      setUsers([])
+      lastSearchRef.current = ''
+    }
   }
 
   return (
@@ -90,29 +157,43 @@ export function UserSearch({
         />
 
         {/* Dropdown with user suggestions */}
-        {isFocused && filteredUsers.length > 0 && (
+        {isFocused && (
           <div className="bg-background absolute top-full z-50 mt-1 max-h-[280px] w-full overflow-y-auto rounded-lg border shadow-lg">
-            {filteredUsers.slice(0, 5).map((user) => (
-              <button
-                key={user.fid}
-                type="button"
-                onClick={() => handleUserSelect(user)}
-                className="hover:bg-muted flex w-full items-center gap-3 border-b p-3 text-left transition-colors last:border-b-0"
-              >
-                <UserAvatar user={user} size="md" clickable={false} />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate font-semibold">{user.displayName}</p>
-                  <p className="text-muted-foreground text-sm">
-                    @{user.username}
-                  </p>
-                </div>
-                {selectedUser?.fid === user.fid && (
-                  <div className="bg-primary text-primary-foreground rounded-full px-2 py-0.5 text-xs">
-                    Selected
+            {isLoading ? (
+              <div className="text-muted-foreground p-4 text-center text-sm">
+                Searching...
+              </div>
+            ) : users.length > 0 ? (
+              users.map((user) => (
+                <button
+                  key={user.fid}
+                  type="button"
+                  onClick={() => handleUserSelect(user)}
+                  className="hover:bg-muted flex w-full items-center gap-3 border-b p-3 text-left transition-colors last:border-b-0"
+                >
+                  <UserAvatar user={user} size="md" clickable={false} />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-semibold">{user.displayName}</p>
+                    <p className="text-muted-foreground text-sm">
+                      @{user.username}
+                    </p>
                   </div>
-                )}
-              </button>
-            ))}
+                  {selectedUser?.fid === user.fid && (
+                    <div className="bg-primary text-primary-foreground rounded-full px-2 py-0.5 text-xs">
+                      Selected
+                    </div>
+                  )}
+                </button>
+              ))
+            ) : searchQuery.trim().length >= 2 ? (
+              <div className="text-muted-foreground p-4 text-center text-sm">
+                No users found
+              </div>
+            ) : searchQuery.trim().length > 0 ? (
+              <div className="text-muted-foreground p-4 text-center text-sm">
+                Type at least 2 characters to search
+              </div>
+            ) : null}
           </div>
         )}
       </div>

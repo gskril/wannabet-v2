@@ -4,15 +4,20 @@ import { Home, Plus, User } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
+import { UserAvatar } from '@/components/user-avatar'
+import { useAuth } from '@/lib/auth-context'
 import { cn } from '@/lib/utils'
 
 export function BottomNav() {
   const pathname = usePathname()
+  const { user, fid, isAuthenticated } = useAuth()
+
+  const profileHref = isAuthenticated && fid ? `/profile/${fid}` : '/profile/3'
 
   const links = [
     { href: '/', icon: Home, label: 'Home' },
-    { href: '/create', icon: Plus, label: 'Create' },
-    { href: '/profile/3', icon: User, label: 'Profile' },
+    { href: '/#create', icon: Plus, label: 'Create' },
+    { href: profileHref, icon: User, label: 'Profile' },
   ]
 
   return (
@@ -20,6 +25,7 @@ export function BottomNav() {
       <div className="flex items-center justify-around">
         {links.map((link) => {
           const isActive = pathname === link.href
+          const isProfileLink = link.label === 'Profile'
           return (
             <Link
               key={link.href}
@@ -31,7 +37,13 @@ export function BottomNav() {
                   : 'text-muted-foreground hover:text-foreground'
               )}
             >
-              <link.icon className="h-5 w-5" />
+              {isProfileLink && user ? (
+                <div className="h-5 w-5">
+                  <UserAvatar user={user} size="sm" clickable={false} />
+                </div>
+              ) : (
+                <link.icon className="h-5 w-5" />
+              )}
               <span>{link.label}</span>
             </Link>
           )

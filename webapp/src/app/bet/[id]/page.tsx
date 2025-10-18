@@ -34,8 +34,8 @@ export async function generateMetadata({
         type: 'launch_mini_app',
         name: 'wannabet',
         url: `${baseUrl}/bet/${bet.id}`,
-        splashImageUrl: `${baseUrl}/splash.png`,
-        splashBackgroundColor: '#000000',
+        splashImageUrl: `${baseUrl}/img/bettingmutt.png`,
+        splashBackgroundColor: '#fefce8',
       },
     },
   }

@@ -3,30 +3,56 @@
 import { sdk } from '@farcaster/miniapp-sdk'
 import { useEffect, useState } from 'react'
 
+import { AuthContext } from '@/lib/auth-context'
+import { getUserByFid } from '@/lib/neynar'
+import type { FarcasterUser } from '@/lib/types'
+
 export function SdkProvider({ children }: { children: React.ReactNode }) {
   const [isReady, setIsReady] = useState(false)
+  const [user, setUser] = useState<FarcasterUser | null>(null)
+  const [fid, setFid] = useState<number | null>(null)
 
   useEffect(() => {
-    // ALWAYS show app after 1 second, no matter what
-    const timer = setTimeout(() => {
-      setIsReady(true)
-    }, 1000)
+    let mounted = true
 
-    // Try to init SDK in parallel (best effort, non-blocking)
-    sdk.context
-      .then((context) => {
-        if (context && context.client) {
-          sdk.actions.ready()
-          console.log('✓ Farcaster SDK initialized')
+    async function initializeSdk() {
+      try {
+        // Get SDK context
+        const context = await sdk.context
+
+        if (!mounted) return
+
+        if (context && context.user) {
+          const userFid = context.user.fid
+          console.log('✓ Farcaster SDK initialized, FID:', userFid)
+          setFid(userFid)
+
+          // Fetch user profile from Neynar
+          const userProfile = await getUserByFid(userFid)
+          if (mounted && userProfile) {
+            setUser(userProfile)
+          }
+
+          // Signal that the mini app is ready to display
+          await sdk.actions.ready()
+          console.log('✓ Mini app ready')
         } else {
-          console.log('ℹ Running in standalone mode')
+          console.log('ℹ Running in standalone mode (no Farcaster context)')
         }
-      })
-      .catch((err) => {
+      } catch (err) {
         console.log('SDK init failed (expected in browser):', err)
-      })
+      } finally {
+        if (mounted) {
+          setIsReady(true)
+        }
+      }
+    }
 
-    return () => clearTimeout(timer)
+    initializeSdk()
+
+    return () => {
+      mounted = false
+    }
   }, [])
 
   // Show loading screen with BettingMutt
@@ -48,5 +74,15 @@ export function SdkProvider({ children }: { children: React.ReactNode }) {
     )
   }
 
-  return <>{children}</>
+  return (
+    <AuthContext.Provider
+      value={{
+        user,
+        fid,
+        isAuthenticated: !!fid,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  )
 }
