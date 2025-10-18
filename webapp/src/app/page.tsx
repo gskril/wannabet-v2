@@ -1,23 +1,15 @@
-import { Coins, TrendingUp, Users } from 'lucide-react'
-
 import { BetsTable } from '@/components/bets-table'
 import { CreateBetDialog } from '@/components/create-bet-dialog'
 import { DUMMY_BETS } from '@/lib/dummy-data'
 
 export default function HomePage() {
-  const totalBets = DUMMY_BETS.length
-  const activeBets = DUMMY_BETS.filter((b) => b.status === 'active').length
-  const totalVolume = DUMMY_BETS.reduce(
-    (sum, bet) => sum + parseFloat(bet.amount),
-    0
-  ).toFixed(2)
-
   return (
     <div className="bg-background min-h-screen pb-20 sm:pb-4">
       <main className="container mx-auto px-4 py-6 md:py-8">
         {/* Hero Section */}
         <div className="mb-8 md:mb-12">
           <div className="mb-6 flex items-center gap-3">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/img/bettingmutt.png"
               alt="WannaBet"

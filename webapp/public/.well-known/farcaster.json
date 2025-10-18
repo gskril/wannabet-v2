@@ -1,0 +1,15 @@
+{
+  "accountAssociation": {
+    "header": "eyJmaWQiOjg1MSwidHlwZSI6ImF1dGgiLCJrZXkiOiIweDJhRWMxMzBFYzUxNTYxMzJmYkIzNDgyOTJBOTBjYjJmM0RlOEE3ODIifQ",
+    "payload": "eyJkb21haW4iOiJ3YW5uYWJldC1wc2kudmVyY2VsLmFwcCJ9",
+    "signature": "QPjQmSMjjTCL3OZceh6NE2P/4VwotV8embeo2p9m3Q1qV9V0EwrO5B5YCA9059/I9V33OayEZIfP57rq9Y66ZBw="
+  },
+  "frame": {
+    "version": "1",
+    "name": "WannaBet",
+    "iconUrl": "https://wannabet-psi.vercel.app/img/bettingmutt.png",
+    "splashImageUrl": "https://wannabet-psi.vercel.app/img/bettingmutt.png",
+    "splashBackgroundColor": "#fefce8",
+    "homeUrl": "https://wannabet-psi.vercel.app"
+  }
+}

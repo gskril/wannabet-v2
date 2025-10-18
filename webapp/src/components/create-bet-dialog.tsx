@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -49,7 +48,7 @@ const COMMON_ACTIONS = [
 ]
 
 export function CreateBetDialog() {
-  const { user: currentUser, isAuthenticated } = useAuth()
+  const { user: currentUser } = useAuth()
   const [open, setOpen] = useState(false)
   const [step, setStep] = useState(1)
   const [formData, setFormData] = useState<FormData>({

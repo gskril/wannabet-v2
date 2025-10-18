@@ -3,6 +3,18 @@ import type { FarcasterUser } from './types'
 const NEYNAR_API_KEY = process.env.NEYNAR_API_KEY || ''
 const NEYNAR_BASE_URL = 'https://api.neynar.com/v2'
 
+interface NeynarUser {
+  fid: number
+  username: string
+  display_name: string
+  pfp_url: string
+  profile?: {
+    bio?: {
+      text: string
+    }
+  }
+}
+
 /**
  * Fetch user data by FID
  */
@@ -77,9 +89,9 @@ export async function getUsersByFids(fids: number[]): Promise<FarcasterUser[]> {
     }
 
     const data = await response.json()
-    const users = data.users || []
+    const users: NeynarUser[] = data.users || []
 
-    return users.map((user: any) => ({
+    return users.map((user) => ({
       fid: user.fid,
       username: user.username,
       displayName: user.display_name || user.username,

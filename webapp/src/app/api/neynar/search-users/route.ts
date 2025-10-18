@@ -3,6 +3,18 @@ import { NextRequest, NextResponse } from 'next/server'
 const NEYNAR_API_KEY = process.env.NEYNAR_API_KEY || ''
 const NEYNAR_BASE_URL = 'https://api.neynar.com/v2'
 
+interface NeynarUser {
+  fid: number
+  username: string
+  display_name: string
+  pfp_url: string
+  profile?: {
+    bio?: {
+      text: string
+    }
+  }
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const query = searchParams.get('q')
@@ -39,7 +51,7 @@ export async function GET(request: NextRequest) {
     }
 
     const data = await response.json()
-    const users = (data.result?.users || []).map((user: any) => ({
+    const users = (data.result?.users || []).map((user: NeynarUser) => ({
       fid: user.fid,
       username: user.username,
       displayName: user.display_name || user.username,

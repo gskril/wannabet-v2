@@ -62,6 +62,7 @@ export function SdkProvider({ children }: { children: React.ReactNode }) {
         className="flex h-screen flex-col items-center justify-center gap-4"
         style={{ backgroundColor: '#fefce8' }}
       >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/img/bettingmutt.png"
           alt="WannaBet"
