@@ -1,25 +1,61 @@
 @import 'tailwindcss';
-:root {
-  --background: #fefce8; /* light amber (tailwind amber-50) */
-  --foreground: #171717;
 
-  --primary: #fbbf24; /* amber-400 */
-  --accent: #38bdf8; /* sky-400 */
-  --border: #e5e5e5; /* zinc-200 */
+:root {
+  /* Light theme - Warm amber for betting vibe */
+  --background: #fefce8; /* amber-50 */
+  --foreground: #171717;
   --card: #ffffff;
+  --card-foreground: #171717;
+  --primary: #fbbf24; /* amber-400 */
+  --primary-foreground: #000000;
+  --accent: #38bdf8; /* sky-400 */
+  --muted: #a3a3a3; /* neutral-400 */
+  --border: #e5e5e5; /* zinc-200 */
+
+  /* Status colors */
+  --success: #22c55e; /* green-500 for open bets */
+  --warning: #eab308; /* yellow-500 for active bets */
+  --danger: #ef4444; /* red-500 */
+}
+
+.dark {
+  /* Dark theme - Keep the warm amber accents */
+  --background: #0a0a0a;
+  --foreground: #fafafa;
+  --card: #171717;
+  --card-foreground: #fafafa;
+  --primary: #fbbf24; /* Keep amber primary */
+  --primary-foreground: #000000;
+  --accent: #38bdf8; /* Keep sky accent */
+  --muted: #737373; /* neutral-500 */
+  --border: #262626; /* neutral-800 */
+
+  /* Status colors stay the same */
+  --success: #22c55e;
+  --warning: #eab308;
+  --danger: #ef4444;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-primary: var(--primary);
-  --color-accent: var(--accent);
-  --color-border: var(--border);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-background: #fefce8;
+  --color-foreground: #171717;
+  --color-card: #ffffff;
+  --color-card-foreground: #171717;
+  --color-primary: #fbbf24;
+  --color-primary-foreground: #000000;
+  --color-accent: #38bdf8;
+  --color-muted: #a3a3a3;
+  --color-border: #e5e5e5;
+  --color-success: #22c55e;
+  --color-warning: #eab308;
+  --color-danger: #ef4444;
 }
 
 body {
-  @apply bg-background text-foreground font-sans;
+  @apply bg-background text-foreground font-sans antialiased;
+}
+
+/* Utility classes */
+.text-muted-foreground {
+  color: var(--muted);
 }
