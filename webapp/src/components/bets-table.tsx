@@ -25,43 +25,61 @@ export function BetsTable({ bets }: BetsTableProps) {
             className="hover:border-primary/50 cursor-pointer p-4 transition-all hover:shadow-md"
             onClick={() => setSelectedBet(bet)}
           >
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex-1 space-y-2">
-                <div className="flex items-start gap-3">
-                  <UserAvatar user={bet.creator} size="sm" clickable={false} />
-                  <div className="flex-1 space-y-1">
-                    <p className="font-medium leading-tight">
-                      {bet.description}
-                    </p>
-                    <div className="text-muted-foreground flex flex-wrap items-center gap-2 text-xs">
-                      <span>@{bet.creator.username}</span>
-                      <span>•</span>
-                      <span>
-                        {formatDistanceToNow(bet.createdAt, {
-                          addSuffix: true,
-                        })}
-                      </span>
-                    </div>
+            <div className="space-y-3">
+              {/* VS Header - Show who's competing */}
+              {bet.acceptedBy ? (
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <UserAvatar
+                      user={bet.creator}
+                      size="sm"
+                      clickable={false}
+                    />
+                    <span className="font-semibold">
+                      @{bet.creator.username}
+                    </span>
+                  </div>
+                  <span className="text-primary text-xl font-bold">VS</span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold">
+                      @{bet.acceptedBy.username}
+                    </span>
+                    <UserAvatar
+                      user={bet.acceptedBy}
+                      size="sm"
+                      clickable={false}
+                    />
                   </div>
                 </div>
-              </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <UserAvatar user={bet.creator} size="sm" clickable={false} />
+                  <span className="font-semibold">@{bet.creator.username}</span>
+                  <span className="text-muted-foreground text-sm">
+                    is looking for an opponent
+                  </span>
+                </div>
+              )}
 
-              <div className="flex items-center gap-3 sm:flex-col sm:items-end">
+              {/* Bet Description */}
+              <p className="font-medium leading-tight">{bet.description}</p>
+
+              {/* Bottom Row: Amount, Status, Time */}
+              <div className="flex items-center justify-between">
                 <div className="flex items-baseline gap-1">
                   <span className="text-lg font-bold">{bet.amount}</span>
                   <span className="text-muted-foreground text-sm">ETH</span>
                 </div>
-                <BetStatusBadge status={bet.status} />
+                <div className="flex items-center gap-2">
+                  <BetStatusBadge status={bet.status} />
+                  <span className="text-muted-foreground text-xs">
+                    {formatDistanceToNow(bet.createdAt, {
+                      addSuffix: true,
+                    })}
+                  </span>
+                </div>
               </div>
             </div>
-
-            {bet.acceptedBy && (
-              <div className="text-muted-foreground mt-3 flex items-center gap-2 border-t pt-3 text-sm">
-                <span>vs</span>
-                <UserAvatar user={bet.acceptedBy} size="sm" clickable={false} />
-                <span>@{bet.acceptedBy.username}</span>
-              </div>
-            )}
           </Card>
         ))}
       </div>

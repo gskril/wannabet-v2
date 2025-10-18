@@ -16,12 +16,21 @@ export default function HomePage() {
     <div className="bg-background min-h-screen pb-20 sm:pb-4">
       <main className="container mx-auto px-4 py-6 md:py-8">
         <div className="mb-6 md:mb-8">
-          <h1 className="mb-2 text-balance text-3xl font-bold md:text-4xl">
-            WannaBet?
-          </h1>
-          <p className="text-muted-foreground text-pretty text-sm md:text-base">
-            See what people are betting on. Create your own or join the action.
-          </p>
+          <div className="mb-4 flex items-center gap-3">
+            <img
+              src="/img/bettingmutt.png"
+              alt="WannaBet"
+              className="h-16 w-16 md:h-20 md:w-20"
+            />
+            <div>
+              <h1 className="text-balance text-3xl font-bold md:text-4xl">
+                WannaBet?
+              </h1>
+              <p className="text-muted-foreground text-pretty text-sm md:text-base">
+                Challenge your friends. Put money where your mouth is.
+              </p>
+            </div>
+          </div>
         </div>
 
         <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 md:mb-8 lg:grid-cols-3">

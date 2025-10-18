@@ -1,14 +1,13 @@
 'use client'
 
 import { format } from 'date-fns'
-import { Calendar, Coins, Trophy, Users } from 'lucide-react'
+import { Calendar, Coins, Trophy } from 'lucide-react'
 
 import { BetStatusBadge } from '@/components/bet-status-badge'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
@@ -36,13 +35,54 @@ export function BetDetailDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
         <DialogHeader>
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex-1">
-              <DialogTitle className="text-xl">{bet.description}</DialogTitle>
-              <DialogDescription className="mt-2">
-                <BetStatusBadge status={bet.status} />
-              </DialogDescription>
-            </div>
+          <div className="flex-1 space-y-3">
+            <BetStatusBadge status={bet.status} />
+
+            {/* VS Header */}
+            {bet.acceptedBy ? (
+              <div className="flex items-center justify-center gap-4">
+                <div className="flex flex-col items-center gap-2">
+                  <UserAvatar user={bet.creator} size="lg" clickable={false} />
+                  <div className="text-center">
+                    <p className="font-bold">{bet.creator.displayName}</p>
+                    <p className="text-muted-foreground text-sm">
+                      @{bet.creator.username}
+                    </p>
+                  </div>
+                </div>
+                <span className="text-primary text-3xl font-bold">VS</span>
+                <div className="flex flex-col items-center gap-2">
+                  <UserAvatar
+                    user={bet.acceptedBy}
+                    size="lg"
+                    clickable={false}
+                  />
+                  <div className="text-center">
+                    <p className="font-bold">{bet.acceptedBy.displayName}</p>
+                    <p className="text-muted-foreground text-sm">
+                      @{bet.acceptedBy.username}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center gap-2">
+                <UserAvatar user={bet.creator} size="lg" clickable={false} />
+                <div className="text-center">
+                  <p className="font-bold">{bet.creator.displayName}</p>
+                  <p className="text-muted-foreground text-sm">
+                    @{bet.creator.username}
+                  </p>
+                  <p className="text-primary mt-1 text-sm font-medium">
+                    Looking for opponent
+                  </p>
+                </div>
+              </div>
+            )}
+
+            <DialogTitle className="text-center text-xl">
+              {bet.description}
+            </DialogTitle>
           </div>
         </DialogHeader>
 
@@ -58,47 +98,14 @@ export function BetDetailDialog({
             </div>
           </div>
 
-          {/* Participants */}
-          <div className="space-y-3">
-            <div className="flex items-center gap-2 text-sm font-medium">
-              <Users className="h-4 w-4" />
-              <span>Participants</span>
+          {/* Challenge Status */}
+          {!bet.acceptedBy && (
+            <div className="text-muted-foreground flex items-center justify-center rounded-lg border border-dashed bg-amber-50 p-6 text-center text-sm">
+              {bet.counterparty
+                ? `Waiting for @${bet.counterparty.username} to accept the challenge`
+                : '💪 Open challenge - anyone can accept!'}
             </div>
-
-            <div className="space-y-3">
-              <div className="flex items-center gap-3 rounded-lg border p-3">
-                <UserAvatar user={bet.creator} size="md" />
-                <div className="flex-1">
-                  <p className="font-medium">{bet.creator.displayName}</p>
-                  <p className="text-muted-foreground text-sm">
-                    @{bet.creator.username}
-                  </p>
-                </div>
-                <span className="text-muted-foreground text-xs">Creator</span>
-              </div>
-
-              {bet.acceptedBy ? (
-                <div className="flex items-center gap-3 rounded-lg border p-3">
-                  <UserAvatar user={bet.acceptedBy} size="md" />
-                  <div className="flex-1">
-                    <p className="font-medium">{bet.acceptedBy.displayName}</p>
-                    <p className="text-muted-foreground text-sm">
-                      @{bet.acceptedBy.username}
-                    </p>
-                  </div>
-                  <span className="text-muted-foreground text-xs">
-                    Opponent
-                  </span>
-                </div>
-              ) : (
-                <div className="text-muted-foreground flex items-center justify-center rounded-lg border border-dashed p-6 text-sm">
-                  {bet.counterparty
-                    ? `Waiting for @${bet.counterparty.username} to accept`
-                    : 'Open to anyone'}
-                </div>
-              )}
-            </div>
-          </div>
+          )}
 
           {/* Timeline */}
           <div className="space-y-3">

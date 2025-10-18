@@ -8,13 +8,23 @@ export function SdkProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const initSdk = async () => {
+      const startTime = Date.now()
+
       try {
-        // Check if we're in a Farcaster client
-        const context = sdk.context
+        // Set a max timeout for SDK initialization
+        const timeoutPromise = new Promise((resolve) => {
+          setTimeout(() => {
+            console.log('⏱️ SDK timeout - loading app in standalone mode')
+            resolve({ client: null })
+          }, 1000)
+        })
+
+        // Race between SDK context and timeout
+        const context = await Promise.race([sdk.context, timeoutPromise])
         console.log('Farcaster SDK Context:', context)
 
         // Only call ready() if we're actually in a Farcaster client
-        if (context.client) {
+        if (context && (context as any).client) {
           await sdk.actions.ready()
           console.log('✓ Farcaster SDK initialized')
         } else {
@@ -23,21 +33,34 @@ export function SdkProvider({ children }: { children: React.ReactNode }) {
       } catch (error) {
         console.error('Failed to initialize Farcaster SDK:', error)
       } finally {
-        // Always set as ready (works standalone too)
-        setIsReady(true)
+        // Ensure minimum 1 second display time for loading screen
+        const elapsedTime = Date.now() - startTime
+        const remainingTime = Math.max(0, 1000 - elapsedTime)
+
+        setTimeout(() => {
+          setIsReady(true)
+        }, remainingTime)
       }
     }
 
-    // Add a small timeout to prevent flash
-    const timer = setTimeout(initSdk, 100)
-    return () => clearTimeout(timer)
+    initSdk()
   }, [])
 
   // Show a minimal loading state while SDK initializes
   if (!isReady) {
     return (
-      <div className="bg-background flex h-screen items-center justify-center">
-        <div className="border-primary h-8 w-8 animate-spin rounded-full border-4 border-t-transparent" />
+      <div
+        className="flex h-screen flex-col items-center justify-center gap-4"
+        style={{ backgroundColor: '#fefce8' }}
+      >
+        <img
+          src="/img/bettingmutt.png"
+          alt="WannaBet"
+          className="h-32 w-32 animate-pulse"
+        />
+        <p className="animate-pulse text-sm" style={{ color: '#a3a3a3' }}>
+          Loading WannaBet...
+        </p>
       </div>
     )
   }
