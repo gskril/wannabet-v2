@@ -1,4 +1,5 @@
 import { Activity, ArrowLeft, Coins, TrendingUp, Trophy } from 'lucide-react'
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 
@@ -6,7 +7,82 @@ import { BetsTable } from '@/components/bets-table'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { UserAvatar } from '@/components/user-avatar'
-import { FARCASTER_USERS, getBetsByUser, getUserStats } from '@/lib/dummy-data'
+import { getBetsByUser, getUserStats } from '@/lib/dummy-data'
+import type { FarcasterUser } from '@/lib/types'
+
+const NEYNAR_API_KEY = process.env.NEYNAR_API_KEY || ''
+const NEYNAR_BASE_URL = 'https://api.neynar.com/v2'
+
+async function fetchUserProfile(fid: number): Promise<FarcasterUser | null> {
+  if (!NEYNAR_API_KEY) {
+    console.error('NEYNAR_API_KEY not set')
+    return null
+  }
+
+  try {
+    const response = await fetch(
+      `${NEYNAR_BASE_URL}/farcaster/user/bulk?fids=${fid}`,
+      {
+        headers: {
+          accept: 'application/json',
+          api_key: NEYNAR_API_KEY,
+        },
+        next: { revalidate: 300 }, // Cache for 5 minutes
+      }
+    )
+
+    if (!response.ok) {
+      console.error('Neynar API error:', response.status, response.statusText)
+      return null
+    }
+
+    const data = await response.json()
+    const user = data.users?.[0]
+
+    if (!user) {
+      return null
+    }
+
+    return {
+      fid: user.fid,
+      username: user.username,
+      displayName: user.display_name || user.username,
+      pfpUrl: user.pfp_url || '',
+      bio: user.profile?.bio?.text || '',
+    }
+  } catch (error) {
+    console.error('Error fetching user profile:', error)
+    return null
+  }
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ fid: string }>
+}): Promise<Metadata> {
+  const { fid: fidString } = await params
+  const fid = parseInt(fidString)
+
+  const user = await fetchUserProfile(fid)
+
+  if (!user) {
+    return {
+      title: 'User Not Found - WannaBet',
+    }
+  }
+
+  return {
+    title: `${user.displayName} (@${user.username}) - WannaBet`,
+    description:
+      user.bio || `View ${user.displayName}'s betting profile on WannaBet`,
+    openGraph: {
+      title: `${user.displayName} (@${user.username})`,
+      description: user.bio || `Betting profile on WannaBet`,
+      images: user.pfpUrl ? [user.pfpUrl] : [],
+    },
+  }
+}
 
 export default async function ProfilePage({
   params,
@@ -16,12 +92,14 @@ export default async function ProfilePage({
   const { fid: fidString } = await params
   const fid = parseInt(fidString)
 
-  const user = FARCASTER_USERS[fid]
+  // Fetch real user data from Neynar
+  const user = await fetchUserProfile(fid)
 
   if (!user) {
     notFound()
   }
 
+  // Stats and bets still use dummy data (will be replaced with blockchain data later)
   const stats = getUserStats(fid)
   const userBets = getBetsByUser(fid)
 
