@@ -340,14 +340,6 @@ export function CreateBetDialog() {
                   <span className="text-sm">Days</span>
                 </button>
               </div>
-              {formData.expiresAt && (
-                <div className="bg-muted rounded-lg p-4 text-center">
-                  <p className="text-muted-foreground text-sm">Bet ends on:</p>
-                  <p className="text-lg font-semibold">
-                    {formatDisplayDate(formData.expiresAt)}
-                  </p>
-                </div>
-              )}
             </div>
           )}
 
