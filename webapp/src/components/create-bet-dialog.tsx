@@ -33,18 +33,13 @@ interface FormData {
   action: string
 }
 
-// Common action suggestions
+// Common action suggestions (just examples to inspire users)
+// Some use "will", some don't - showing variety in bet construction
 const COMMON_ACTIONS = [
-  'run a marathon',
-  'lose 10 lbs',
-  'complete a project',
-  'read 3 books',
-  'go to the gym 5 times',
-  'wake up before 6am every day',
-  'cook dinner 4 times',
-  'finish a side project',
-  'ship a new feature',
-  'get 1000 new followers',
+  'will run a marathon',
+  'loses 10 lbs',
+  'will ship a new feature',
+  'bets the Vikings win the Super Bowl',
 ]
 
 export function CreateBetDialog() {
@@ -100,14 +95,6 @@ export function CreateBetDialog() {
       return displayUser.displayName
     } else if (formData.subject === 'taker' && formData.takerUser) {
       return formData.takerUser.displayName
-    } else if (
-      formData.subject &&
-      formData.subject !== '' &&
-      formData.subject !== 'maker' &&
-      formData.subject !== 'taker' &&
-      formData.subject !== 'custom'
-    ) {
-      return formData.subject // Custom text
     }
     return ''
   }
@@ -115,10 +102,9 @@ export function CreateBetDialog() {
   // Construct the full bet description from template
   const getFullDescription = (): string => {
     const parts = []
-    const subjectText = getSubjectText()
 
-    if (subjectText) parts.push(subjectText)
-    if (formData.action) parts.push('will', formData.action)
+    // Action already includes subject name and "will"
+    if (formData.action) parts.push(formData.action)
 
     // Add date context
     if (formData.expiresAt) {
@@ -164,7 +150,8 @@ export function CreateBetDialog() {
       case 4:
         return (
           formData.subject.trim().length > 0 &&
-          formData.action.trim().length > 0
+          formData.action.trim().length > 0 &&
+          formData.action.split(' ').length >= 2
         )
       default:
         return false
@@ -351,20 +338,25 @@ export function CreateBetDialog() {
               </div>
 
               {/* Subject */}
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <Label htmlFor="subject" className="text-sm font-medium">
-                  Subject (who?)
+                  Who is this bet about?
                 </Label>
 
-                {/* Maker and Taker side by side */}
-                <div className="grid grid-cols-2 gap-2">
-                  {/* Maker */}
+                {/* Two users side by side */}
+                <div className="grid grid-cols-2 gap-3">
+                  {/* Maker button */}
                   <button
                     type="button"
-                    onClick={() =>
-                      setFormData({ ...formData, subject: 'maker' })
-                    }
-                    className={`flex items-center gap-2 rounded-lg border-2 p-2 transition-all ${
+                    onClick={() => {
+                      const userName = displayUser.username
+                      setFormData({
+                        ...formData,
+                        subject: 'maker',
+                        action: `${userName} `,
+                      })
+                    }}
+                    className={`flex flex-col items-center gap-2 rounded-lg border-2 p-3 transition-all ${
                       formData.subject === 'maker'
                         ? 'border-primary bg-primary/10'
                         : 'border-muted hover:border-primary/50'
@@ -375,19 +367,24 @@ export function CreateBetDialog() {
                       size="sm"
                       clickable={false}
                     />
-                    <span className="truncate text-sm font-semibold">
-                      {displayUser.displayName}
+                    <span className="truncate text-sm font-medium">
+                      @{displayUser.username}
                     </span>
                   </button>
 
-                  {/* Taker (Opponent) - only show if opponent was selected */}
+                  {/* Taker (Opponent) */}
                   {formData.takerUser && (
                     <button
                       type="button"
-                      onClick={() =>
-                        setFormData({ ...formData, subject: 'taker' })
-                      }
-                      className={`flex items-center gap-2 rounded-lg border-2 p-2 transition-all ${
+                      onClick={() => {
+                        const userName = formData.takerUser!.username
+                        setFormData({
+                          ...formData,
+                          subject: 'taker',
+                          action: `${userName} `,
+                        })
+                      }}
+                      className={`flex flex-col items-center gap-2 rounded-lg border-2 p-3 transition-all ${
                         formData.subject === 'taker'
                           ? 'border-primary bg-primary/10'
                           : 'border-muted hover:border-primary/50'
@@ -398,113 +395,90 @@ export function CreateBetDialog() {
                         size="sm"
                         clickable={false}
                       />
-                      <span className="truncate text-sm font-semibold">
-                        {formData.takerUser.displayName}
+                      <span className="truncate text-sm font-medium">
+                        @{formData.takerUser.username}
                       </span>
                     </button>
                   )}
                 </div>
-
-                {/* Someone else - custom input, separate and distinct */}
-                <div>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setFormData({ ...formData, subject: 'custom' })
-                    }
-                    className={`flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed p-2 transition-all ${
-                      formData.subject !== '' &&
-                      formData.subject !== 'maker' &&
-                      formData.subject !== 'taker'
-                        ? 'border-primary bg-primary/5'
-                        : 'border-muted hover:border-primary/30'
-                    }`}
-                  >
-                    <span className="text-muted-foreground text-sm">
-                      Or someone else...
-                    </span>
-                  </button>
-                  {formData.subject !== '' &&
-                    formData.subject !== 'maker' &&
-                    formData.subject !== 'taker' && (
-                      <Input
-                        type="text"
-                        placeholder="Enter custom subject..."
-                        value={
-                          formData.subject === 'custom' ? '' : formData.subject
-                        }
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            subject: e.target.value || 'custom',
-                          })
-                        }
-                        autoFocus
-                        className="mt-2 h-11"
-                      />
-                    )}
-                </div>
               </div>
 
-              {/* Action */}
-              <div className="space-y-2">
-                <Label htmlFor="action" className="text-sm font-medium">
-                  Action (what will happen?)
-                </Label>
-                <div className="relative">
-                  <Input
-                    id="action"
-                    type="text"
-                    placeholder="e.g., run a marathon, lose 10 lbs..."
-                    value={formData.action}
-                    onChange={(e) =>
-                      setFormData({ ...formData, action: e.target.value })
-                    }
-                    onFocus={() => setShowActionSuggestions(true)}
-                    onBlur={() =>
-                      setTimeout(() => setShowActionSuggestions(false), 200)
-                    }
-                    required
-                    className="h-12 text-base"
-                  />
-                  {showActionSuggestions && formData.action.length === 0 && (
-                    <div className="bg-background absolute top-full z-50 mt-1 max-h-[200px] w-full overflow-y-auto rounded-lg border shadow-lg">
-                      {COMMON_ACTIONS.map((action) => (
-                        <button
-                          key={action}
-                          type="button"
-                          onClick={() => {
-                            setFormData({ ...formData, action })
-                            setShowActionSuggestions(false)
-                          }}
-                          className="hover:bg-muted w-full border-b p-3 text-left text-sm last:border-b-0"
-                        >
-                          {action}
-                        </button>
-                      ))}
-                    </div>
-                  )}
+              {/* Action - only show after subject is selected */}
+              {formData.subject && (
+                <div className="space-y-2">
+                  <Label htmlFor="action" className="text-sm font-medium">
+                    What's the bet?
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      id="action"
+                      type="text"
+                      placeholder="e.g., will run a marathon, bets Vikings win..."
+                      value={formData.action}
+                      onChange={(e) =>
+                        setFormData({ ...formData, action: e.target.value })
+                      }
+                      onFocus={() => setShowActionSuggestions(true)}
+                      onBlur={() =>
+                        setTimeout(() => setShowActionSuggestions(false), 200)
+                      }
+                      required
+                      autoFocus
+                      className="h-12 text-base"
+                    />
+                    {showActionSuggestions &&
+                    (formData.action.trim().endsWith(displayUser.username) ||
+                      (formData.takerUser &&
+                        formData.action
+                          .trim()
+                          .endsWith(formData.takerUser.username))) ? (
+                      <div className="bg-background absolute top-full z-50 mt-1 max-h-[200px] w-full overflow-y-auto rounded-lg border shadow-lg">
+                        {COMMON_ACTIONS.map((action) => (
+                          <button
+                            key={action}
+                            type="button"
+                            onClick={() => {
+                              const userName =
+                                formData.subject === 'maker'
+                                  ? displayUser.username
+                                  : formData.takerUser?.username || ''
+                              setFormData({
+                                ...formData,
+                                action: `${userName} ${action}`,
+                              })
+                              setShowActionSuggestions(false)
+                            }}
+                            className="hover:bg-muted w-full border-b p-3 text-left text-sm last:border-b-0"
+                          >
+                            {action}
+                          </button>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
                 </div>
-              </div>
+              )}
 
-              {/* Preview - only show if user has entered some data */}
-              {(getSubjectText() || formData.action) && (
+              {/* Preview - only show if user has entered action */}
+              {formData.action && (
                 <div className="bg-primary/10 border-primary/20 rounded-lg border-2 border-dashed p-4">
                   <p className="text-muted-foreground mb-1 text-xs font-medium">
                     Preview:
                   </p>
-                  <p className="text-base font-semibold leading-relaxed">
-                    {getSubjectText() && (
-                      <span className="text-muted-foreground underline decoration-dotted">
-                        {getSubjectText()}
-                      </span>
-                    )}
-                    {getSubjectText() && formData.action && ' will '}
-                    {formData.action && (
-                      <span className="text-muted-foreground underline decoration-dotted">
-                        {formData.action}
-                      </span>
-                    )}
+                  <p className="text-base font-medium leading-relaxed">
+                    {(() => {
+                      const parts = formData.action.split(' ')
+                      const username = parts[0]
+                      const rest = parts.slice(1).join(' ')
+                      return (
+                        <>
+                          <span className="text-farcaster-brand">
+                            {username}
+                          </span>
+                          {rest && ` ${rest}`}
+                        </>
+                      )
+                    })()}
                     {formData.expiresAt && (
                       <>
                         {' by '}
@@ -512,11 +486,6 @@ export function CreateBetDialog() {
                           {formatDisplayDate(formData.expiresAt)}
                         </span>
                       </>
-                    )}
-                    {!getSubjectText() && !formData.action && (
-                      <span className="text-muted-foreground">
-                        Your bet will appear here...
-                      </span>
                     )}
                   </p>
                 </div>

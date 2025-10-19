@@ -12,6 +12,9 @@
   --muted: #a3a3a3; /* neutral-400 */
   --border: #e5e5e5; /* zinc-200 */
 
+  /* Brand colors */
+  --farcaster-brand: #7f5fc7; /* Farcaster purple */
+
   /* Status colors */
   --success: #22c55e; /* green-500 for open bets */
   --warning: #eab308; /* yellow-500 for active bets */
@@ -30,6 +33,9 @@
   --muted: #737373; /* neutral-500 */
   --border: #262626; /* neutral-800 */
 
+  /* Brand colors */
+  --farcaster-brand: #7f5fc7; /* Farcaster purple */
+
   /* Status colors stay the same */
   --success: #22c55e;
   --warning: #eab308;
@@ -46,6 +52,7 @@
   --color-accent: #38bdf8;
   --color-muted: #a3a3a3;
   --color-border: #e5e5e5;
+  --color-farcaster-brand: #7f5fc7;
   --color-success: #22c55e;
   --color-warning: #eab308;
   --color-danger: #ef4444;
@@ -58,4 +65,8 @@ body {
 /* Utility classes */
 .text-muted-foreground {
   color: var(--muted);
+}
+
+.text-farcaster-brand {
+  color: var(--farcaster-brand);
 }
