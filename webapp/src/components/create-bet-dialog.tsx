@@ -89,16 +89,6 @@ export function CreateBetDialog() {
     })
   }
 
-  // Get the display text for subject
-  const getSubjectText = (): string => {
-    if (formData.subject === 'maker') {
-      return displayUser.displayName
-    } else if (formData.subject === 'taker' && formData.takerUser) {
-      return formData.takerUser.displayName
-    }
-    return ''
-  }
-
   // Construct the full bet description from template
   const getFullDescription = (): string => {
     const parts = []
@@ -407,7 +397,7 @@ export function CreateBetDialog() {
               {formData.subject && (
                 <div className="space-y-2">
                   <Label htmlFor="action" className="text-sm font-medium">
-                    What's the bet?
+                    What&apos;s the bet?
                   </Label>
                   <div className="relative">
                     <Input
