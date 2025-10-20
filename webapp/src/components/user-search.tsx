@@ -21,7 +21,7 @@ interface UserSearchProps {
 
 export function UserSearch({
   label,
-  placeholder = '@username or FID',
+  placeholder = '@username',
   helperText,
   required = false,
   value,
