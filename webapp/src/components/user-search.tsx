@@ -103,16 +103,6 @@ export function UserSearch({
     }
   }, [searchQuery, performSearch])
 
-  // Check if current value matches a known user
-  useEffect(() => {
-    const cleanValue = value.replace('@', '').trim()
-    const matchedUser = users.find(
-      (user) =>
-        user.username === cleanValue || user.fid.toString() === cleanValue
-    )
-    setSelectedUser(matchedUser)
-  }, [value, users])
-
   const handleUserSelect = (user: FarcasterUser) => {
     const username = `@${user.username}`
     setSearchQuery(username)
@@ -134,77 +124,98 @@ export function UserSearch({
     }
   }
 
+  const handleClearSelection = () => {
+    setSearchQuery('')
+    setSelectedUser(undefined)
+    onChange('', undefined)
+    setUsers([])
+    lastSearchRef.current = ''
+  }
+
   return (
     <div className="space-y-2">
       <Label htmlFor="user-search" className="text-base">
         {label} {required && '*'}
       </Label>
-      <div className="relative">
-        <Search className="text-muted-foreground absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2" />
-        <Input
-          id="user-search"
-          type="text"
-          placeholder={placeholder}
-          value={searchQuery}
-          onChange={(e) => handleInputChange(e.target.value)}
-          onFocus={() => setIsFocused(true)}
-          onBlur={() => {
-            // Delay to allow click on user
-            setTimeout(() => setIsFocused(false), 200)
-          }}
-          required={required}
-          className="h-12 pl-10 text-base"
-        />
 
-        {/* Dropdown with user suggestions */}
-        {isFocused && (
-          <div className="bg-background absolute top-full z-50 mt-1 max-h-[280px] w-full overflow-y-auto rounded-lg border shadow-lg">
-            {isLoading ? (
-              <div className="text-muted-foreground p-4 text-center text-sm">
-                Searching...
-              </div>
-            ) : users.length > 0 ? (
-              users.map((user) => (
-                <button
-                  key={user.fid}
-                  type="button"
-                  onClick={() => handleUserSelect(user)}
-                  className="hover:bg-muted flex w-full items-center gap-3 border-b p-3 text-left transition-colors last:border-b-0"
-                >
-                  <UserAvatar user={user} size="md" clickable={false} />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-semibold">{user.displayName}</p>
-                    <p className="text-muted-foreground text-sm">
-                      @{user.username}
-                    </p>
-                  </div>
-                  {selectedUser?.fid === user.fid && (
-                    <div className="bg-primary text-primary-foreground rounded-full px-2 py-0.5 text-xs">
-                      Selected
-                    </div>
-                  )}
-                </button>
-              ))
-            ) : searchQuery.trim().length >= 2 ? (
-              <div className="text-muted-foreground p-4 text-center text-sm">
-                No users found
-              </div>
-            ) : searchQuery.trim().length > 0 ? (
-              <div className="text-muted-foreground p-4 text-center text-sm">
-                Type at least 2 characters to search
-              </div>
-            ) : null}
+      {/* Show avatar card if user is selected, otherwise show search input */}
+      {selectedUser ? (
+        <div className="border-primary bg-primary/10 flex items-center justify-between gap-3 rounded-lg border-2 p-3">
+          <div className="flex items-center gap-3">
+            <UserAvatar user={selectedUser} size="md" clickable={false} />
+            <div>
+              <p className="font-semibold">{selectedUser.displayName}</p>
+              <p className="text-muted-foreground text-sm">
+                @{selectedUser.username}
+              </p>
+            </div>
           </div>
-        )}
-      </div>
-      {selectedUser && (
-        <div className="bg-muted flex items-center gap-2 rounded-lg p-2">
-          <UserAvatar user={selectedUser} size="sm" clickable={false} />
-          <span className="text-sm font-medium">
-            {selectedUser.displayName}
-          </span>
+          <button
+            type="button"
+            onClick={handleClearSelection}
+            className="text-muted-foreground hover:text-foreground rounded-lg px-3 py-1.5 text-sm font-medium transition-colors"
+          >
+            Change
+          </button>
+        </div>
+      ) : (
+        <div className="relative">
+          <Search className="text-muted-foreground absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2" />
+          <Input
+            id="user-search"
+            type="text"
+            placeholder={placeholder}
+            value={searchQuery}
+            onChange={(e) => handleInputChange(e.target.value)}
+            onFocus={() => setIsFocused(true)}
+            onBlur={() => {
+              // Delay to allow click on user
+              setTimeout(() => setIsFocused(false), 200)
+            }}
+            required={required}
+            className="h-12 pl-10 text-base"
+          />
+
+          {/* Dropdown with user suggestions */}
+          {isFocused && (
+            <div className="bg-background absolute top-full z-50 mt-1 max-h-[280px] w-full overflow-y-auto rounded-lg border shadow-lg">
+              {isLoading ? (
+                <div className="text-muted-foreground p-4 text-center text-sm">
+                  Searching...
+                </div>
+              ) : users.length > 0 ? (
+                users.map((user) => (
+                  <button
+                    key={user.fid}
+                    type="button"
+                    onClick={() => handleUserSelect(user)}
+                    className="hover:bg-muted flex w-full items-center gap-3 border-b p-3 text-left transition-colors last:border-b-0"
+                  >
+                    <UserAvatar user={user} size="md" clickable={false} />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-semibold">
+                        {user.displayName}
+                      </p>
+                      <p className="text-muted-foreground text-sm">
+                        @{user.username}
+                      </p>
+                    </div>
+                  </button>
+                ))
+              ) : searchQuery.trim().length >= 2 ? (
+                <div className="text-muted-foreground p-4 text-center text-sm">
+                  No users found
+                </div>
+              ) : searchQuery.trim().length > 0 ? (
+                <div className="text-muted-foreground p-4 text-center text-sm">
+                  Type at least 2 characters to search
+                </div>
+              ) : null}
+            </div>
+          )}
         </div>
       )}
+
       {helperText && (
         <p className="text-muted-foreground text-xs">{helperText}</p>
       )}

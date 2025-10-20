@@ -1,6 +1,6 @@
 'use client'
 
-import { Coins, Plus } from 'lucide-react'
+import { Calendar, Coins, Plus } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
@@ -18,7 +18,7 @@ import { UserSearch } from '@/components/user-search'
 import { useAuth } from '@/lib/auth-context'
 import type { FarcasterUser } from '@/lib/types'
 
-type DateOption = '1day' | '1week'
+type DateOption = '1day' | '1week' | '1month' | 'custom'
 
 interface FormData {
   taker: string
@@ -64,14 +64,15 @@ export function CreateBetDialog() {
       if (window.location.hash === '#create') {
         setOpen(true)
         // Clear the hash without adding to history
-        history.replaceState(null, '', window.location.pathname)
+        window.history.replaceState(
+          null,
+          '',
+          window.location.pathname + window.location.search
+        )
       }
     }
 
-    // Check on mount
-    handleHashChange()
-
-    // Listen for changes
+    // Only listen for changes, don't check on mount
     window.addEventListener('hashchange', handleHashChange)
     return () => window.removeEventListener('hashchange', handleHashChange)
   }, [])
@@ -155,9 +156,20 @@ export function CreateBetDialog() {
     if (option === '1day') {
       expiryDate = new Date(now)
       expiryDate.setDate(now.getDate() + 1)
-    } else {
+    } else if (option === '1week') {
       expiryDate = new Date(now)
       expiryDate.setDate(now.getDate() + 7)
+    } else if (option === '1month') {
+      expiryDate = new Date(now)
+      expiryDate.setMonth(now.getMonth() + 1)
+    } else {
+      // custom - don't set expiry date yet
+      setFormData({
+        ...formData,
+        dateOption: option,
+        expiresAt: '',
+      })
+      return
     }
 
     setFormData({
@@ -165,6 +177,25 @@ export function CreateBetDialog() {
       dateOption: option,
       expiresAt: expiryDate.toISOString(),
     })
+  }
+
+  const handleCustomDateChange = (dateString: string) => {
+    if (dateString) {
+      const date = new Date(dateString)
+      // Set time to end of day
+      date.setHours(23, 59, 59, 999)
+      setFormData({
+        ...formData,
+        dateOption: 'custom',
+        expiresAt: date.toISOString(),
+      })
+    } else {
+      setFormData({
+        ...formData,
+        dateOption: 'custom',
+        expiresAt: '',
+      })
+    }
   }
 
   const formatDisplayDate = (isoString: string): string => {
@@ -200,10 +231,10 @@ export function CreateBetDialog() {
       <DialogTrigger asChild>
         <Button
           size="lg"
-          className="fixed bottom-20 right-4 z-50 h-14 w-14 rounded-full shadow-lg sm:bottom-4 sm:h-auto sm:w-auto sm:rounded-md sm:px-6"
+          className="hidden sm:fixed sm:bottom-4 sm:right-4 sm:z-50 sm:flex sm:h-auto sm:w-auto sm:items-center sm:gap-2 sm:rounded-md sm:px-6 sm:shadow-lg"
         >
-          <Plus className="h-6 w-6 sm:mr-2" />
-          <span className="hidden sm:inline">Create Bet</span>
+          <Plus className="h-5 w-5" />
+          <span>Create Bet</span>
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-md">
@@ -250,7 +281,6 @@ export function CreateBetDialog() {
                 onChange={(value, user) =>
                   setFormData({ ...formData, judge: value, judgeUser: user })
                 }
-                excludeFids={formData.takerUser ? [formData.takerUser.fid] : []}
               />
             </div>
           )}
@@ -291,7 +321,7 @@ export function CreateBetDialog() {
               <Label className="text-lg font-semibold">
                 When does the bet end?
               </Label>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-3">
                 <button
                   type="button"
                   onClick={() => handleDateSelect('1day')}
@@ -316,6 +346,39 @@ export function CreateBetDialog() {
                   <span className="text-2xl font-bold">7</span>
                   <span className="text-sm">Days</span>
                 </button>
+                <button
+                  type="button"
+                  onClick={() => handleDateSelect('1month')}
+                  className={`flex h-24 flex-col items-center justify-center rounded-lg border-2 transition-all ${
+                    formData.dateOption === '1month'
+                      ? 'border-primary bg-primary text-primary-foreground'
+                      : 'border-muted bg-primary/10 hover:border-primary/50'
+                  }`}
+                >
+                  <span className="text-2xl font-bold">1</span>
+                  <span className="text-sm">Month</span>
+                </button>
+              </div>
+
+              {/* Custom date input */}
+              <div className="relative">
+                <Input
+                  type="date"
+                  value={
+                    formData.expiresAt && formData.dateOption === 'custom'
+                      ? new Date(formData.expiresAt).toISOString().split('T')[0]
+                      : ''
+                  }
+                  onChange={(e) => handleCustomDateChange(e.target.value)}
+                  min={new Date().toISOString().split('T')[0]}
+                  placeholder="Select a date"
+                  className={`h-12 pr-10 text-base ${
+                    formData.dateOption === 'custom'
+                      ? 'border-primary bg-primary/10'
+                      : ''
+                  }`}
+                />
+                <Calendar className="text-muted-foreground pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2" />
               </div>
             </div>
           )}
