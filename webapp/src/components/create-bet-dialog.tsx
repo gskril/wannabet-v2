@@ -1,6 +1,7 @@
 'use client'
 
-import { Calendar, Coins, Plus } from 'lucide-react'
+import { Calendar, Plus } from 'lucide-react'
+import Image from 'next/image'
 import { useEffect, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
@@ -288,27 +289,58 @@ export function CreateBetDialog() {
           {/* Step 2: How Much */}
           {step === 2 && (
             <div className="space-y-4">
-              <Label htmlFor="amount" className="text-lg font-semibold">
-                How much USDC?
-              </Label>
+              <Label className="text-lg font-semibold">How much USDC?</Label>
+
+              {/* Quick select amounts */}
+              <div className="grid grid-cols-3 gap-3">
+                {[1, 5, 100].map((preset) => (
+                  <button
+                    key={preset}
+                    type="button"
+                    onClick={() =>
+                      setFormData({ ...formData, amount: preset.toString() })
+                    }
+                    className={`flex h-20 flex-col items-center justify-center rounded-lg border-2 transition-all ${
+                      formData.amount === preset.toString()
+                        ? 'border-primary bg-primary text-primary-foreground'
+                        : 'border-muted bg-primary/10 hover:border-primary/50'
+                    }`}
+                  >
+                    <span className="text-2xl font-bold">{preset}</span>
+                    <span className="text-xs">USDC</span>
+                  </button>
+                ))}
+              </div>
+
+              {/* Custom amount input */}
               <div className="relative">
-                <div className="bg-muted absolute left-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-lg">
-                  <Coins className="text-primary h-6 w-6" />
+                <div className="absolute left-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center">
+                  <Image
+                    src="/img/usdc.png"
+                    alt="USDC"
+                    width={32}
+                    height={32}
+                    className="rounded-full"
+                  />
                 </div>
                 <Input
                   id="amount"
                   type="number"
                   step="0.01"
                   min="0.01"
-                  placeholder="100"
+                  placeholder="Custom amount"
                   value={formData.amount}
                   onChange={(e) =>
                     setFormData({ ...formData, amount: e.target.value })
                   }
                   required
-                  className="h-16 pl-16 text-2xl font-semibold"
+                  className="h-14 pl-14 pr-16 text-xl font-semibold"
                 />
+                <span className="text-muted-foreground absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium">
+                  USDC
+                </span>
               </div>
+
               <p className="text-muted-foreground text-sm">
                 Both you and your opponent will put up this amount
               </p>
@@ -375,7 +407,7 @@ export function CreateBetDialog() {
                 <Input
                   type="date"
                   value={
-                    formData.expiresAt && formData.dateOption === 'custom'
+                    formData.expiresAt
                       ? new Date(formData.expiresAt).toISOString().split('T')[0]
                       : ''
                   }
@@ -383,9 +415,7 @@ export function CreateBetDialog() {
                   min={new Date().toISOString().split('T')[0]}
                   placeholder="Select a date"
                   className={`h-12 cursor-pointer pr-10 text-base [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none ${
-                    formData.dateOption === 'custom'
-                      ? 'border-primary bg-primary/10'
-                      : ''
+                    formData.expiresAt ? 'border-primary bg-primary/10' : ''
                   }`}
                 />
                 <Calendar className="text-muted-foreground pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2" />
