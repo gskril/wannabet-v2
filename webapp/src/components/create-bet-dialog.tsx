@@ -361,7 +361,17 @@ export function CreateBetDialog() {
               </div>
 
               {/* Custom date input */}
-              <div className="relative">
+              <div
+                className="relative cursor-pointer"
+                onClick={() => {
+                  const input = document.querySelector(
+                    'input[type="date"]'
+                  ) as HTMLInputElement
+                  if (input) {
+                    input.showPicker?.()
+                  }
+                }}
+              >
                 <Input
                   type="date"
                   value={
@@ -372,7 +382,7 @@ export function CreateBetDialog() {
                   onChange={(e) => handleCustomDateChange(e.target.value)}
                   min={new Date().toISOString().split('T')[0]}
                   placeholder="Select a date"
-                  className={`h-12 pr-10 text-base ${
+                  className={`h-12 cursor-pointer pr-10 text-base [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none ${
                     formData.dateOption === 'custom'
                       ? 'border-primary bg-primary/10'
                       : ''
