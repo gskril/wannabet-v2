@@ -11,11 +11,18 @@ contract BetFactoryTest is Test {
     address owner = makeAddr("owner");
 
     function setUp() public {
+        // Run everything on a fork of Base
+        vm.createSelectFork("https://base-rpc.publicnode.com");
+
         Bet betImplementation = new Bet();
         betFactory = new BetFactory(owner, address(betImplementation));
     }
 
     function test_Name() public view {
         assertEq(betFactory.name(), "BetFactory");
+    }
+
+    function test_Fork() public view {
+        assertEq(block.chainid, 8453);
     }
 }
