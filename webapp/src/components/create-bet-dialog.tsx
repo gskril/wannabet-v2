@@ -19,7 +19,7 @@ import { UserSearch } from '@/components/user-search'
 import { useAuth } from '@/lib/auth-context'
 import type { FarcasterUser } from '@/lib/types'
 
-type DateOption = '1day' | '1week' | '1month' | 'custom'
+type DateOption = '1day' | '7days' | '30days' | 'custom'
 
 interface FormData {
   taker: string
@@ -56,7 +56,11 @@ export function CreateBetDialog() {
     subject: '', // No default - user must select
     action: '',
   })
-
+  const DATE_PRESETS: { key: DateOption; label: string; days: number }[] = [
+    { key: '1day', label: 'Day', days: 1 },
+    { key: '7days', label: 'Days', days: 7 },
+    { key: '30days', label: 'Days', days: 30 },
+  ]
   const [showActionSuggestions, setShowActionSuggestions] = useState(false)
 
   // Listen for hash changes to open dialog from bottom nav
@@ -157,12 +161,12 @@ export function CreateBetDialog() {
     if (option === '1day') {
       expiryDate = new Date(now)
       expiryDate.setDate(now.getDate() + 1)
-    } else if (option === '1week') {
+    } else if (option === '7days') {
       expiryDate = new Date(now)
       expiryDate.setDate(now.getDate() + 7)
-    } else if (option === '1month') {
+    } else if (option === '30days') {
       expiryDate = new Date(now)
-      expiryDate.setMonth(now.getMonth() + 1)
+      expiryDate.setDate(now.getDate() + 30)
     } else {
       // custom - don't set expiry date yet
       setFormData({
@@ -354,42 +358,24 @@ export function CreateBetDialog() {
                 When does the bet end?
               </Label>
               <div className="grid grid-cols-3 gap-3">
-                <button
-                  type="button"
-                  onClick={() => handleDateSelect('1day')}
-                  className={`flex h-24 flex-col items-center justify-center rounded-lg border-2 transition-all ${
-                    formData.dateOption === '1day'
-                      ? 'border-primary bg-primary text-primary-foreground'
-                      : 'border-muted bg-primary/10 hover:border-primary/50'
-                  }`}
-                >
-                  <span className="text-2xl font-bold">1</span>
-                  <span className="text-sm">Day</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleDateSelect('1week')}
-                  className={`flex h-24 flex-col items-center justify-center rounded-lg border-2 transition-all ${
-                    formData.dateOption === '1week'
-                      ? 'border-primary bg-primary text-primary-foreground'
-                      : 'border-muted bg-primary/10 hover:border-primary/50'
-                  }`}
-                >
-                  <span className="text-2xl font-bold">7</span>
-                  <span className="text-sm">Days</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleDateSelect('1month')}
-                  className={`flex h-24 flex-col items-center justify-center rounded-lg border-2 transition-all ${
-                    formData.dateOption === '1month'
-                      ? 'border-primary bg-primary text-primary-foreground'
-                      : 'border-muted bg-primary/10 hover:border-primary/50'
-                  }`}
-                >
-                  <span className="text-2xl font-bold">1</span>
-                  <span className="text-sm">Month</span>
-                </button>
+                {DATE_PRESETS.map(({ key, label, days }) => {
+                  const active = formData.dateOption === key
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => handleDateSelect(key)}
+                      className={`flex h-24 flex-col items-center justify-center rounded-lg border-2 transition-all ${
+                        active
+                          ? 'border-primary bg-primary text-primary-foreground'
+                          : 'border-muted bg-primary/10 hover:border-primary/50'
+                      }`}
+                    >
+                      <span className="text-2xl font-bold">{days}</span>
+                      <span className="text-sm">{label}</span>
+                    </button>
+                  )
+                })}
               </div>
 
               {/* Custom date input */}
