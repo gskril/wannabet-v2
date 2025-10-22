@@ -1,7 +1,7 @@
 'use client'
 
 import { HelpCircle } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import { BetsTable } from '@/components/bets-table'
 import { CreateBetDialog } from '@/components/create-bet-dialog'
@@ -9,7 +9,20 @@ import { WelcomeModal } from '@/components/welcome-modal'
 import { DUMMY_BETS } from '@/lib/dummy-data'
 
 export default function HomePage() {
-  const [showWelcome, setShowWelcome] = useState(true)
+  const [showWelcome, setShowWelcome] = useState(false)
+
+  // Load initial state from localStorage after client mounts
+  useEffect(() => {
+    const dismissed = localStorage.getItem('welcomeDismissed') === 'true'
+    setShowWelcome(!dismissed)
+  }, [])
+
+  const handleCloseWelcome = (open: boolean) => {
+    setShowWelcome(open)
+    if (!open) {
+      localStorage.setItem('welcomeDismissed', 'true')
+    }
+  }
 
   const handleGetStarted = () => {
     // Open the create bet dialog
@@ -52,7 +65,7 @@ export default function HomePage() {
 
       <WelcomeModal
         open={showWelcome}
-        onOpenChange={setShowWelcome}
+        onOpenChange={handleCloseWelcome}
         onGetStarted={handleGetStarted}
       />
       <CreateBetDialog />
