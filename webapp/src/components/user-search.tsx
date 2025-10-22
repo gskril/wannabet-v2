@@ -19,6 +19,8 @@ interface UserSearchProps {
   excludeFids?: number[]
 }
 
+const EMPTY_ARRAY: number[] = []
+
 export function UserSearch({
   label,
   placeholder = '@username',
@@ -26,7 +28,7 @@ export function UserSearch({
   required = false,
   value,
   onChange,
-  excludeFids = [],
+  excludeFids = EMPTY_ARRAY,
 }: UserSearchProps) {
   const [isFocused, setIsFocused] = useState(false)
   const [searchQuery, setSearchQuery] = useState(value)
