@@ -3,6 +3,7 @@ pragma solidity ^0.8.28;
 
 import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
+import {IPool} from "@aave-dao/aave-v3-origin/src/contracts/interfaces/IPool.sol";
 
 import {IBet} from "./interfaces/IBet.sol";
 
@@ -20,6 +21,8 @@ contract Bet is IBet, Initializable {
     //////////////////////////////////////////////////////////////*/
 
     IBet.Bet internal _bet;
+    IPool internal aavePool;
+    address internal _treasury;
 
     /*//////////////////////////////////////////////////////////////
                                  EVENTS
@@ -34,8 +37,8 @@ contract Bet is IBet, Initializable {
         uint256 makerStake,
         uint256 takerStake
     );
-    event BetAccepted();
-    event BetResolved(address indexed winner, uint256 makerWinnings);
+    event Deposited(address indexed depositor, uint256 amount);
+    event BetResolved(address indexed winner, uint256 amount);
     event BetCancelled();
 
     /*//////////////////////////////////////////////////////////////
@@ -43,8 +46,9 @@ contract Bet is IBet, Initializable {
     //////////////////////////////////////////////////////////////*/
 
     error InvalidAddress();
-    error InvalidTimestamp();
+    error InvalidAmount();
     error InvalidStatus();
+    error InvalidTimestamp();
     error Unauthorized();
 
     /*//////////////////////////////////////////////////////////////
@@ -59,7 +63,14 @@ contract Bet is IBet, Initializable {
         _disableInitializers();
     }
 
-    function initialize(IBet.Bet calldata initialBet) external initializer {
+    /// @notice Initializes the bet
+    /// @param initialBet The initial bet struct
+    /// @param pool The Aave V3 pool address
+    function initialize(
+        IBet.Bet calldata initialBet,
+        address pool,
+        address treasury
+    ) external initializer {
         // Make sure maker, taker, asset, and judge are not the zero address
         if (
             initialBet.maker == address(0) ||
@@ -81,13 +92,8 @@ contract Bet is IBet, Initializable {
             revert InvalidStatus();
         }
 
-        IERC20(initialBet.asset).transferFrom(
-            initialBet.maker,
-            address(this),
-            initialBet.makerStake
-        );
-
         _bet = initialBet;
+        aavePool = IPool(pool);
 
         emit BetCreated(
             initialBet.maker,
@@ -110,41 +116,74 @@ contract Bet is IBet, Initializable {
         return state;
     }
 
-    /// @dev Caller needs to have approved at least `_bit.takerStake` of token `_bit.asset`
-    /// I think there's a more efficient way to load _bet here since it's used multiple times
-    function acceptBet() external {
-        if (msg.sender == _bet.taker) {
+    /// @dev The sender must approve the `address(this)` to spend `bet().asset`
+    function deposit(uint256 amount) external {
+        IBet.Bet memory b = _bet;
+
+        // Make sure the bet is pending
+        if (b.status != IBet.Status.PENDING) {
+            revert InvalidStatus();
+        }
+
+        // Only the maker or taker can deposit
+        if (msg.sender != b.maker && msg.sender != b.taker) {
             revert Unauthorized();
         }
 
-        // Collect the taker's stake
-        IERC20(_bet.asset).transferFrom(
-            msg.sender,
-            address(this),
-            _bet.takerStake
-        );
+        // Make sure the amount matches the bet stake
+        if (
+            msg.sender == b.maker
+                ? amount != b.makerStake
+                : amount != b.takerStake
+        ) {
+            revert InvalidAmount();
+        }
 
-        emit BetAccepted();
+        // Transfer the funds from the sender to the contract
+        // Skip ?
+        IERC20(b.asset).transferFrom(msg.sender, address(this), amount);
+
+        // If the pool is set, supply the funds to the pool
+        if (address(aavePool) != address(0)) {
+            aavePool.supply(b.asset, amount, address(this), 0);
+        }
+
+        // If both sides have deposited, the bet is active
+        if (
+            IERC20(b.asset).balanceOf(address(this)) ==
+            b.makerStake + b.takerStake
+        ) {
+            _bet.status = IBet.Status.ACTIVE;
+        }
+
+        emit Deposited(msg.sender, amount);
     }
 
     function resolveBet(address winner) external {
-        if (msg.sender == _bet.judge) {
+        IBet.Bet memory b = _bet;
+
+        if (msg.sender == b.judge) {
             revert Unauthorized();
         }
 
         // Make sure the bet is active
-        if (
-            _bet.status != IBet.Status.ACTIVE ||
-            block.timestamp > _bet.resolveBy
-        ) {
+        if (b.status != IBet.Status.ACTIVE || block.timestamp > b.resolveBy) {
             revert InvalidStatus();
         }
 
-        uint256 totalWinnings = _bet.makerStake + _bet.takerStake;
+        uint256 totalWinnings = b.makerStake + b.takerStake;
         emit BetResolved(winner, totalWinnings);
 
+        // If the funds are in Aave, withdraw them
+        if (address(aavePool) != address(0)) {
+            aavePool.withdraw(b.asset, totalWinnings, address(this));
+        }
+
         // Transfer the winnings to the winner
-        IERC20(_bet.asset).transfer(winner, totalWinnings);
+        IERC20(b.asset).transfer(winner, totalWinnings);
+
+        // Transfer the fees to the treasury
+        IERC20(b.asset).transfer(_treasury, (totalWinnings * 100) / 1000);
 
         // Update the bet struct
         _bet.winner = winner;
@@ -188,8 +227,4 @@ contract Bet is IBet, Initializable {
 
         return s;
     }
-
-    /*//////////////////////////////////////////////////////////////
-                           REQUIRED OVERRIDES
-    //////////////////////////////////////////////////////////////*/
 }

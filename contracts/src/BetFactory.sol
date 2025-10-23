@@ -29,6 +29,11 @@ contract BetFactory is Ownable {
     /// @notice The bet count
     uint256 public betCount;
 
+    /// @notice Mapping of token addresses to Aave V3 pool addresses
+    mapping(address => address) public tokenToPool;
+
+    address public treasury;
+
     /*//////////////////////////////////////////////////////////////
                                  EVENTS
     //////////////////////////////////////////////////////////////*/
@@ -59,7 +64,10 @@ contract BetFactory is Ownable {
                             PUBLIC FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
+    // receive() external payable {}
+
     /// @notice Creates a new bet
+    /// @return The address of the new bet
     function createBet(
         address taker,
         address judge,
@@ -68,7 +76,7 @@ contract BetFactory is Ownable {
         uint256 takerStake,
         uint40 acceptBy,
         uint40 resolveBy
-    ) external {
+    ) external returns (address) {
         betCount++;
         address newBet = Clones.clone(betImplementation);
         IBet(newBet).initialize(
@@ -83,9 +91,12 @@ contract BetFactory is Ownable {
                 winner: address(0),
                 makerStake: makerStake,
                 takerStake: takerStake
-            })
+            }),
+            tokenToPool[asset],
+            treasury
         );
         emit BetCreated(newBet);
+        return newBet;
     }
 
     /// @notice Gets a bet by address
@@ -100,6 +111,16 @@ contract BetFactory is Ownable {
     /*//////////////////////////////////////////////////////////////
                             ADMIN FUNCTIONS
     //////////////////////////////////////////////////////////////*/
+
+    /// @notice Sets the Aave V3 pool address for a token
+    function setPool(address token, address pool) external onlyOwner {
+        tokenToPool[token] = pool;
+    }
+
+    /// @notice Sets the treasury address
+    function setTreasury(address _treasury) external onlyOwner {
+        treasury = _treasury;
+    }
 
     /*//////////////////////////////////////////////////////////////
                            INTERNAL FUNCTIONS

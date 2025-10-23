@@ -29,5 +29,9 @@ interface IBet {
 
     function bet() external view returns (Bet memory);
 
-    function initialize(IBet.Bet memory initialBet) external;
+    function initialize(
+        IBet.Bet memory initialBet,
+        address pool,
+        address treasury
+    ) external;
 }

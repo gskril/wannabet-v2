@@ -1,18 +1,27 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.28;
 
+import {Test} from "forge-std/Test.sol";
+import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
+
 import {Bet} from "../src/Bet.sol";
 import {BetFactory} from "../src/BetFactory.sol";
-import {Test} from "forge-std/Test.sol";
+import {IBet} from "../src/interfaces/IBet.sol";
 
 contract BetFactoryTest is Test {
     BetFactory betFactory;
-
+    address maker = makeAddr("maker");
+    address taker = makeAddr("taker");
     address owner = makeAddr("owner");
+    IERC20 usdc = IERC20(0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913);
 
     function setUp() public {
         // Run everything on a fork of Base
         vm.createSelectFork("https://base-rpc.publicnode.com");
+
+        // Mint some USDC to the maker
+        vm.prank(0x534631Bcf33BDb069fB20A93d2fdb9e4D4dD42CF); // Slobo has some USDC on Base
+        usdc.transfer(maker, 10000);
 
         Bet betImplementation = new Bet();
         betFactory = new BetFactory(owner, address(betImplementation));
@@ -22,7 +31,25 @@ contract BetFactoryTest is Test {
         assertEq(betFactory.name(), "BetFactory");
     }
 
-    function test_Fork() public view {
+    function test_ForkAndPrank() public view {
         assertEq(block.chainid, 8453);
+        assertEq(IERC20(usdc).balanceOf(maker), 10000);
+    }
+
+    function test_CreateBetWithNoPool() public {
+        IBet bet = IBet(
+            betFactory.createBet(
+                makeAddr("taker"), // taker
+                makeAddr("judge"), // judge
+                address(usdc), // asset
+                1000000000000000000, // makerStake
+                1000000000000000000, // takerStake
+                uint40(block.timestamp + 1000), // acceptBy
+                uint40(block.timestamp + 2000) // resolveBy
+            )
+        );
+
+        assertEq(betFactory.betCount(), 1);
+        // assertEq(newBet.bet().maker, bet.maker);
     }
 }

@@ -32,6 +32,9 @@ importers:
 
   contracts:
     dependencies:
+      '@aave-dao/aave-v3-origin':
+        specifier: github:aave-dao/aave-v3-origin#main
+        version: https://codeload.github.com/aave-dao/aave-v3-origin/tar.gz/8a43339b6f93ea0a2f4d8e1ef3b9494c9d206a64
       '@openzeppelin/contracts':
         specifier: ^5.4.0
         version: 5.4.0
@@ -142,6 +145,10 @@ importers:
 
 packages:
 
+  '@aave-dao/aave-v3-origin@https://codeload.github.com/aave-dao/aave-v3-origin/tar.gz/8a43339b6f93ea0a2f4d8e1ef3b9494c9d206a64':
+    resolution: {tarball: https://codeload.github.com/aave-dao/aave-v3-origin/tar.gz/8a43339b6f93ea0a2f4d8e1ef3b9494c9d206a64}
+    version: 3.5.0
+
   '@actions/core@1.11.1':
     resolution: {integrity: sha512-hXJCSrkwfA46Vd9Z3q4cpEpHB1rL5NG04+/rbqW9d3+CSvtB1tYe8UTpAlixa1vj0m/ULglfEK2UKxMGxCxv5A==}
 
@@ -204,6 +211,9 @@ packages:
   '@babel/types@7.28.4':
     resolution: {integrity: sha512-bkFqkLhh3pMBUQQkpVgWDWq/lqzc2678eUyDlTBhRqhCHFguYYGM0Efga7tYk4TogG/3x0EEl66/OQ+WGbWB/Q==}
     engines: {node: '>=6.9.0'}
+
+  '@bgd-labs/solidity-utils@1.1.2':
+    resolution: {integrity: sha512-GgKwrjgdfnd9yKiWX1LDWysbVIyw/HTvqewq+4I2FAJXJt7AdUgSOCSi/cJi4dymsQmE1u/zgXHSeFH5fI+XsA==}
 
   '@borewit/text-codec@0.1.1':
     resolution: {integrity: sha512-5L/uBxmjaCIX5h8Z+uu+kA9BQLkc/Wl06UGR5ajNRxu+/XjonB5i8JpgFMrPj3LXTCPA0pv8yxUvbUi+QthGGA==}
@@ -993,6 +1003,11 @@ packages:
     resolution: {integrity: sha512-u/3VAbF8c68AXBgm8nBAdDPLPW/KgrtHz28yemf92zNB0iDZFGdRUX2W80Lzf177g6ctYLz0GIPHCOU0LTJegQ==}
     engines: {node: '>=16'}
     hasBin: true
+
+  '@openzeppelin/contracts-upgradeable@5.4.0':
+    resolution: {integrity: sha512-STJKyDzUcYuB35Zub1JpWW58JxvrFFVgQ+Ykdr8A9PGXgtq/obF5uoh07k2XmFyPxfnZdPdBdhkJ/n2YxJ87HQ==}
+    peerDependencies:
+      '@openzeppelin/contracts': 5.4.0
 
   '@openzeppelin/contracts@5.4.0':
     resolution: {integrity: sha512-eCYgWnLg6WO+X52I16TZt8uEjbtdkgLC0SUX/xnAksjjrQI4Xfn4iBRoI5j55dmlOhDv1Y7BoR3cU7e3WWhC6A==}
@@ -1787,6 +1802,10 @@ packages:
 
   caniuse-lite@1.0.30001750:
     resolution: {integrity: sha512-cuom0g5sdX6rw00qOoLNSFCJ9/mYIsuSOA+yzpDw8eopiFqcVwQvZHqov0vmEighRxX++cfC0Vg1G+1Iy/mSpQ==}
+
+  catapulta-verify@1.4.3:
+    resolution: {integrity: sha512-9FPHSOKL/hRm5L62YEj35dnXq+YikU/6u6XWPqZ5nG3x95Ouwk++3F/ffSt1n4HIQXusmYHZvEOx2GUKd6tQjA==}
+    hasBin: true
 
   cbor2@1.12.0:
     resolution: {integrity: sha512-3Cco8XQhi27DogSp9Ri6LYNZLi/TBY/JVnDe+mj06NkBjW/ZYOtekaEU4wZ4xcRMNrFkDv8KNtOAqHyDfz3lYg==}
@@ -3751,6 +3770,11 @@ packages:
 
 snapshots:
 
+  '@aave-dao/aave-v3-origin@https://codeload.github.com/aave-dao/aave-v3-origin/tar.gz/8a43339b6f93ea0a2f4d8e1ef3b9494c9d206a64':
+    dependencies:
+      '@bgd-labs/solidity-utils': 1.1.2
+      catapulta-verify: 1.4.3
+
   '@actions/core@1.11.1':
     dependencies:
       '@actions/exec': 1.1.1
@@ -3821,6 +3845,11 @@ snapshots:
     dependencies:
       '@babel/helper-string-parser': 7.27.1
       '@babel/helper-validator-identifier': 7.27.1
+
+  '@bgd-labs/solidity-utils@1.1.2':
+    dependencies:
+      '@openzeppelin/contracts': 5.4.0
+      '@openzeppelin/contracts-upgradeable': 5.4.0(@openzeppelin/contracts@5.4.0)
 
   '@borewit/text-codec@0.1.1': {}
 
@@ -4677,6 +4706,10 @@ snapshots:
       - encoding
       - supports-color
 
+  '@openzeppelin/contracts-upgradeable@5.4.0(@openzeppelin/contracts@5.4.0)':
+    dependencies:
+      '@openzeppelin/contracts': 5.4.0
+
   '@openzeppelin/contracts@5.4.0': {}
 
   '@radix-ui/primitive@1.1.3': {}
@@ -5461,6 +5494,8 @@ snapshots:
   callsites@3.1.0: {}
 
   caniuse-lite@1.0.30001750: {}
+
+  catapulta-verify@1.4.3: {}
 
   cbor2@1.12.0: {}
 

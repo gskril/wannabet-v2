@@ -17,6 +17,7 @@
     "viem": "^2.38.0"
   },
   "dependencies": {
+    "@aave-dao/aave-v3-origin": "github:aave-dao/aave-v3-origin#main",
     "@openzeppelin/contracts": "^5.4.0"
   }
 }
