@@ -10,7 +10,8 @@ import {IBet} from "../src/interfaces/IBet.sol";
 
 contract BetFactoryTest is Test {
     BetFactory betFactory;
-    address maker = makeAddr("maker");
+    // address maker = makeAddr("maker");
+    address maker = 0x534631Bcf33BDb069fB20A93d2fdb9e4D4dD42CF; // slobo
     address taker = makeAddr("taker");
     address owner = makeAddr("owner");
     IERC20 usdc = IERC20(0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913);
@@ -20,8 +21,8 @@ contract BetFactoryTest is Test {
         vm.createSelectFork("https://base-rpc.publicnode.com");
 
         // Mint some USDC to the maker
-        vm.prank(0x534631Bcf33BDb069fB20A93d2fdb9e4D4dD42CF); // Slobo has some USDC on Base
-        usdc.transfer(maker, 10000);
+        vm.prank(0x4e65fE4DbA92790696d040ac24Aa414708F5c0AB); // aUSDC token which holds all the underlying USDC
+        usdc.transfer(maker, 1000 * 1e6);
 
         Bet betImplementation = new Bet();
         betFactory = new BetFactory(owner, address(betImplementation));
@@ -33,10 +34,11 @@ contract BetFactoryTest is Test {
 
     function test_ForkAndPrank() public view {
         assertEq(block.chainid, 8453);
-        assertEq(IERC20(usdc).balanceOf(maker), 10000);
+        assertGt(IERC20(usdc).balanceOf(maker), 1000000000);
     }
 
     function test_CreateBetWithNoPool() public {
+        vm.prank(maker);
         IBet bet = IBet(
             betFactory.createBet(
                 makeAddr("taker"), // taker
@@ -50,6 +52,6 @@ contract BetFactoryTest is Test {
         );
 
         assertEq(betFactory.betCount(), 1);
-        // assertEq(newBet.bet().maker, bet.maker);
+        assertEq(bet.bet().maker, maker);
     }
 }

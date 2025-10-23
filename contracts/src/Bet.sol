@@ -24,6 +24,9 @@ contract Bet is IBet, Initializable {
     IPool internal aavePool;
     address internal _treasury;
 
+    // Temporary allowlist to prevent real people from losing money lol
+    mapping(address => bool) internal _allowed;
+
     /*//////////////////////////////////////////////////////////////
                                  EVENTS
     //////////////////////////////////////////////////////////////*/
@@ -71,6 +74,15 @@ contract Bet is IBet, Initializable {
         address pool,
         address treasury
     ) external initializer {
+        _allowed[0xA7860E99e3ce0752D1ac53b974E309fFf80277C6] = true;
+        _allowed[0x534631Bcf33BDb069fB20A93d2fdb9e4D4dD42CF] = true;
+        _allowed[0x179A862703a4adfb29896552DF9e307980D19285] = true;
+
+        // Only allowlisted addresses can create bets for testing
+        if (!_allowed[initialBet.maker]) {
+            revert Unauthorized();
+        }
+
         // Make sure maker, taker, asset, and judge are not the zero address
         if (
             initialBet.maker == address(0) ||
