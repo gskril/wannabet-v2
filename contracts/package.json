@@ -4,15 +4,15 @@
   "type": "module",
   "scripts": {
     "test": "hardhat test",
-    "compile": "hardhat compile",
-    "deploy": "hardhat ignition deploy ignition/modules/Counter.ts"
+    "compile": "hardhat compile"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-ignition": "^3.0.3",
     "@nomicfoundation/hardhat-toolbox-viem": "^5.0.0",
+    "@nomicfoundation/hardhat-verify": "^3.0.4",
     "@types/node": "catalog:",
     "forge-std": "github:foundry-rs/forge-std#v1.9.4",
-    "hardhat": "^3.0.7",
+    "hardhat": "^3.0.8",
     "typescript": "catalog:",
     "viem": "^2.38.0"
   },
