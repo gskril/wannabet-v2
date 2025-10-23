@@ -105,6 +105,7 @@ contract Bet is IBet, Initializable {
         }
 
         _bet = initialBet;
+        _treasury = treasury;
         aavePool = IPool(pool);
 
         emit BetCreated(
@@ -121,12 +122,6 @@ contract Bet is IBet, Initializable {
     /*//////////////////////////////////////////////////////////////
                             PUBLIC FUNCTIONS
     //////////////////////////////////////////////////////////////*/
-
-    function bet() external view returns (IBet.Bet memory state) {
-        state = _bet;
-        state.status = _status(state);
-        return state;
-    }
 
     /// @dev The sender must approve the `address(this)` to spend `bet().asset`
     function deposit(uint256 amount) external {
@@ -174,7 +169,7 @@ contract Bet is IBet, Initializable {
     function resolveBet(address winner) external {
         IBet.Bet memory b = _bet;
 
-        if (msg.sender == b.judge) {
+        if (msg.sender != b.judge) {
             revert Unauthorized();
         }
 
@@ -194,10 +189,13 @@ contract Bet is IBet, Initializable {
         // Transfer the winnings to the winner
         IERC20(b.asset).transfer(winner, totalWinnings);
 
-        // Transfer the fees to the treasury
-        IERC20(b.asset).transfer(_treasury, (totalWinnings * 100) / 1000);
+        // Transfer the remainder to the treasury
+        uint256 remainder = IERC20(b.asset).balanceOf(address(this));
+        if (remainder > 0) {
+            IERC20(b.asset).transfer(_treasury, remainder);
+        }
 
-        // Update the bet struct
+        // Update the bet
         _bet.winner = winner;
         _bet.status = IBet.Status.RESOLVED;
     }
@@ -219,9 +217,16 @@ contract Bet is IBet, Initializable {
         _bet.status = IBet.Status.CANCELLED;
         emit BetCancelled();
     }
-    /*//////////////////////////////////////////////////////////////
-                            ADMIN FUNCTIONS
-    //////////////////////////////////////////////////////////////*/
+
+    function bet() external view returns (IBet.Bet memory state) {
+        state = _bet;
+        state.status = _status(state);
+        return state;
+    }
+
+    function status() external view returns (IBet.Status) {
+        return _status(_bet);
+    }
 
     /*//////////////////////////////////////////////////////////////
                            INTERNAL FUNCTIONS

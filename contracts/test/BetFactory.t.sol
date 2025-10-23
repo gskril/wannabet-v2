@@ -13,6 +13,7 @@ contract BetFactoryTest is Test {
     // address maker = makeAddr("maker");
     address maker = 0x534631Bcf33BDb069fB20A93d2fdb9e4D4dD42CF; // slobo
     address taker = makeAddr("taker");
+    address judge = makeAddr("judge");
     address owner = makeAddr("owner");
     IERC20 usdc = IERC20(0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913);
 
@@ -20,9 +21,11 @@ contract BetFactoryTest is Test {
         // Run everything on a fork of Base
         vm.createSelectFork("https://base-rpc.publicnode.com");
 
-        // Mint some USDC to the maker
-        vm.prank(0x4e65fE4DbA92790696d040ac24Aa414708F5c0AB); // aUSDC token which holds all the underlying USDC
+        // Mint some USDC to the maker and taker
+        vm.startPrank(0x4e65fE4DbA92790696d040ac24Aa414708F5c0AB); // aUSDC token which holds all the underlying USDC
         usdc.transfer(maker, 1000 * 1e6);
+        usdc.transfer(taker, 1000 * 1e6);
+        vm.stopPrank();
 
         Bet betImplementation = new Bet();
         betFactory = new BetFactory(owner, address(betImplementation));
@@ -41,11 +44,11 @@ contract BetFactoryTest is Test {
         vm.prank(maker);
         IBet bet = IBet(
             betFactory.createBet(
-                makeAddr("taker"), // taker
-                makeAddr("judge"), // judge
+                taker, // taker
+                judge, // judge
                 address(usdc), // asset
-                1000000000000000000, // makerStake
-                1000000000000000000, // takerStake
+                1000, // makerStake
+                1000, // takerStake
                 uint40(block.timestamp + 1000), // acceptBy
                 uint40(block.timestamp + 2000) // resolveBy
             )
@@ -53,5 +56,37 @@ contract BetFactoryTest is Test {
 
         assertEq(betFactory.betCount(), 1);
         assertEq(bet.bet().maker, maker);
+
+        // Maker deposits
+        vm.startPrank(maker);
+        usdc.approve(address(bet), 1000);
+        bet.deposit(1000);
+        vm.stopPrank();
+
+        // Taker deposits
+        vm.startPrank(taker);
+        usdc.approve(address(bet), 1000);
+        bet.deposit(1000);
+        vm.stopPrank();
+
+        assertEq(usdc.balanceOf(address(bet)), 2000);
+        assertEq(uint(bet.bet().status), uint(IBet.Status.ACTIVE));
+
+        // Judge resolves the bet in favor of thet maker
+        uint256 makerBalanceBefore = usdc.balanceOf(maker);
+        vm.prank(judge);
+        bet.resolveBet(maker);
+        uint256 makerBalanceAfter = usdc.balanceOf(maker);
+
+        assertEq(makerBalanceAfter - makerBalanceBefore, 2000);
+        assertEq(uint(bet.bet().status), uint(IBet.Status.RESOLVED));
+    }
+
+    function test_BetExpires() public {
+        // TODO
+    }
+
+    function test_BetCancelled() public {
+        // TODO
     }
 }

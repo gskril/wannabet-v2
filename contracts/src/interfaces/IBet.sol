@@ -27,11 +27,17 @@ interface IBet {
         uint256 takerStake; // Slot 6
     }
 
-    function bet() external view returns (Bet memory);
-
     function initialize(
         IBet.Bet memory initialBet,
         address pool,
         address treasury
     ) external;
+
+    function deposit(uint256 amount) external;
+
+    function resolveBet(address winner) external;
+
+    function cancelBet() external;
+
+    function bet() external view returns (Bet memory);
 }
