@@ -19,6 +19,8 @@ interface UserSearchProps {
   excludeFids?: number[]
 }
 
+const EMPTY_ARRAY: number[] = []
+
 export function UserSearch({
   label,
   placeholder = '@username',
@@ -26,7 +28,7 @@ export function UserSearch({
   required = false,
   value,
   onChange,
-  excludeFids = [],
+  excludeFids = EMPTY_ARRAY,
 }: UserSearchProps) {
   const [isFocused, setIsFocused] = useState(false)
   const [searchQuery, setSearchQuery] = useState(value)
@@ -189,7 +191,7 @@ export function UserSearch({
                     key={user.fid}
                     type="button"
                     onClick={() => handleUserSelect(user)}
-                    className="hover:bg-muted flex w-full items-center gap-3 border-b p-3 text-left transition-colors last:border-b-0"
+                    className="hover:bg-farcaster-brand/20 flex w-full items-center gap-3 border-b p-3 text-left transition-colors last:border-b-0"
                   >
                     <UserAvatar user={user} size="md" clickable={false} />
                     <div className="min-w-0 flex-1">
