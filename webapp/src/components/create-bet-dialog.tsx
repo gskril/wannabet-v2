@@ -97,12 +97,10 @@ export function CreateBetDialog() {
     return parts.join(' ')
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    console.log('handleSubmit called, current step:', step)
+  const handleCreateBet = () => {
+    console.log('handleCreateBet called, current step:', step)
     // Only allow actual submission on step 5
     if (step !== 5) {
-      // Prevent form submission on earlier steps
       console.log('Blocked submission - not on step 5')
       return
     }
@@ -112,6 +110,11 @@ export function CreateBetDialog() {
     alert(`Bet created! (dummy submission)\n\n"${fullDescription}"`)
     setOpen(false)
     handleReset()
+  }
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    handleCreateBet()
   }
 
   const handleNext = () => {
@@ -200,15 +203,6 @@ export function CreateBetDialog() {
       day: 'numeric',
       year: 'numeric',
     })
-  }
-
-  // Mock display user if no auth
-  const displayUser = currentUser || {
-    fid: 0,
-    username: 'testuser',
-    displayName: 'Test User',
-    pfpUrl: '/img/bettingmutt.png',
-    bio: 'Testing mode - open in Farcaster for real auth',
   }
 
   return (
@@ -483,7 +477,7 @@ export function CreateBetDialog() {
                 className="h-12 flex-1 text-base"
                 onClick={() => {
                   console.log('Create Bet button clicked')
-                  handleSubmit(new Event('submit') as any)
+                  handleCreateBet()
                 }}
                 disabled={!canProceed()}
               >
