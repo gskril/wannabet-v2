@@ -73,7 +73,7 @@ export function CreateBetDialog() {
   // USDC approval hooks
   const {
     data: approvalHash,
-    writeContract: approveUsdc,
+    writeContractAsync: approveUsdc,
     isPending: isApproving,
     isSuccess: approvalWritten,
     reset: resetApproval,
@@ -89,7 +89,7 @@ export function CreateBetDialog() {
   // Bet creation hooks
   const {
     data: betCreationHash,
-    writeContract: createBet,
+    writeContractAsync: createBet,
     isPending: isCreatingBet,
     isSuccess: betCreationWritten,
     error: betCreationError,
@@ -179,7 +179,7 @@ export function CreateBetDialog() {
         )
         const resolveByTimestamp = expiresAtTimestamp + 90 * 24 * 60 * 60
 
-        createBet({
+        await createBet({
           address: BETFACTORY_ADDRESS,
           abi: BETFACTORY_ABI,
           functionName: 'createBet',
@@ -303,20 +303,20 @@ export function CreateBetDialog() {
 
       // Predict bet address before approval
       console.log('Predicting bet address...')
-      const predictedAddress = (await readContract(wagmiConfig, {
+      const predictedAddress = await readContract(wagmiConfig, {
         address: BETFACTORY_ADDRESS,
         abi: BETFACTORY_ABI,
         functionName: 'predictBetAddress',
         args: [
           address, // maker (current user)
-          takerAddress,
-          USDC_ADDRESS,
-          amountInUnits,
-          amountInUnits,
-          acceptByTimestamp,
-          resolveByTimestamp,
+          takerAddress, // taker
+          USDC_ADDRESS, // asset
+          amountInUnits, // makerStake
+          amountInUnits, // takerStake
+          acceptByTimestamp, // acceptBy
+          resolveByTimestamp, // resolveBy
         ],
-      })) as Address
+      })
 
       console.log('Predicted bet address:', predictedAddress)
       setPredictedBetAddress(predictedAddress)
@@ -331,9 +331,6 @@ export function CreateBetDialog() {
           functionName: 'approve',
           args: [predictedAddress, amountInUnits], // ✅ Approve to bet contract, not factory
         })
-        // Wait for approval to be confirmed before proceeding
-        // The useEffect will handle creating bet after approval
-        return
       }
 
       console.log('Creating bet on-chain...')
