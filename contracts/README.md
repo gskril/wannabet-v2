@@ -46,3 +46,8 @@ pnpm hardhat verify --network sepolia 0x1234567890...
 ```
 
 Works on Blockscout though!
+
+## Todo
+
+- [ ] Add a judging window (90 day hardcoded or user-defined)
+- [ ] Add ability for judge to refund the bet

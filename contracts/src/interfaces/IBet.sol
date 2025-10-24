@@ -32,6 +32,23 @@ interface IBet {
     }
 
     /*//////////////////////////////////////////////////////////////
+                                 EVENTS
+    //////////////////////////////////////////////////////////////*/
+
+    event BetCreated(
+        address indexed maker,
+        address indexed taker,
+        address indexed asset,
+        uint40 acceptBy,
+        uint40 resolveBy,
+        uint256 makerStake,
+        uint256 takerStake
+    );
+    event BetAccepted();
+    event BetResolved(address indexed winner, uint256 amount);
+    event BetCancelled();
+
+    /*//////////////////////////////////////////////////////////////
                                  ERRORS
     //////////////////////////////////////////////////////////////*/
 
@@ -51,7 +68,7 @@ interface IBet {
         address treasury
     ) external;
 
-    function deposit(uint256 amount) external;
+    function accept() external;
 
     function resolve(address winner) external;
 

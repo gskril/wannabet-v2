@@ -31,7 +31,19 @@ contract BetFactoryTest is Test {
         Bet betImplementation = new Bet();
         betFactory = new BetFactory(owner, address(betImplementation));
 
-        vm.prank(maker);
+        // Predict the bet address
+        address betAddress = betFactory.predictBetAddress(
+            maker,
+            taker,
+            address(usdc),
+            1000,
+            1000,
+            uint40(block.timestamp + 1000),
+            uint40(block.timestamp + 2000)
+        );
+
+        vm.startPrank(maker);
+        usdc.approve(address(betAddress), 1000);
         bet = IBet(
             betFactory.createBet(
                 taker, // taker
@@ -43,6 +55,7 @@ contract BetFactoryTest is Test {
                 uint40(block.timestamp + 2000) // resolveBy
             )
         );
+        vm.stopPrank();
     }
 
     function test_ForkAndPrank() public view {
@@ -68,16 +81,12 @@ contract BetFactoryTest is Test {
         assertEq(betFactory.betCount(), 1);
         assertEq(bet.bet().maker, maker);
 
-        // Maker deposits
-        vm.startPrank(maker);
-        usdc.approve(address(bet), 1000);
-        bet.deposit(1000);
-        vm.stopPrank();
-
         // Taker deposits
         vm.startPrank(taker);
         usdc.approve(address(bet), 1000);
-        bet.deposit(1000);
+        vm.expectEmit();
+        emit IBet.BetAccepted();
+        bet.accept();
         vm.stopPrank();
 
         assertEq(usdc.balanceOf(address(bet)), 2000);
@@ -99,12 +108,6 @@ contract BetFactoryTest is Test {
 
     // Maker or taker doesn't deposit in time
     function test_BetExpiresBeforeStarting() public {
-        // Maker deposits
-        vm.startPrank(maker);
-        usdc.approve(address(bet), 1000);
-        bet.deposit(1000);
-        vm.stopPrank();
-
         vm.warp(block.timestamp + 1001);
 
         // At this point, the bet should be expired
@@ -114,11 +117,13 @@ contract BetFactoryTest is Test {
         vm.startPrank(taker);
         usdc.approve(address(bet), 1000);
         vm.expectRevert(IBet.InvalidStatus.selector);
-        bet.deposit(1000);
+        bet.accept();
         vm.stopPrank();
 
         // Anybody can cancel an expired bet, which sends funds back to each party
+        uint256 makerBalanceBefore = usdc.balanceOf(maker);
         bet.cancel();
+        assertEq(usdc.balanceOf(maker) - makerBalanceBefore, 1000);
     }
 
     // Judge doesn't resolve the bet in time
