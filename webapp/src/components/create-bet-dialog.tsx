@@ -11,6 +11,7 @@ import {
   useWaitForTransactionReceipt,
   useWriteContract,
 } from 'wagmi'
+import { readContract } from 'wagmi/actions'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -32,6 +33,7 @@ import {
   USDC_ADDRESS,
 } from '@/lib/contracts'
 import type { FarcasterUser } from '@/lib/types'
+import { wagmiConfig } from '@/lib/wagmi-config'
 
 type DateOption = '1day' | '7days' | '30days' | 'custom'
 
@@ -61,6 +63,8 @@ export function CreateBetDialog() {
   const [createdBetAddress, setCreatedBetAddress] = useState<Address | null>(
     null
   )
+  const [predictedBetAddress, setPredictedBetAddress] =
+    useState<Address | null>(null)
 
   // Wagmi hooks
   const { address, isConnected } = useAccount()
@@ -151,12 +155,12 @@ export function CreateBetDialog() {
 
   // When approval is confirmed, automatically create bet
   useEffect(() => {
-    if (approvalConfirmed && step === 5 && address) {
+    if (approvalConfirmed && step === 5 && address && predictedBetAddress) {
       refetchAllowance().then(async () => {
         // Now that allowance is updated, proceed with bet creation
         const amountInUnits = parseUnits(formData.amount, 6)
 
-        // Resolve addresses from Farcaster users
+        // Resolve addresses from Farcaster users (must match prediction)
         const takerAddress: Address = formData.takerUser?.fid
           ? (await resolveAddressFromFid(formData.takerUser.fid)) ||
             ('0x0000000000000000000000000000000000000000' as Address)
@@ -167,10 +171,13 @@ export function CreateBetDialog() {
             ('0x0000000000000000000000000000000000000000' as Address)
           : ('0x0000000000000000000000000000000000000000' as Address)
 
+        // Calculate timestamps (must match prediction)
+        const acceptByTimestamp =
+          Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60
         const expiresAtTimestamp = Math.floor(
           new Date(formData.expiresAt).getTime() / 1000
         )
-        const acceptByTimestamp = expiresAtTimestamp - 86400
+        const resolveByTimestamp = expiresAtTimestamp + 90 * 24 * 60 * 60
 
         createBet({
           address: BETFACTORY_ADDRESS,
@@ -183,7 +190,7 @@ export function CreateBetDialog() {
             amountInUnits,
             amountInUnits,
             acceptByTimestamp,
-            expiresAtTimestamp,
+            resolveByTimestamp,
           ],
         })
       })
@@ -193,6 +200,7 @@ export function CreateBetDialog() {
     refetchAllowance,
     step,
     address,
+    predictedBetAddress,
     formData.amount,
     formData.takerUser,
     formData.judgeUser,
@@ -238,6 +246,7 @@ export function CreateBetDialog() {
       description: '',
     })
     setCreatedBetAddress(null)
+    setPredictedBetAddress(null)
     resetApproval()
     resetBetCreation()
   }
@@ -262,21 +271,6 @@ export function CreateBetDialog() {
       // Convert amount to proper units (USDC has 6 decimals)
       const amountInUnits = parseUnits(formData.amount, 6)
 
-      // Check if we need to approve USDC
-      const currentAllowance = allowance || BigInt(0)
-      if (currentAllowance < amountInUnits) {
-        console.log('Approving USDC...')
-        await approveUsdc({
-          address: USDC_ADDRESS,
-          abi: ERC20_ABI,
-          functionName: 'approve',
-          args: [BETFACTORY_ADDRESS, amountInUnits],
-        })
-        // Wait for approval to be confirmed before proceeding
-        // The useEffect will handle creating bet after approval
-        return
-      }
-
       // Resolve addresses from Farcaster users
       const takerAddress: Address = formData.takerUser?.fid
         ? (await resolveAddressFromFid(formData.takerUser.fid)) ||
@@ -298,11 +292,49 @@ export function CreateBetDialog() {
         return
       }
 
-      // Convert timestamps to uint40 (seconds since epoch)
+      // Calculate timestamps with new logic:
+      // - acceptBy: 7 days from now (users have 7 days to accept the bet)
+      // - resolveBy: expiresAt + 90 days (judge has 90 days after bet ends to resolve)
+      const acceptByTimestamp = Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60
       const expiresAtTimestamp = Math.floor(
         new Date(formData.expiresAt).getTime() / 1000
       )
-      const acceptByTimestamp = expiresAtTimestamp - 86400
+      const resolveByTimestamp = expiresAtTimestamp + 90 * 24 * 60 * 60
+
+      // Predict bet address before approval
+      console.log('Predicting bet address...')
+      const predictedAddress = (await readContract(wagmiConfig, {
+        address: BETFACTORY_ADDRESS,
+        abi: BETFACTORY_ABI,
+        functionName: 'predictBetAddress',
+        args: [
+          address, // maker (current user)
+          takerAddress,
+          USDC_ADDRESS,
+          amountInUnits,
+          amountInUnits,
+          acceptByTimestamp,
+          resolveByTimestamp,
+        ],
+      })) as Address
+
+      console.log('Predicted bet address:', predictedAddress)
+      setPredictedBetAddress(predictedAddress)
+
+      // Check if we need to approve USDC to the predicted bet address
+      const currentAllowance = allowance || BigInt(0)
+      if (currentAllowance < amountInUnits) {
+        console.log('Approving USDC to predicted bet address...')
+        await approveUsdc({
+          address: USDC_ADDRESS,
+          abi: ERC20_ABI,
+          functionName: 'approve',
+          args: [predictedAddress, amountInUnits], // ✅ Approve to bet contract, not factory
+        })
+        // Wait for approval to be confirmed before proceeding
+        // The useEffect will handle creating bet after approval
+        return
+      }
 
       console.log('Creating bet on-chain...')
       await createBet({
@@ -316,7 +348,7 @@ export function CreateBetDialog() {
           amountInUnits,
           amountInUnits,
           acceptByTimestamp,
-          expiresAtTimestamp,
+          resolveByTimestamp,
         ],
       })
     } catch (error) {

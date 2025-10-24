@@ -52,6 +52,19 @@ export const BETFACTORY_ABI = [
       {
         indexed: true,
         internalType: 'address',
+        name: 'newImplementation',
+        type: 'address',
+      },
+    ],
+    name: 'ImplementationUpdated',
+    type: 'event',
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: 'address',
         name: 'previousOwner',
         type: 'address',
       },
@@ -63,6 +76,33 @@ export const BETFACTORY_ABI = [
       },
     ],
     name: 'OwnershipTransferred',
+    type: 'event',
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: 'address',
+        name: 'token',
+        type: 'address',
+      },
+      { indexed: true, internalType: 'address', name: 'pool', type: 'address' },
+    ],
+    name: 'PoolConfigured',
+    type: 'event',
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: 'address',
+        name: 'newTreasury',
+        type: 'address',
+      },
+    ],
+    name: 'TreasuryUpdated',
     type: 'event',
   },
   {
@@ -121,14 +161,22 @@ export const BETFACTORY_ABI = [
   },
   {
     inputs: [],
-    name: 'name',
-    outputs: [{ internalType: 'string', name: '', type: 'string' }],
+    name: 'owner',
+    outputs: [{ internalType: 'address', name: '', type: 'address' }],
     stateMutability: 'view',
     type: 'function',
   },
   {
-    inputs: [],
-    name: 'owner',
+    inputs: [
+      { internalType: 'address', name: 'maker', type: 'address' },
+      { internalType: 'address', name: 'taker', type: 'address' },
+      { internalType: 'address', name: 'asset', type: 'address' },
+      { internalType: 'uint256', name: 'makerStake', type: 'uint256' },
+      { internalType: 'uint256', name: 'takerStake', type: 'uint256' },
+      { internalType: 'uint40', name: 'acceptBy', type: 'uint40' },
+      { internalType: 'uint40', name: 'resolveBy', type: 'uint40' },
+    ],
+    name: 'predictBetAddress',
     outputs: [{ internalType: 'address', name: '', type: 'address' }],
     stateMutability: 'view',
     type: 'function',
@@ -142,8 +190,8 @@ export const BETFACTORY_ABI = [
   },
   {
     inputs: [
-      { internalType: 'address', name: 'token', type: 'address' },
-      { internalType: 'address', name: 'pool', type: 'address' },
+      { internalType: 'address', name: '_token', type: 'address' },
+      { internalType: 'address', name: '_pool', type: 'address' },
     ],
     name: 'setPool',
     outputs: [],
@@ -176,6 +224,19 @@ export const BETFACTORY_ABI = [
     name: 'treasury',
     outputs: [{ internalType: 'address', name: '', type: 'address' }],
     stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [
+      {
+        internalType: 'address',
+        name: '_betImplementation',
+        type: 'address',
+      },
+    ],
+    name: 'updateImplementation',
+    outputs: [],
+    stateMutability: 'nonpayable',
     type: 'function',
   },
 ] as const
