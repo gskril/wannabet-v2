@@ -4,6 +4,7 @@ import { Geist, Geist_Mono } from 'next/font/google'
 import { BottomNav } from '@/components/bottom-nav'
 import { SdkProvider } from '@/components/sdk-provider'
 import { ThemeProvider } from '@/components/theme-provider'
+import { WagmiProvider } from '@/components/wagmi-provider'
 
 import './globals.css'
 
@@ -38,8 +39,10 @@ export default function RootLayout({
       >
         <ThemeProvider defaultTheme="light" storageKey="wannabet-theme">
           <SdkProvider>
-            {children}
-            <BottomNav />
+            <WagmiProvider>
+              {children}
+              <BottomNav />
+            </WagmiProvider>
           </SdkProvider>
         </ThemeProvider>
       </body>

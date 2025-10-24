@@ -4,6 +4,7 @@ import { HelpCircle } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 import { BetsTable } from '@/components/bets-table'
+import { ConnectWalletButton } from '@/components/connect-wallet-button'
 import { CreateBetDialog } from '@/components/create-bet-dialog'
 import { WelcomeModal } from '@/components/welcome-modal'
 import { DUMMY_BETS } from '@/lib/dummy-data'
@@ -49,14 +50,19 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Help button */}
-            <button
-              onClick={() => setShowWelcome(true)}
-              className="text-muted-foreground hover:text-foreground hover:border-primary flex h-10 w-10 items-center justify-center rounded-full border transition-colors"
-              aria-label="How it works"
-            >
-              <HelpCircle className="h-5 w-5" />
-            </button>
+            <div className="flex items-center gap-2">
+              {/* Wallet Connect Button */}
+              <ConnectWalletButton />
+
+              {/* Help button */}
+              <button
+                onClick={() => setShowWelcome(true)}
+                className="text-muted-foreground hover:text-foreground hover:border-primary flex h-10 w-10 items-center justify-center rounded-full border transition-colors"
+                aria-label="How it works"
+              >
+                <HelpCircle className="h-5 w-5" />
+              </button>
+            </div>
           </div>
         </div>
 
