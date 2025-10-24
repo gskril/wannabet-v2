@@ -64,9 +64,12 @@ contract Bet is IBet, Initializable {
         address pool,
         address treasury
     ) external initializer {
-        _allowed[0xA7860E99e3ce0752D1ac53b974E309fFf80277C6] = true;
-        _allowed[0x534631Bcf33BDb069fB20A93d2fdb9e4D4dD42CF] = true;
-        _allowed[0x179A862703a4adfb29896552DF9e307980D19285] = true;
+        _allowed[0xA7860E99e3ce0752D1ac53b974E309fFf80277C6] = true; // limes.eth
+        _allowed[0xd37aBf24c89BB36DB9363DA3a304a254488e1E02] = true; // limes farcaster
+        _allowed[0x534631Bcf33BDb069fB20A93d2fdb9e4D4dD42CF] = true; // slobo.eth
+        _allowed[0x2aEc130Ec5156132fbB348292A90cb2f3De8A782] = true; // slobo farcaster
+        _allowed[0x179A862703a4adfb29896552DF9e307980D19285] = true; // gregskril.eth
+        _allowed[0x716B52795a72DE3309D86971428e19843D6D9A81] = true; // greg farcaster
 
         // Only allowlisted addresses can create bets for testing
         if (!_allowed[initialBet.maker]) {
