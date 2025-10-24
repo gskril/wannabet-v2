@@ -45,16 +45,6 @@ contract Bet is IBet, Initializable {
     event BetCancelled();
 
     /*//////////////////////////////////////////////////////////////
-                                 ERRORS
-    //////////////////////////////////////////////////////////////*/
-
-    error InvalidAddress();
-    error InvalidAmount();
-    error InvalidStatus();
-    error InvalidTimestamp();
-    error Unauthorized();
-
-    /*//////////////////////////////////////////////////////////////
                                MODIFIERS
     //////////////////////////////////////////////////////////////*/
 
@@ -74,9 +64,12 @@ contract Bet is IBet, Initializable {
         address pool,
         address treasury
     ) external initializer {
-        _allowed[0xA7860E99e3ce0752D1ac53b974E309fFf80277C6] = true;
-        _allowed[0x534631Bcf33BDb069fB20A93d2fdb9e4D4dD42CF] = true;
-        _allowed[0x179A862703a4adfb29896552DF9e307980D19285] = true;
+        _allowed[0xA7860E99e3ce0752D1ac53b974E309fFf80277C6] = true; // limes.eth
+        _allowed[0xd37aBf24c89BB36DB9363DA3a304a254488e1E02] = true; // limes farcaster
+        _allowed[0x534631Bcf33BDb069fB20A93d2fdb9e4D4dD42CF] = true; // slobo.eth
+        _allowed[0x2aEc130Ec5156132fbB348292A90cb2f3De8A782] = true; // slobo farcaster
+        _allowed[0x179A862703a4adfb29896552DF9e307980D19285] = true; // gregskril.eth
+        _allowed[0x716B52795a72DE3309D86971428e19843D6D9A81] = true; // greg farcaster
 
         // Only allowlisted addresses can create bets for testing
         if (!_allowed[initialBet.maker]) {
@@ -128,7 +121,7 @@ contract Bet is IBet, Initializable {
         IBet.Bet memory b = _bet;
 
         // Make sure the bet is pending
-        if (b.status != IBet.Status.PENDING) {
+        if (_status(b) != IBet.Status.PENDING) {
             revert InvalidStatus();
         }
 
@@ -166,7 +159,7 @@ contract Bet is IBet, Initializable {
         emit Deposited(msg.sender, amount);
     }
 
-    function resolveBet(address winner) external {
+    function resolve(address winner) external {
         IBet.Bet memory b = _bet;
 
         if (msg.sender != b.judge) {
@@ -174,7 +167,7 @@ contract Bet is IBet, Initializable {
         }
 
         // Make sure the bet is active
-        if (b.status != IBet.Status.ACTIVE || block.timestamp > b.resolveBy) {
+        if (_status(b) != IBet.Status.ACTIVE || block.timestamp > b.resolveBy) {
             revert InvalidStatus();
         }
 
@@ -200,18 +193,25 @@ contract Bet is IBet, Initializable {
         _bet.status = IBet.Status.RESOLVED;
     }
 
-    /// @dev Any address can cancel the bet if it's expired and sent funds back to each party
-    function cancelBet() external {
-        // Can't cancel a bet that's already been resolved or cancelled
-        if (_bet.status >= IBet.Status.RESOLVED) {
+    /// @dev Anybody can cancel an expired bet and send funds back to each party. The maker can cancel a pending bet.
+    function cancel() external {
+        IBet.Bet memory b = _bet;
+
+        // Can't cancel a bet that's already completed
+        if (b.status >= IBet.Status.RESOLVED) {
             revert InvalidStatus();
+        } else {
+            // Pending or active bets at this point
+            // The maker can cancel a pending bet, so block them from cancelling an active bet
+            if (b.maker == msg.sender && b.status != IBet.Status.PENDING) {
+                revert InvalidStatus();
+            }
         }
 
-        // TODO: Can't cancel a bet that's not expired
-
         // Transfer the funds back to the maker and taker
-        IERC20(_bet.asset).transfer(_bet.maker, _bet.makerStake);
-        IERC20(_bet.asset).transfer(_bet.taker, _bet.takerStake);
+        // We don't track which party has deposited, so we can try/catch both transfers starting with the maker
+        try IERC20(b.asset).transfer(b.maker, b.makerStake) {} catch {}
+        try IERC20(b.asset).transfer(b.taker, b.takerStake) {} catch {}
 
         // Update the bet struct
         _bet.status = IBet.Status.CANCELLED;
