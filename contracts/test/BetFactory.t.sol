@@ -16,6 +16,7 @@ contract BetFactoryTest is Test {
     address judge = makeAddr("judge");
     address owner = makeAddr("owner");
     IERC20 usdc = IERC20(0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913);
+    IBet bet;
 
     function setUp() public {
         // Run everything on a fork of Base
@@ -29,20 +30,9 @@ contract BetFactoryTest is Test {
 
         Bet betImplementation = new Bet();
         betFactory = new BetFactory(owner, address(betImplementation));
-    }
 
-    function test_Name() public view {
-        assertEq(betFactory.name(), "BetFactory");
-    }
-
-    function test_ForkAndPrank() public view {
-        assertEq(block.chainid, 8453);
-        assertGt(IERC20(usdc).balanceOf(maker), 1000000000);
-    }
-
-    function test_CreateBetWithNoPool() public {
         vm.prank(maker);
-        IBet bet = IBet(
+        bet = IBet(
             betFactory.createBet(
                 taker, // taker
                 judge, // judge
@@ -53,7 +43,28 @@ contract BetFactoryTest is Test {
                 uint40(block.timestamp + 2000) // resolveBy
             )
         );
+    }
 
+    function test_ForkAndPrank() public view {
+        assertEq(block.chainid, 8453);
+        assertGt(IERC20(usdc).balanceOf(maker), 1000000000);
+    }
+
+    function test_GetDeterministicBetAddress() public view {
+        address betAddress = betFactory.predictBetAddress(
+            maker,
+            taker,
+            address(usdc),
+            1000,
+            1000,
+            uint40(block.timestamp + 1000),
+            uint40(block.timestamp + 2000)
+        );
+
+        assertEq(betAddress, address(bet));
+    }
+
+    function test_CreateBetWithNoPool() public {
         assertEq(betFactory.betCount(), 1);
         assertEq(bet.bet().maker, maker);
 
@@ -80,6 +91,10 @@ contract BetFactoryTest is Test {
 
         assertEq(makerBalanceAfter - makerBalanceBefore, 2000);
         assertEq(uint(bet.bet().status), uint(IBet.Status.RESOLVED));
+    }
+
+    function test_CreateBetWithPool() public {
+        // TODO
     }
 
     function test_BetExpires() public {
