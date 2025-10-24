@@ -86,7 +86,7 @@ contract BetFactoryTest is Test {
         // Judge resolves the bet in favor of thet maker
         uint256 makerBalanceBefore = usdc.balanceOf(maker);
         vm.prank(judge);
-        bet.resolveBet(maker);
+        bet.resolve(maker);
         uint256 makerBalanceAfter = usdc.balanceOf(maker);
 
         assertEq(makerBalanceAfter - makerBalanceBefore, 2000);
@@ -97,7 +97,32 @@ contract BetFactoryTest is Test {
         // TODO
     }
 
-    function test_BetExpires() public {
+    // Maker or taker doesn't deposit in time
+    function test_BetExpiresBeforeStarting() public {
+        // Maker deposits
+        vm.startPrank(maker);
+        usdc.approve(address(bet), 1000);
+        bet.deposit(1000);
+        vm.stopPrank();
+
+        vm.warp(block.timestamp + 1001);
+
+        // At this point, the bet should be expired
+        assertEq(uint(bet.bet().status), uint(IBet.Status.EXPIRED));
+
+        // Nobody can deposit to an expired bet
+        vm.startPrank(taker);
+        usdc.approve(address(bet), 1000);
+        vm.expectRevert(IBet.InvalidStatus.selector);
+        bet.deposit(1000);
+        vm.stopPrank();
+
+        // Anybody can cancel an expired bet, which sends funds back to each party
+        bet.cancel();
+    }
+
+    // Judge doesn't resolve the bet in time
+    function test_BetExpiresAfterNoResolution() public {
         // TODO
     }
 

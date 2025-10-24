@@ -2,6 +2,10 @@
 pragma solidity ^0.8.28;
 
 interface IBet {
+    /*//////////////////////////////////////////////////////////////
+                                STRUCTS
+    //////////////////////////////////////////////////////////////*/
+
     enum Status {
         PENDING,
         ACTIVE,
@@ -27,6 +31,20 @@ interface IBet {
         uint256 takerStake; // Slot 6
     }
 
+    /*//////////////////////////////////////////////////////////////
+                                 ERRORS
+    //////////////////////////////////////////////////////////////*/
+
+    error InvalidAddress();
+    error InvalidAmount();
+    error InvalidStatus();
+    error InvalidTimestamp();
+    error Unauthorized();
+
+    /*//////////////////////////////////////////////////////////////
+                           EXTERNAL FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
+
     function initialize(
         IBet.Bet memory initialBet,
         address pool,
@@ -35,9 +53,9 @@ interface IBet {
 
     function deposit(uint256 amount) external;
 
-    function resolveBet(address winner) external;
+    function resolve(address winner) external;
 
-    function cancelBet() external;
+    function cancel() external;
 
     function bet() external view returns (Bet memory);
 }
