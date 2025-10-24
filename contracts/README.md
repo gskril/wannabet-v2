@@ -4,8 +4,8 @@
 
 | Contract       | Address                                                                                                                      |
 | -------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| Implementation | [0xEBf271Bc510F89bAef8657eA42758D28F33706Ce](https://base.blockscout.com/address/0xEBf271Bc510F89bAef8657eA42758D28F33706Ce) |
-| Factory        | [0x1b535d459A42249dB93d1824C046e46F6F7d71C1](https://base.blockscout.com/address/0x1b535d459A42249dB93d1824C046e46F6F7d71C1) |
+| Implementation | [0xA5470ED010aad98A08B50474199B7Ae4D371Ba17](https://base.blockscout.com/address/0xA5470ED010aad98A08B50474199B7Ae4D371Ba17) |
+| Factory        | [0xCA7E034982418FFAf975D292AF27Ce718fC03dF3](https://base.blockscout.com/address/0xCA7E034982418FFAf975D292AF27Ce718fC03dF3) |
 
 ## Usage
 

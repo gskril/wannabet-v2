@@ -2,7 +2,7 @@ import { Address } from 'viem'
 
 // BetFactory contract on Base
 export const BETFACTORY_ADDRESS: Address =
-  '0x1b535d459A42249dB93d1824C046e46F6F7d71C1'
+  '0xCA7E034982418FFAf975D292AF27Ce718fC03dF3'
 
 // USDC contract on Base
 export const USDC_ADDRESS: Address =
