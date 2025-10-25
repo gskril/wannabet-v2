@@ -241,6 +241,331 @@ export const BETFACTORY_ABI = [
   },
 ] as const
 
+// Bet ABI (extracted from deployed contract)
+export const BET_ABI = [
+  {
+    inputs: [],
+    name: 'InvalidAddress',
+    type: 'error',
+  },
+  {
+    inputs: [],
+    name: 'InvalidAmount',
+    type: 'error',
+  },
+  {
+    inputs: [],
+    name: 'InvalidInitialization',
+    type: 'error',
+  },
+  {
+    inputs: [],
+    name: 'InvalidStatus',
+    type: 'error',
+  },
+  {
+    inputs: [],
+    name: 'InvalidTimestamp',
+    type: 'error',
+  },
+  {
+    inputs: [],
+    name: 'NotInitializing',
+    type: 'error',
+  },
+  {
+    inputs: [],
+    name: 'Unauthorized',
+    type: 'error',
+  },
+  {
+    anonymous: false,
+    inputs: [],
+    name: 'BetAccepted',
+    type: 'event',
+  },
+  {
+    anonymous: false,
+    inputs: [],
+    name: 'BetCancelled',
+    type: 'event',
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: 'address',
+        name: 'maker',
+        type: 'address',
+      },
+      {
+        indexed: true,
+        internalType: 'address',
+        name: 'taker',
+        type: 'address',
+      },
+      {
+        indexed: true,
+        internalType: 'address',
+        name: 'asset',
+        type: 'address',
+      },
+      {
+        indexed: false,
+        internalType: 'uint40',
+        name: 'acceptBy',
+        type: 'uint40',
+      },
+      {
+        indexed: false,
+        internalType: 'uint40',
+        name: 'resolveBy',
+        type: 'uint40',
+      },
+      {
+        indexed: false,
+        internalType: 'uint256',
+        name: 'makerStake',
+        type: 'uint256',
+      },
+      {
+        indexed: false,
+        internalType: 'uint256',
+        name: 'takerStake',
+        type: 'uint256',
+      },
+    ],
+    name: 'BetCreated',
+    type: 'event',
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: 'address',
+        name: 'winner',
+        type: 'address',
+      },
+      {
+        indexed: false,
+        internalType: 'uint256',
+        name: 'amount',
+        type: 'uint256',
+      },
+    ],
+    name: 'BetResolved',
+    type: 'event',
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: false,
+        internalType: 'uint64',
+        name: 'version',
+        type: 'uint64',
+      },
+    ],
+    name: 'Initialized',
+    type: 'event',
+  },
+  {
+    inputs: [],
+    name: 'accept',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'balanceOfAsset',
+    outputs: [
+      {
+        internalType: 'uint256',
+        name: '',
+        type: 'uint256',
+      },
+    ],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'bet',
+    outputs: [
+      {
+        components: [
+          {
+            internalType: 'address',
+            name: 'maker',
+            type: 'address',
+          },
+          {
+            internalType: 'uint40',
+            name: 'acceptBy',
+            type: 'uint40',
+          },
+          {
+            internalType: 'uint40',
+            name: 'resolveBy',
+            type: 'uint40',
+          },
+          {
+            internalType: 'enum IBet.Status',
+            name: 'status',
+            type: 'uint8',
+          },
+          {
+            internalType: 'address',
+            name: 'taker',
+            type: 'address',
+          },
+          {
+            internalType: 'address',
+            name: 'judge',
+            type: 'address',
+          },
+          {
+            internalType: 'address',
+            name: 'asset',
+            type: 'address',
+          },
+          {
+            internalType: 'address',
+            name: 'winner',
+            type: 'address',
+          },
+          {
+            internalType: 'uint256',
+            name: 'makerStake',
+            type: 'uint256',
+          },
+          {
+            internalType: 'uint256',
+            name: 'takerStake',
+            type: 'uint256',
+          },
+        ],
+        internalType: 'struct IBet.Bet',
+        name: 'state',
+        type: 'tuple',
+      },
+    ],
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'cancel',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [
+      {
+        components: [
+          {
+            internalType: 'address',
+            name: 'maker',
+            type: 'address',
+          },
+          {
+            internalType: 'uint40',
+            name: 'acceptBy',
+            type: 'uint40',
+          },
+          {
+            internalType: 'uint40',
+            name: 'resolveBy',
+            type: 'uint40',
+          },
+          {
+            internalType: 'enum IBet.Status',
+            name: 'status',
+            type: 'uint8',
+          },
+          {
+            internalType: 'address',
+            name: 'taker',
+            type: 'address',
+          },
+          {
+            internalType: 'address',
+            name: 'judge',
+            type: 'address',
+          },
+          {
+            internalType: 'address',
+            name: 'asset',
+            type: 'address',
+          },
+          {
+            internalType: 'address',
+            name: 'winner',
+            type: 'address',
+          },
+          {
+            internalType: 'uint256',
+            name: 'makerStake',
+            type: 'uint256',
+          },
+          {
+            internalType: 'uint256',
+            name: 'takerStake',
+            type: 'uint256',
+          },
+        ],
+        internalType: 'struct IBet.Bet',
+        name: 'initialBet',
+        type: 'tuple',
+      },
+      {
+        internalType: 'address',
+        name: 'pool',
+        type: 'address',
+      },
+      {
+        internalType: 'address',
+        name: 'treasury',
+        type: 'address',
+      },
+    ],
+    name: 'initialize',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [
+      {
+        internalType: 'address',
+        name: 'winner',
+        type: 'address',
+      },
+    ],
+    name: 'resolve',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [],
+    name: 'status',
+    outputs: [
+      {
+        internalType: 'enum IBet.Status',
+        name: '',
+        type: 'uint8',
+      },
+    ],
+    stateMutability: 'view',
+    type: 'function',
+  },
+] as const
+
 // ERC20 ABI (minimal - just what we need for USDC)
 export const ERC20_ABI = [
   {

@@ -1,13 +1,28 @@
 'use client'
 
 import { format } from 'date-fns'
-import { Calendar, ChevronDown, ChevronUp, Coins, Trophy } from 'lucide-react'
-import { useState } from 'react'
+import {
+  Calendar,
+  ChevronDown,
+  ChevronUp,
+  Coins,
+  Loader2,
+  Trophy,
+} from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { type Address, parseUnits } from 'viem'
+import {
+  useAccount,
+  useReadContract,
+  useWaitForTransactionReceipt,
+  useWriteContract,
+} from 'wagmi'
 
 import { BetStatusBadge } from '@/components/bet-status-badge'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader } from '@/components/ui/dialog'
 import { UserAvatar } from '@/components/user-avatar'
+import { BET_ABI, ERC20_ABI, USDC_ADDRESS } from '@/lib/contracts'
 import type { Bet } from '@/lib/types'
 
 interface BetDetailDialogProps {
@@ -22,15 +37,198 @@ export function BetDetailDialog({
   onOpenChange,
 }: BetDetailDialogProps) {
   const [timelineExpanded, setTimelineExpanded] = useState(false)
+  const { address } = useAccount()
 
-  const handleAcceptBet = () => {
-    console.log('Accept bet:', bet.id)
-    // TODO: Implement bet acceptance
-    alert('Bet acceptance coming soon!')
+  // Bet contract address (in real usage, this would come from bet.id)
+  const betAddress = bet.id as Address
+
+  // USDC approval hooks
+  const {
+    data: approvalHash,
+    writeContractAsync: approveUsdc,
+    isPending: isApproving,
+    reset: resetApproval,
+  } = useWriteContract()
+
+  const { isSuccess: approvalConfirmed } = useWaitForTransactionReceipt({
+    hash: approvalHash,
+    query: {
+      enabled: !!approvalHash,
+    },
+  })
+
+  // Accept bet hooks
+  const {
+    data: acceptHash,
+    writeContractAsync: acceptBet,
+    isPending: isAccepting,
+    isSuccess: acceptWritten,
+    error: acceptError,
+    reset: resetAccept,
+  } = useWriteContract()
+
+  const { isSuccess: acceptConfirmed, isLoading: isWaitingForAccept } =
+    useWaitForTransactionReceipt({
+      hash: acceptHash,
+      query: {
+        enabled: !!acceptHash,
+      },
+    })
+
+  // Resolve bet hooks
+  const {
+    data: resolveHash,
+    writeContractAsync: resolveBet,
+    isPending: isResolving,
+    error: resolveError,
+    reset: resetResolve,
+  } = useWriteContract()
+
+  const { isSuccess: resolveConfirmed, isLoading: isWaitingForResolve } =
+    useWaitForTransactionReceipt({
+      hash: resolveHash,
+      query: {
+        enabled: !!resolveHash,
+      },
+    })
+
+  // Cancel bet hooks
+  const {
+    data: cancelHash,
+    writeContractAsync: cancelBet,
+    isPending: isCanceling,
+    error: cancelError,
+    reset: resetCancel,
+  } = useWriteContract()
+
+  const { isSuccess: cancelConfirmed, isLoading: isWaitingForCancel } =
+    useWaitForTransactionReceipt({
+      hash: cancelHash,
+      query: {
+        enabled: !!cancelHash,
+      },
+    })
+
+  // Check USDC allowance
+  const { data: allowance, refetch: refetchAllowance } = useReadContract({
+    address: USDC_ADDRESS,
+    abi: ERC20_ABI,
+    functionName: 'allowance',
+    args: address ? [address, betAddress] : undefined,
+    query: {
+      enabled: !!address,
+    },
+  })
+
+  // Auto-accept after approval is confirmed
+  useEffect(() => {
+    if (approvalConfirmed && address) {
+      refetchAllowance().then(async () => {
+        await acceptBet({
+          address: betAddress,
+          abi: BET_ABI,
+          functionName: 'accept',
+          chainId: 8453, // Force Base network
+        })
+      })
+    }
+  }, [approvalConfirmed, refetchAllowance, address, acceptBet, betAddress])
+
+  const handleAcceptBet = async () => {
+    if (!address) {
+      alert('Please connect your wallet')
+      return
+    }
+
+    try {
+      const amountInUnits = parseUnits(bet.amount.toString(), 6)
+      const currentAllowance = allowance || BigInt(0)
+
+      // Check if we need to approve USDC
+      if (currentAllowance < amountInUnits) {
+        await approveUsdc({
+          address: USDC_ADDRESS,
+          abi: ERC20_ABI,
+          functionName: 'approve',
+          args: [betAddress, amountInUnits],
+          chainId: 8453, // Force Base network
+        })
+        // Actual acceptance will happen in useEffect after approval confirms
+      } else {
+        // Already approved, call accept directly
+        await acceptBet({
+          address: betAddress,
+          abi: BET_ABI,
+          functionName: 'accept',
+          chainId: 8453, // Force Base network
+        })
+      }
+    } catch (error) {
+      console.error('Error accepting bet:', error)
+    }
   }
 
+  const handleResolveBet = async (winner: Address) => {
+    if (!address) {
+      alert('Please connect your wallet')
+      return
+    }
+
+    try {
+      await resolveBet({
+        address: betAddress,
+        abi: BET_ABI,
+        functionName: 'resolve',
+        args: [winner],
+        chainId: 8453, // Force Base network
+      })
+    } catch (error) {
+      console.error('Error resolving bet:', error)
+    }
+  }
+
+  const handleCancelBet = async () => {
+    if (!address) {
+      alert('Please connect your wallet')
+      return
+    }
+
+    try {
+      await cancelBet({
+        address: betAddress,
+        abi: BET_ABI,
+        functionName: 'cancel',
+        chainId: 8453, // Force Base network
+      })
+    } catch (error) {
+      console.error('Error canceling bet:', error)
+    }
+  }
+
+  const handleReset = () => {
+    resetApproval()
+    resetAccept()
+    resetResolve()
+    resetCancel()
+  }
+
+  const isProcessing =
+    isApproving ||
+    isAccepting ||
+    isWaitingForAccept ||
+    isResolving ||
+    isWaitingForResolve ||
+    isCanceling ||
+    isWaitingForCancel
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={(isOpen) => {
+        onOpenChange(isOpen)
+        if (!isOpen) handleReset()
+      }}
+    >
       <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
         <DialogHeader>
           {/* Status Badge - Minimal in top right */}

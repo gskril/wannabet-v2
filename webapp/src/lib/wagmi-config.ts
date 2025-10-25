@@ -7,7 +7,7 @@ const baseRpcUrl =
   process.env.NEXT_PUBLIC_BASE_RPC_URL || 'https://mainnet.base.org'
 
 export const wagmiConfig = createConfig({
-  chains: [base],
+  chains: [base], // Only Base - useSwitchChain will still work from other networks
   connectors: [
     injected({
       // Support all injected wallets (MetaMask, Coinbase Wallet, etc.)

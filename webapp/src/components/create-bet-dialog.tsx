@@ -8,6 +8,7 @@ import {
   useAccount,
   useConnect,
   useReadContract,
+  useSwitchChain,
   useWaitForTransactionReceipt,
   useWriteContract,
 } from 'wagmi'
@@ -29,6 +30,7 @@ import { useAuth } from '@/lib/auth-context'
 import {
   BETFACTORY_ABI,
   BETFACTORY_ADDRESS,
+  BET_ABI,
   ERC20_ABI,
   USDC_ADDRESS,
 } from '@/lib/contracts'
@@ -67,8 +69,26 @@ export function CreateBetDialog() {
     useState<Address | null>(null)
 
   // Wagmi hooks
-  const { address, isConnected } = useAccount()
+  const { address, isConnected, chain } = useAccount()
   const { connect, connectors } = useConnect()
+  const { switchChain, isPending: isSwitchingChain } = useSwitchChain()
+
+  // Log network info when it changes
+  useEffect(() => {
+    if (chain) {
+      console.log('🌐 Connected to chain:', {
+        id: chain.id,
+        name: chain.name,
+        expected: 'Base (8453)',
+        isCorrect: chain.id === 8453,
+      })
+      if (chain.id !== 8453) {
+        console.warn(
+          '⚠️ WARNING: Not connected to Base network! Switch to Base (chain ID 8453)'
+        )
+      }
+    }
+  }, [chain])
 
   // USDC approval hooks
   const {
@@ -76,8 +96,16 @@ export function CreateBetDialog() {
     writeContractAsync: approveUsdc,
     isPending: isApproving,
     isSuccess: approvalWritten,
+    error: approvalError,
     reset: resetApproval,
   } = useWriteContract()
+
+  // Log approval errors
+  useEffect(() => {
+    if (approvalError) {
+      console.error('❌ Approval error:', approvalError)
+    }
+  }, [approvalError])
 
   const { isSuccess: approvalConfirmed } = useWaitForTransactionReceipt({
     hash: approvalHash,
@@ -107,16 +135,30 @@ export function CreateBetDialog() {
     },
   })
 
-  // Check USDC allowance - only when on step 5
+  // Check USDC balance
+  const { data: usdcBalance } = useReadContract({
+    address: USDC_ADDRESS,
+    abi: ERC20_ABI,
+    functionName: 'balanceOf',
+    args: address ? [address] : undefined,
+    query: {
+      enabled: isConnected && step === 5,
+    },
+  })
+
+  // Check USDC allowance for the predicted bet address
   const { data: allowance, refetch: refetchAllowance } = useReadContract({
     address: USDC_ADDRESS,
     abi: ERC20_ABI,
     functionName: 'allowance',
-    args: address ? [address, BETFACTORY_ADDRESS] : undefined,
+    args:
+      address && predictedBetAddress
+        ? [address, predictedBetAddress] // Check allowance for bet contract, not factory
+        : undefined,
     query: {
-      enabled: isConnected && step === 5, // Auto-fetch only on step 5
-      refetchInterval: false, // Don't auto-refetch
-      staleTime: 30000, // Consider data fresh for 30 seconds
+      enabled: isConnected && step === 5 && !!predictedBetAddress,
+      refetchInterval: false,
+      staleTime: 30000,
     },
   })
 
@@ -192,6 +234,7 @@ export function CreateBetDialog() {
             acceptByTimestamp,
             resolveByTimestamp,
           ],
+          chainId: 8453, // Force Base network
         })
       })
     }
@@ -207,6 +250,16 @@ export function CreateBetDialog() {
     formData.expiresAt,
     createBet,
   ])
+
+  // Read bet data from the created contract
+  const { data: betData } = useReadContract({
+    address: createdBetAddress || undefined,
+    abi: BET_ABI,
+    functionName: 'bet',
+    query: {
+      enabled: !!createdBetAddress,
+    },
+  })
 
   // When bet creation is confirmed, extract bet address from logs
   useEffect(() => {
@@ -227,6 +280,7 @@ export function CreateBetDialog() {
           if (decodedLog.eventName === 'BetCreated') {
             const betAddr = decodedLog.args.bet as Address
             setCreatedBetAddress(betAddr)
+            console.log('✅ Bet created at address:', betAddr)
           }
         } catch (error) {
           console.error('Error decoding BetCreated event:', error)
@@ -234,6 +288,20 @@ export function CreateBetDialog() {
       }
     }
   }, [betCreationConfirmed, betCreationReceipt])
+
+  // Log bet data when it's loaded from contract
+  useEffect(() => {
+    if (betData) {
+      console.log('✅ Bet data from contract:', betData)
+      console.log('   Maker:', betData.maker)
+      console.log('   Taker:', betData.taker)
+      console.log('   Judge:', betData.judge)
+      console.log('   Asset:', betData.asset)
+      console.log('   Status:', betData.status) // 0=PENDING, 1=ACTIVE, 2=RESOLVED, 3=CANCELLED, 4=EXPIRED
+      console.log('   Maker Stake:', betData.makerStake.toString())
+      console.log('   Taker Stake:', betData.takerStake.toString())
+    }
+  }, [betData])
 
   const handleReset = () => {
     setStep(1)
@@ -260,16 +328,32 @@ export function CreateBetDialog() {
   }
 
   const handleCreateBet = async () => {
-    console.log('handleCreateBet called, current step:', step)
+    console.log('🚀 handleCreateBet called, current step:', step)
     // Only allow actual submission on step 5
     if (step !== 5 || !address) {
-      console.log('Blocked submission - not on step 5 or no address')
+      console.log('❌ Blocked submission - not on step 5 or no address')
       return
     }
 
     try {
       // Convert amount to proper units (USDC has 6 decimals)
       const amountInUnits = parseUnits(formData.amount, 6)
+      console.log('💰 Amount in USDC units:', amountInUnits.toString())
+
+      // Check USDC balance
+      const balance = usdcBalance || BigInt(0)
+      console.log('💵 Your USDC balance:', {
+        balance: balance.toString(),
+        needed: amountInUnits.toString(),
+        hasEnough: balance >= amountInUnits,
+      })
+
+      if (balance < amountInUnits) {
+        alert(
+          `Insufficient USDC balance. You have ${(Number(balance) / 1e6).toFixed(2)} USDC but need ${formData.amount} USDC`
+        )
+        return
+      }
 
       // Resolve addresses from Farcaster users
       const takerAddress: Address = formData.takerUser?.fid
@@ -281,6 +365,12 @@ export function CreateBetDialog() {
         ? (await resolveAddressFromFid(formData.judgeUser.fid)) ||
           ('0x0000000000000000000000000000000000000000' as Address)
         : ('0x0000000000000000000000000000000000000000' as Address)
+
+      console.log('👥 Addresses:', {
+        maker: address,
+        taker: takerAddress,
+        judge: judgeAddress,
+      })
 
       if (
         judgeAddress === '0x0000000000000000000000000000000000000000' &&
@@ -301,8 +391,14 @@ export function CreateBetDialog() {
       )
       const resolveByTimestamp = expiresAtTimestamp + 90 * 24 * 60 * 60
 
+      console.log('⏰ Timestamps:', {
+        acceptBy: acceptByTimestamp,
+        expiresAt: expiresAtTimestamp,
+        resolveBy: resolveByTimestamp,
+      })
+
       // Predict bet address before approval
-      console.log('Predicting bet address...')
+      console.log('🔮 Predicting bet address...')
       const predictedAddress = await readContract(wagmiConfig, {
         address: BETFACTORY_ADDRESS,
         abi: BETFACTORY_ABI,
@@ -318,38 +414,84 @@ export function CreateBetDialog() {
         ],
       })
 
-      console.log('Predicted bet address:', predictedAddress)
+      console.log('✅ Predicted bet address:', predictedAddress)
       setPredictedBetAddress(predictedAddress)
 
-      // Check if we need to approve USDC to the predicted bet address
-      const currentAllowance = allowance || BigInt(0)
-      if (currentAllowance < amountInUnits) {
-        console.log('Approving USDC to predicted bet address...')
-        await approveUsdc({
+      // Wait a moment for React to update, then check allowance
+      await new Promise((resolve) => setTimeout(resolve, 100))
+      const { data: currentAllowance } = await refetchAllowance()
+      const allowanceAmount = currentAllowance || BigInt(0)
+
+      console.log('💳 USDC allowance check:', {
+        owner: address,
+        spender: predictedAddress,
+        allowance: allowanceAmount.toString(),
+        needed: amountInUnits.toString(),
+        needsApproval: allowanceAmount < amountInUnits,
+      })
+
+      // Ensure we're on Base network
+      if (chain?.id !== 8453) {
+        console.log('🔄 Wrong network detected, switching to Base...')
+        try {
+          await switchChain({ chainId: 8453 })
+          console.log('✅ Switched to Base network')
+          // After switching, the user needs to click the button again
+          alert(
+            'Successfully switched to Base! Please click "Create Bet" again.'
+          )
+          return
+        } catch (error) {
+          console.error('❌ Failed to switch network:', error)
+          alert('Please manually switch to Base network in your wallet')
+          return
+        }
+      }
+
+      if (allowanceAmount < amountInUnits) {
+        console.log('📝 Approving USDC to predicted bet address...')
+        console.log('   USDC address:', USDC_ADDRESS)
+        console.log('   Spender (bet contract):', predictedAddress)
+        console.log('   Amount:', amountInUnits.toString())
+        console.log('   Chain ID:', 8453, '(Base)')
+
+        const hash = await approveUsdc({
           address: USDC_ADDRESS,
           abi: ERC20_ABI,
           functionName: 'approve',
-          args: [predictedAddress, amountInUnits], // ✅ Approve to bet contract, not factory
+          args: [predictedAddress, amountInUnits],
+          chainId: 8453, // Force Base network
         })
+        console.log('✅ Approval transaction submitted:', hash)
+        // The useEffect will handle creating the bet after approval confirms
+      } else {
+        console.log('✅ Already approved, creating bet directly...')
+        const hash = await createBet({
+          address: BETFACTORY_ADDRESS,
+          abi: BETFACTORY_ABI,
+          functionName: 'createBet',
+          args: [
+            takerAddress,
+            judgeAddress,
+            USDC_ADDRESS,
+            amountInUnits,
+            amountInUnits,
+            acceptByTimestamp,
+            resolveByTimestamp,
+          ],
+          chainId: 8453, // Force Base network
+        })
+        console.log('✅ Bet creation transaction submitted:', hash)
       }
-
-      console.log('Creating bet on-chain...')
-      await createBet({
-        address: BETFACTORY_ADDRESS,
-        abi: BETFACTORY_ABI,
-        functionName: 'createBet',
-        args: [
-          takerAddress,
-          judgeAddress,
-          USDC_ADDRESS,
-          amountInUnits,
-          amountInUnits,
-          acceptByTimestamp,
-          resolveByTimestamp,
-        ],
-      })
     } catch (error) {
-      console.error('Error creating bet:', error)
+      console.error('❌ Error creating bet:', error)
+      if (error instanceof Error) {
+        console.error('   Error message:', error.message)
+        console.error('   Error stack:', error.stack)
+      }
+      alert(
+        `Error: ${error instanceof Error ? error.message : 'Unknown error'}`
+      )
     }
   }
 
@@ -675,6 +817,36 @@ export function CreateBetDialog() {
           {/* Step 5 */}
           {isConnected && step === 5 && (
             <div className="space-y-4">
+              {/* Wrong Network Warning */}
+              {chain?.id !== 8453 && (
+                <div className="rounded-lg border border-yellow-500/20 bg-yellow-500/10 p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="text-2xl">⚠️</div>
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold">Wrong Network</p>
+                      <p className="text-muted-foreground text-xs">
+                        You're on {chain?.name || 'Unknown'}. Switch to Base to
+                        create a bet.
+                      </p>
+                    </div>
+                    <Button
+                      size="sm"
+                      onClick={() => switchChain({ chainId: 8453 })}
+                      disabled={isSwitchingChain}
+                    >
+                      {isSwitchingChain ? (
+                        <>
+                          <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                          Switching...
+                        </>
+                      ) : (
+                        'Switch to Base'
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              )}
+
               {/* Success State */}
               {betCreationConfirmed && createdBetAddress ? (
                 <>
@@ -883,13 +1055,20 @@ export function CreateBetDialog() {
                   }}
                   disabled={
                     !canProceed() ||
+                    chain?.id !== 8453 ||
+                    isSwitchingChain ||
                     isApproving ||
                     approvalWritten ||
                     isCreatingBet ||
                     isWaitingForBetCreation
                   }
                 >
-                  {isApproving || approvalWritten ? (
+                  {isSwitchingChain ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Switching Network...
+                    </>
+                  ) : isApproving || approvalWritten ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Approving...
@@ -899,6 +1078,8 @@ export function CreateBetDialog() {
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Creating...
                     </>
+                  ) : chain?.id !== 8453 ? (
+                    'Wrong Network'
                   ) : (
                     'Create Bet'
                   )}
