@@ -142,7 +142,7 @@ export function UserSearch({
 
       {/* Show avatar card if user is selected, otherwise show search input */}
       {selectedUser ? (
-        <div className="border-primary bg-primary/10 flex items-center justify-between gap-3 rounded-lg border-2 p-3">
+        <div className="border-primary bg-primary/10 flex min-h-[72px] items-center justify-between gap-3 rounded-lg border-2 p-3">
           <div className="flex items-center gap-3">
             <UserAvatar user={selectedUser} size="md" clickable={false} />
             <div>
@@ -161,7 +161,7 @@ export function UserSearch({
           </button>
         </div>
       ) : (
-        <div className="relative">
+        <div className="relative min-h-[72px]">
           <Search className="text-muted-foreground absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2" />
           <Input
             id="user-search"
@@ -175,7 +175,7 @@ export function UserSearch({
               setTimeout(() => setIsFocused(false), 200)
             }}
             required={required}
-            className="h-12 pl-10 text-base"
+            className="h-[72px] pl-10 text-base"
           />
 
           {/* Dropdown with user suggestions */}

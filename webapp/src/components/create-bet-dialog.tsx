@@ -534,7 +534,7 @@ export function CreateBetDialog() {
           ))}
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-5 px-6 pb-6">
+        <form onSubmit={handleSubmit} className="space-y-5 px-6 pb-8 sm:pb-6">
           {/* connect */}
           {!isConnected && (
             <div className="space-y-4 text-center">
@@ -901,7 +901,7 @@ export function CreateBetDialog() {
 
           {/* nav */}
           {isConnected && (
-            <div className="flex gap-3 pt-2">
+            <div className="flex gap-3 pb-2 pt-4">
               {step > 1 && phase !== 'done' && (
                 <Button
                   type="button"
