@@ -84,8 +84,10 @@ contract Bet is IBet, Initializable {
             initialBet.makerStake
         );
 
-        // If the pool is set, supply the funds to the pool
+        // If the pool is set, approve and supply the funds to the pool
         if (pool != address(0)) {
+            IERC20(initialBet.asset).approve(pool, type(uint256).max);
+
             aavePool.supply(
                 initialBet.asset,
                 initialBet.makerStake,
@@ -153,7 +155,11 @@ contract Bet is IBet, Initializable {
 
         // If the funds are in Aave, withdraw them
         if (address(aavePool) != address(0)) {
-            aavePool.withdraw(b.asset, totalWinnings, address(this));
+            uint256 aTokenBalance = IERC20(aavePool.getReserveAToken(b.asset))
+                .balanceOf(address(this));
+
+            totalWinnings = _min(totalWinnings, aTokenBalance);
+            aavePool.withdraw(b.asset, aTokenBalance, address(this));
         }
 
         // Transfer the winnings to the winner
@@ -185,10 +191,23 @@ contract Bet is IBet, Initializable {
             }
         }
 
+        uint256 makerRefund = b.makerStake;
+        uint256 takerRefund = b.takerStake;
+
+        // If there is a pool, withdraw the funds from Aave first
+        if (address(aavePool) != address(0)) {
+            uint256 aTokenBalance = IERC20(aavePool.getReserveAToken(b.asset))
+                .balanceOf(address(this));
+            aavePool.withdraw(b.asset, aTokenBalance, address(this));
+
+            makerRefund = _min(makerRefund, aTokenBalance);
+            takerRefund = _min(takerRefund, aTokenBalance - makerRefund);
+        }
+
         // Transfer the funds back to the maker and taker
         // We don't track which party has deposited, so we can try/catch both transfers starting with the maker
-        try IERC20(b.asset).transfer(b.maker, b.makerStake) {} catch {}
-        try IERC20(b.asset).transfer(b.taker, b.takerStake) {} catch {}
+        try IERC20(b.asset).transfer(b.maker, makerRefund) {} catch {}
+        try IERC20(b.asset).transfer(b.taker, takerRefund) {} catch {}
 
         // Update the bet struct
         _bet.status = IBet.Status.CANCELLED;
@@ -224,5 +243,9 @@ contract Bet is IBet, Initializable {
         }
 
         return s;
+    }
+
+    function _min(uint256 a, uint256 b) internal pure returns (uint256) {
+        return a < b ? a : b;
     }
 }

@@ -59,8 +59,6 @@ contract BetFactory is Ownable {
                             PUBLIC FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    // receive() external payable {}
-
     /// @notice Create a new bet.
     /// @return The address of the new bet.
     function createBet(
