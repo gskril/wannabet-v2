@@ -1,4 +1,4 @@
-import { Address, parseUnits } from 'viem'
+import { Address, formatUnits } from 'viem'
 
 import {
   Asset,
@@ -218,7 +218,7 @@ export async function GET(request: Request) {
     }
 
     // Convert amount from wei to USDC (6 decimals)
-    const amountInUsdc = parseUnits(bet.makerStake, asset.decimals).toString()
+    const amountInUsdc = formatUnits(BigInt(bet.makerStake), asset.decimals)
 
     return {
       id: bet.address,
