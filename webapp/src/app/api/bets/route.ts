@@ -1,4 +1,7 @@
+import { Address, parseUnits } from 'viem'
+
 import {
+  Asset,
   type Bet,
   type BetStatus,
   BetStatusEnum,
@@ -8,10 +11,10 @@ import {
 interface EnvioResponse {
   data: {
     Bet_BetCreated: Array<{
-      address: string
-      maker: string
-      taker: string
-      asset: string
+      address: Address
+      maker: Address
+      taker: Address
+      asset: Address
       makerStake: string
       takerStake: string
       acceptBy: string
@@ -19,23 +22,41 @@ interface EnvioResponse {
       createdAt: number
     }>
     Bet_BetAccepted: Array<{
-      address: string
+      address: Address
     }>
     Bet_BetResolved: Array<{
-      address: string
+      address: Address
     }>
     Bet_BetCancelled: Array<{
-      address: string
+      address: Address
     }>
   }
 }
 
 const INDEXER_URL = 'https://indexer.dev.hyperindex.xyz/3a938cb/v1/graphql'
 
-// Note: This can be done in the indexer, but since the frontend only allows USDC this is easier for now
-const ASSETS = new Map<string, string>([
-  ['0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', 'USDC'],
-])
+// Note: This should be done in the indexer, but since the frontend only allows USDC this is easier for now
+const ASSETS: Asset[] = [
+  {
+    address: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
+    symbol: 'USDC',
+    decimals: 6,
+  },
+]
+
+const getAsset = (address: Address): Asset => {
+  let asset = ASSETS.find((asset) => asset.address === address)
+
+  if (!asset) {
+    asset = {
+      address: address,
+      symbol: 'Unknown',
+      decimals: 18,
+    }
+  }
+
+  return asset
+}
 
 // Zero address constant
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
@@ -108,14 +129,15 @@ export async function GET(request: Request) {
     }
   })
 
+  const baseUrl = request.url.includes('localhost')
+    ? 'http://localhost:3000'
+    : request.url.split('/api/')[0]
+
   // Fetch user data for all addresses
   let userMap: Record<string, FarcasterUser> = {}
   if (uniqueAddresses.size > 0) {
     try {
       const addressList = Array.from(uniqueAddresses).join(',')
-      const baseUrl = request.url.includes('localhost')
-        ? 'http://localhost:3000'
-        : request.url.split('/api/')[0]
 
       const userResponse = await fetch(
         `${baseUrl}/api/neynar/bulk-users-by-address?addresses=${encodeURIComponent(addressList)}`
@@ -132,13 +154,15 @@ export async function GET(request: Request) {
 
   // Transform blockchain data to UI Bet format
   const bets: Bet[] = data.Bet_BetCreated.map((bet) => {
+    const asset = getAsset(bet.asset)
     const accepted = !!data.Bet_BetAccepted.find(
       (accepted) => accepted.address === bet.address
     )
 
-    const resolved = !!data.Bet_BetResolved.find(
+    const winner = data.Bet_BetResolved.find(
       (resolved) => resolved.address === bet.address
     )
+    const resolved = !!winner
 
     const cancelled = !!data.Bet_BetCancelled.find(
       (cancelled) => cancelled.address === bet.address
@@ -167,23 +191,34 @@ export async function GET(request: Request) {
     }
 
     // Get user data
-    const makerUser = userMap[bet.maker.toLowerCase()]
+    const makerAddress = bet.maker.toLowerCase()
+    let makerUser = userMap[makerAddress]
     const takerAddress = bet.taker.toLowerCase()
-    const takerUser =
-      takerAddress === ZERO_ADDRESS.toLowerCase() ? null : userMap[takerAddress]
+    let takerUser = userMap[takerAddress]
 
-    // Filter out bets where maker couldn't be resolved
+    // If users don't have a Farcaster account, return "Unknown" username
     if (!makerUser) {
-      return null
+      makerUser = {
+        fid: 0,
+        username: 'Unknown',
+        displayName: 'Unknown',
+        pfpUrl: `${baseUrl}/fallback-pfp.png`,
+        bio: '',
+      }
     }
 
-    // For non-open bets, filter out if taker couldn't be resolved
-    if (takerAddress !== ZERO_ADDRESS.toLowerCase() && !takerUser) {
-      return null
+    if (!takerUser) {
+      takerUser = {
+        fid: 0,
+        username: 'Unknown',
+        displayName: 'Unknown',
+        pfpUrl: `${baseUrl}/fallback-pfp.png`,
+        bio: '',
+      }
     }
 
     // Convert amount from wei to USDC (6 decimals)
-    const amountInUsdc = (Number(bet.makerStake) / 1_000_000).toString()
+    const amountInUsdc = parseUnits(bet.makerStake, asset.decimals).toString()
 
     return {
       id: bet.address,
@@ -191,14 +226,13 @@ export async function GET(request: Request) {
       maker: makerUser,
       makerAddress: bet.maker,
       taker: takerUser,
-      takerAddress:
-        takerAddress === ZERO_ADDRESS.toLowerCase() ? null : bet.taker,
+      takerAddress: bet.taker,
       judge: null, // Skip for MVP
       amount: amountInUsdc,
       status: mapStatus(status),
       createdAt: new Date(bet.createdAt * 1000),
       expiresAt: new Date(Number(bet.resolveBy) * 1000),
-      winner: null, // Skip for MVP
+      winner: winner ? winner.address : null,
       acceptedBy: accepted && takerUser ? takerUser : null,
       acceptedAt: accepted ? new Date(bet.createdAt * 1000) : null, // Approximate - we don't have exact acceptance time
     } as Bet
