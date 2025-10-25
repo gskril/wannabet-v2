@@ -3,6 +3,7 @@ pragma solidity ^0.8.28;
 
 import {Test} from "forge-std/Test.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
+import {IPool} from "@aave-dao/aave-v3-origin/src/contracts/interfaces/IPool.sol";
 
 import {Bet} from "../src/Bet.sol";
 import {BetFactory} from "../src/BetFactory.sol";
@@ -16,6 +17,7 @@ contract BetFactoryTest is Test {
     address judge = makeAddr("judge");
     address owner = makeAddr("owner");
     IERC20 usdc = IERC20(0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913);
+    IERC20 aUSDC = IERC20(0x4e65fE4DbA92790696d040ac24Aa414708F5c0AB); // holds all the underlying USDC in Aave
     IBet bet;
 
     function setUp() public {
@@ -23,7 +25,7 @@ contract BetFactoryTest is Test {
         vm.createSelectFork("https://base-rpc.publicnode.com");
 
         // Mint some USDC to the maker and taker
-        vm.startPrank(0x4e65fE4DbA92790696d040ac24Aa414708F5c0AB); // aUSDC token which holds all the underlying USDC
+        vm.startPrank(address(aUSDC));
         usdc.transfer(maker, 1000 * 1e6);
         usdc.transfer(taker, 1000 * 1e6);
         vm.stopPrank();
@@ -103,7 +105,69 @@ contract BetFactoryTest is Test {
     }
 
     function test_CreateBetWithPool() public {
-        // TODO
+        address aaveUsdcPool = 0xA238Dd80C259a72e81d7e4664a9801593F98d1c5;
+        vm.warp(block.timestamp + 1); // Avoid create2 conflicts with the original bet
+
+        assertEq(betFactory.tokenToPool(address(usdc)), address(0));
+        vm.prank(owner);
+        vm.expectEmit();
+        emit BetFactory.PoolConfigured(address(usdc), aaveUsdcPool);
+        betFactory.setPool(address(usdc), aaveUsdcPool);
+
+        address betAddress = betFactory.predictBetAddress(
+            maker,
+            taker,
+            address(usdc),
+            1000,
+            1000,
+            uint40(block.timestamp + 1000),
+            uint40(block.timestamp + 2000)
+        );
+
+        vm.startPrank(maker);
+        usdc.approve(address(betAddress), 1000);
+        assertNotEq(betFactory.tokenToPool(address(usdc)), address(0));
+
+        // The balance of aUSDC in the new bet should be 0 before its created
+        assertEq(aUSDC.balanceOf(betAddress), 0);
+
+        // Create the bet
+        IBet newBet = IBet(
+            betFactory.createBet(
+                taker,
+                judge,
+                address(usdc),
+                1000,
+                1000,
+                uint40(block.timestamp + 1000),
+                uint40(block.timestamp + 2000)
+            )
+        );
+        vm.stopPrank();
+
+        // There should be aUSDC in the bet contract, but no USDC
+        assertGt(aUSDC.balanceOf(betAddress), 0);
+        assertEq(usdc.balanceOf(betAddress), 0);
+
+        // Have the taker accept the bet and verify their deposit is also sent to Aave
+        vm.startPrank(taker);
+        usdc.approve(address(betAddress), 1000);
+        newBet.accept();
+        vm.stopPrank();
+
+        assertGt(aUSDC.balanceOf(betAddress), 1000);
+        assertEq(usdc.balanceOf(betAddress), 0);
+
+        // Skip ahead, resolve the bet in favor of the maker which should withdraw the funds from Aave
+        uint256 makerBalanceBefore = usdc.balanceOf(maker);
+        vm.warp(block.timestamp + 1000);
+        vm.prank(judge);
+        newBet.resolve(maker);
+
+        uint256 makerBalanceAfter = usdc.balanceOf(maker);
+        assertGt(makerBalanceAfter - makerBalanceBefore, 0);
+        assertEq(aUSDC.balanceOf(betAddress), 0);
+        assertEq(usdc.balanceOf(betAddress), 0);
     }
 
     // Maker or taker doesn't deposit in time

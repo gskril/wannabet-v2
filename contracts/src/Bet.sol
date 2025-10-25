@@ -84,8 +84,10 @@ contract Bet is IBet, Initializable {
             initialBet.makerStake
         );
 
-        // If the pool is set, supply the funds to the pool
+        // If the pool is set, approve and supply the funds to the pool
         if (pool != address(0)) {
+            IERC20(initialBet.asset).approve(pool, type(uint256).max);
+
             aavePool.supply(
                 initialBet.asset,
                 initialBet.makerStake,
@@ -153,7 +155,11 @@ contract Bet is IBet, Initializable {
 
         // If the funds are in Aave, withdraw them
         if (address(aavePool) != address(0)) {
-            aavePool.withdraw(b.asset, totalWinnings, address(this));
+            uint256 aTokenBalance = IERC20(aavePool.getReserveAToken(b.asset))
+                .balanceOf(address(this));
+
+            totalWinnings = _min(totalWinnings, aTokenBalance);
+            aavePool.withdraw(b.asset, aTokenBalance, address(this));
         }
 
         // Transfer the winnings to the winner
@@ -224,5 +230,9 @@ contract Bet is IBet, Initializable {
         }
 
         return s;
+    }
+
+    function _min(uint256 a, uint256 b) internal pure returns (uint256) {
+        return a < b ? a : b;
     }
 }
