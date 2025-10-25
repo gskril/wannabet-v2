@@ -231,7 +231,7 @@ export async function GET(request: Request) {
 
     return {
       id: bet.address,
-      description: 'Bet details', // Placeholder for MVP
+      description: bet.description,
       maker: makerUser,
       makerAddress: bet.maker,
       taker: takerUser,
