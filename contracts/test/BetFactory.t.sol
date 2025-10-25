@@ -18,7 +18,8 @@ contract BetFactoryTest is Test {
     address owner = makeAddr("owner");
     IERC20 usdc = IERC20(0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913);
     IERC20 aUSDC = IERC20(0x4e65fE4DbA92790696d040ac24Aa414708F5c0AB); // holds all the underlying USDC in Aave
-    IBet bet;
+    IBet betNoPool;
+    IBet betWithPool;
 
     function setUp() public {
         // Run everything on a fork of Base
@@ -33,8 +34,8 @@ contract BetFactoryTest is Test {
         Bet betImplementation = new Bet();
         betFactory = new BetFactory(owner, address(betImplementation));
 
-        // Predict the bet address
-        address betAddress = betFactory.predictBetAddress(
+        // Predict the first bet address
+        address betNoPoolAddress = betFactory.predictBetAddress(
             maker,
             taker,
             address(usdc),
@@ -45,94 +46,8 @@ contract BetFactoryTest is Test {
         );
 
         vm.startPrank(maker);
-        usdc.approve(address(betAddress), 1000);
-        bet = IBet(
-            betFactory.createBet(
-                taker, // taker
-                judge, // judge
-                address(usdc), // asset
-                1000, // makerStake
-                1000, // takerStake
-                uint40(block.timestamp + 1000), // acceptBy
-                uint40(block.timestamp + 2000) // resolveBy
-            )
-        );
-        vm.stopPrank();
-    }
-
-    function test_ForkAndPrank() public view {
-        assertEq(block.chainid, 8453);
-        assertGt(IERC20(usdc).balanceOf(maker), 1000000000);
-    }
-
-    function test_GetDeterministicBetAddress() public view {
-        address betAddress = betFactory.predictBetAddress(
-            maker,
-            taker,
-            address(usdc),
-            1000,
-            1000,
-            uint40(block.timestamp + 1000),
-            uint40(block.timestamp + 2000)
-        );
-
-        assertEq(betAddress, address(bet));
-    }
-
-    function test_CreateBetWithNoPool() public {
-        assertEq(betFactory.betCount(), 1);
-        assertEq(bet.bet().maker, maker);
-
-        // Taker deposits
-        vm.startPrank(taker);
-        usdc.approve(address(bet), 1000);
-        vm.expectEmit();
-        emit IBet.BetAccepted();
-        bet.accept();
-        vm.stopPrank();
-
-        assertEq(usdc.balanceOf(address(bet)), 2000);
-        assertEq(uint(bet.bet().status), uint(IBet.Status.ACTIVE));
-
-        // Judge resolves the bet in favor of thet maker
-        uint256 makerBalanceBefore = usdc.balanceOf(maker);
-        vm.prank(judge);
-        bet.resolve(maker);
-        uint256 makerBalanceAfter = usdc.balanceOf(maker);
-
-        assertEq(makerBalanceAfter - makerBalanceBefore, 2000);
-        assertEq(uint(bet.bet().status), uint(IBet.Status.RESOLVED));
-    }
-
-    function test_CreateBetWithPool() public {
-        address aaveUsdcPool = 0xA238Dd80C259a72e81d7e4664a9801593F98d1c5;
-        vm.warp(block.timestamp + 1); // Avoid create2 conflicts with the original bet
-
-        assertEq(betFactory.tokenToPool(address(usdc)), address(0));
-        vm.prank(owner);
-        vm.expectEmit();
-        emit BetFactory.PoolConfigured(address(usdc), aaveUsdcPool);
-        betFactory.setPool(address(usdc), aaveUsdcPool);
-
-        address betAddress = betFactory.predictBetAddress(
-            maker,
-            taker,
-            address(usdc),
-            1000,
-            1000,
-            uint40(block.timestamp + 1000),
-            uint40(block.timestamp + 2000)
-        );
-
-        vm.startPrank(maker);
-        usdc.approve(address(betAddress), 1000);
-        assertNotEq(betFactory.tokenToPool(address(usdc)), address(0));
-
-        // The balance of aUSDC in the new bet should be 0 before its created
-        assertEq(aUSDC.balanceOf(betAddress), 0);
-
-        // Create the bet
-        IBet newBet = IBet(
+        usdc.approve(address(betNoPoolAddress), 1000);
+        betNoPool = IBet(
             betFactory.createBet(
                 taker,
                 judge,
@@ -145,29 +60,115 @@ contract BetFactoryTest is Test {
         );
         vm.stopPrank();
 
+        // Configure the Aave pool for USDC
+        address aaveUsdcPool = 0xA238Dd80C259a72e81d7e4664a9801593F98d1c5;
+        vm.warp(block.timestamp + 1); // Avoid create2 conflicts with the original bet
+
+        vm.prank(owner);
+        vm.expectEmit();
+        emit BetFactory.PoolConfigured(address(usdc), aaveUsdcPool);
+        betFactory.setPool(address(usdc), aaveUsdcPool);
+
+        address betWithPoolAddress = betFactory.predictBetAddress(
+            maker,
+            taker,
+            address(usdc),
+            1000,
+            1000,
+            uint40(block.timestamp + 1000),
+            uint40(block.timestamp + 2000)
+        );
+
+        vm.startPrank(maker);
+        usdc.approve(address(betWithPoolAddress), 1000);
+
+        // The balance of aUSDC in the new bet should be 0 before its created
+        assertEq(aUSDC.balanceOf(betWithPoolAddress), 0);
+
+        // Create the bet
+        betWithPool = IBet(
+            betFactory.createBet(
+                taker,
+                judge,
+                address(usdc),
+                1000,
+                1000,
+                uint40(block.timestamp + 1000),
+                uint40(block.timestamp + 2000)
+            )
+        );
+        vm.stopPrank();
+    }
+
+    function test_ForkAndPrankAndBasics() public view {
+        assertEq(block.chainid, 8453);
+        assertGt(IERC20(usdc).balanceOf(maker), 1000000000);
+        assertEq(betFactory.betCount(), 2);
+        assertEq(betNoPool.bet().maker, maker);
+    }
+
+    function test_GetDeterministicBetAddress() public view {
+        address betWithPoolAddress = betFactory.predictBetAddress(
+            maker,
+            taker,
+            address(usdc),
+            1000,
+            1000,
+            uint40(block.timestamp + 1000),
+            uint40(block.timestamp + 2000)
+        );
+
+        assertEq(betWithPoolAddress, address(betWithPool));
+    }
+
+    function test_CreateBetWithNoPool() public {
+        // Taker deposits
+        vm.startPrank(taker);
+        usdc.approve(address(betNoPool), 1000);
+        vm.expectEmit();
+        emit IBet.BetAccepted();
+        betNoPool.accept();
+        vm.stopPrank();
+
+        assertEq(usdc.balanceOf(address(betNoPool)), 2000);
+        assertEq(uint(betNoPool.bet().status), uint(IBet.Status.ACTIVE));
+
+        // Judge resolves the bet in favor of thet maker
+        uint256 makerBalanceBefore = usdc.balanceOf(maker);
+        vm.prank(judge);
+        betNoPool.resolve(maker);
+        uint256 makerBalanceAfter = usdc.balanceOf(maker);
+
+        assertEq(makerBalanceAfter - makerBalanceBefore, 2000);
+        assertEq(uint(betNoPool.bet().status), uint(IBet.Status.RESOLVED));
+    }
+
+    function test_CreateBetWithPool() public {
+        address betWithPoolAddress = address(betWithPool);
+
         // There should be aUSDC in the bet contract, but no USDC
-        assertGt(aUSDC.balanceOf(betAddress), 0);
-        assertEq(usdc.balanceOf(betAddress), 0);
+        assertGt(aUSDC.balanceOf(betWithPoolAddress), 0);
+        assertEq(usdc.balanceOf(betWithPoolAddress), 0);
 
         // Have the taker accept the bet and verify their deposit is also sent to Aave
         vm.startPrank(taker);
-        usdc.approve(address(betAddress), 1000);
-        newBet.accept();
+        usdc.approve(address(betWithPoolAddress), 1000);
+        betWithPool.accept();
         vm.stopPrank();
 
-        assertGt(aUSDC.balanceOf(betAddress), 1000);
-        assertEq(usdc.balanceOf(betAddress), 0);
+        assertGt(aUSDC.balanceOf(betWithPoolAddress), 1000);
+        assertEq(usdc.balanceOf(betWithPoolAddress), 0);
 
         // Skip ahead, resolve the bet in favor of the maker which should withdraw the funds from Aave
         uint256 makerBalanceBefore = usdc.balanceOf(maker);
         vm.warp(block.timestamp + 1000);
         vm.prank(judge);
-        newBet.resolve(maker);
+        betWithPool.resolve(maker);
 
         uint256 makerBalanceAfter = usdc.balanceOf(maker);
         assertGt(makerBalanceAfter - makerBalanceBefore, 0);
-        assertEq(aUSDC.balanceOf(betAddress), 0);
-        assertEq(usdc.balanceOf(betAddress), 0);
+        assertEq(aUSDC.balanceOf(betWithPoolAddress), 0);
+        assertEq(usdc.balanceOf(betWithPoolAddress), 0);
     }
 
     // Maker or taker doesn't deposit in time
@@ -175,18 +176,18 @@ contract BetFactoryTest is Test {
         vm.warp(block.timestamp + 1001);
 
         // At this point, the bet should be expired
-        assertEq(uint(bet.bet().status), uint(IBet.Status.EXPIRED));
+        assertEq(uint(betNoPool.bet().status), uint(IBet.Status.EXPIRED));
 
         // Nobody can deposit to an expired bet
         vm.startPrank(taker);
-        usdc.approve(address(bet), 1000);
+        usdc.approve(address(betNoPool), 1000);
         vm.expectRevert(IBet.InvalidStatus.selector);
-        bet.accept();
+        betNoPool.accept();
         vm.stopPrank();
 
         // Anybody can cancel an expired bet, which sends funds back to each party
         uint256 makerBalanceBefore = usdc.balanceOf(maker);
-        bet.cancel();
+        betNoPool.cancel();
         assertEq(usdc.balanceOf(maker) - makerBalanceBefore, 1000);
     }
 
