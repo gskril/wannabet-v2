@@ -2,6 +2,7 @@
 
 import { format } from 'date-fns'
 import { Coins, ExternalLink, Trophy } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { type Address, parseUnits } from 'viem'
 import {
@@ -42,6 +43,7 @@ export function BetDetailDialog({
 }: BetDetailDialogProps) {
   const [timelineExpanded, setTimelineExpanded] = useState(false)
   const { address } = useAccount()
+  const router = useRouter()
 
   // Bet contract address (in real usage, this would come from bet.id)
   const betAddress = bet.id as Address
@@ -69,26 +71,29 @@ export function BetDetailDialog({
     reset: resetAccept,
   } = useWriteContract()
 
-  const { isLoading: isWaitingForAccept } = useWaitForTransactionReceipt({
-    hash: acceptHash,
-    query: {
-      enabled: !!acceptHash,
-    },
-  })
+  const { isLoading: isWaitingForAccept, isSuccess: isAcceptSuccess } =
+    useWaitForTransactionReceipt({
+      hash: acceptHash,
+      query: {
+        enabled: !!acceptHash,
+      },
+    })
 
   // Resolve bet hooks
   const {
     data: resolveHash,
+    writeContractAsync: resolveBet,
     isPending: isResolving,
     reset: resetResolve,
   } = useWriteContract()
 
-  const { isLoading: isWaitingForResolve } = useWaitForTransactionReceipt({
-    hash: resolveHash,
-    query: {
-      enabled: !!resolveHash,
-    },
-  })
+  const { isLoading: isWaitingForResolve, isSuccess: isResolveSuccess } =
+    useWaitForTransactionReceipt({
+      hash: resolveHash,
+      query: {
+        enabled: !!resolveHash,
+      },
+    })
 
   // Cancel bet hooks
   const {
@@ -140,6 +145,24 @@ export function BetDetailDialog({
     }
   }, [approvalConfirmed, refetchAllowance, address, acceptBet, betAddress])
 
+  // Refresh page after accept transaction succeeds
+  useEffect(() => {
+    if (isAcceptSuccess) {
+      setTimeout(() => {
+        router.refresh()
+      }, 2000)
+    }
+  }, [isAcceptSuccess, router])
+
+  // Refresh page after resolve transaction succeeds
+  useEffect(() => {
+    if (isResolveSuccess) {
+      setTimeout(() => {
+        router.refresh()
+      }, 2000)
+    }
+  }, [isResolveSuccess, router])
+
   const handleAcceptBet = async () => {
     if (!address) {
       alert('Please connect your wallet')
@@ -171,6 +194,25 @@ export function BetDetailDialog({
       }
     } catch (error) {
       console.error('Error accepting bet:', error)
+    }
+  }
+
+  const handleResolveBet = async (winnerAddress: string) => {
+    if (!address) {
+      alert('Please connect your wallet')
+      return
+    }
+
+    try {
+      await resolveBet({
+        address: betAddress,
+        abi: BET_ABI,
+        functionName: 'resolve',
+        args: [winnerAddress as Address],
+        chainId: 8453, // Force Base network
+      })
+    } catch (error) {
+      console.error('Error resolving bet:', error)
     }
   }
 
@@ -294,6 +336,56 @@ export function BetDetailDialog({
               </div>
             </div>
           )}
+
+          {/* Judge Resolution - Active bets only */}
+          {bet.status === 'active' &&
+            bet.judgeAddress &&
+            address &&
+            bet.judgeAddress.toLowerCase() === address.toLowerCase() &&
+            bet.acceptedBy && (
+              <div className="space-y-3 rounded-lg border bg-blue-500/5 px-4 py-3">
+                <p className="text-center text-sm font-medium">
+                  Select the winner
+                </p>
+                <div className="flex gap-2">
+                  {/* Maker button */}
+                  <Button
+                    onClick={() => handleResolveBet(bet.makerAddress)}
+                    className="flex-1"
+                    variant="outline"
+                    disabled={isResolving || isWaitingForResolve}
+                  >
+                    <div className="flex items-center gap-2">
+                      <UserAvatar user={bet.maker} size="sm" />
+                      <span className="text-sm">{bet.maker.displayName}</span>
+                    </div>
+                  </Button>
+
+                  {/* Taker button */}
+                  <Button
+                    onClick={() => handleResolveBet(bet.takerAddress || '')}
+                    className="flex-1"
+                    variant="outline"
+                    disabled={isResolving || isWaitingForResolve}
+                  >
+                    <div className="flex items-center gap-2">
+                      <UserAvatar user={bet.acceptedBy} size="sm" />
+                      <span className="text-sm">
+                        {bet.acceptedBy.displayName}
+                      </span>
+                    </div>
+                  </Button>
+                </div>
+
+                {(isResolving || isWaitingForResolve) && (
+                  <p className="text-muted-foreground text-center text-xs">
+                    {isResolving
+                      ? 'Submitting resolution...'
+                      : 'Waiting for confirmation...'}
+                  </p>
+                )}
+              </div>
+            )}
 
           {/* Judge Section - Minimal */}
           <div className="flex items-center justify-center gap-2">
