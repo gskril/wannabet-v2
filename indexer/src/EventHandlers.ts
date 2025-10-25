@@ -45,6 +45,7 @@ Bet.BetCreated.handler(async ({ event, context }) => {
     resolveBy: event.params.resolveBy,
     makerStake: event.params.makerStake,
     takerStake: event.params.takerStake,
+    createdAt: event.block.timestamp,
   }
 
   context.Bet_BetCreated.set(entity)

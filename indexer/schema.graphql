@@ -18,6 +18,7 @@ type Bet_BetCreated {
   resolveBy: BigInt!
   makerStake: BigInt!
   takerStake: BigInt!
+  createdAt: Int!
 }
 
 type Bet_BetResolved {
