@@ -8,15 +8,43 @@ import { ConnectWalletButton } from '@/components/connect-wallet-button'
 import { CreateBetDialog } from '@/components/create-bet-dialog'
 import { TestBetContract } from '@/components/test-bet-contract'
 import { WelcomeModal } from '@/components/welcome-modal'
-import { DUMMY_BETS } from '@/lib/dummy-data'
+import type { Bet } from '@/lib/types'
 
 export default function HomePage() {
   const [showWelcome, setShowWelcome] = useState(false)
+  const [bets, setBets] = useState<Bet[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   // Load initial state from localStorage after client mounts
   useEffect(() => {
     const dismissed = localStorage.getItem('welcomeDismissed') === 'true'
     setShowWelcome(!dismissed)
+  }, [])
+
+  // Fetch real bets data
+  useEffect(() => {
+    async function fetchBets() {
+      try {
+        setLoading(true)
+        setError(null)
+        const response = await fetch('/api/bets')
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch bets')
+        }
+
+        const data = await response.json()
+        setBets(data)
+      } catch (err) {
+        console.error('Error fetching bets:', err)
+        setError(err instanceof Error ? err.message : 'Failed to load bets')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchBets()
   }, [])
 
   const handleCloseWelcome = (open: boolean) => {
@@ -72,7 +100,24 @@ export default function HomePage() {
           <TestBetContract />
         </div>
 
-        <BetsTable bets={DUMMY_BETS} />
+        {/* Bets Section */}
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="text-muted-foreground">Loading bets...</div>
+          </div>
+        ) : error ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="text-destructive">Error: {error}</div>
+          </div>
+        ) : bets.length === 0 ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="text-muted-foreground">
+              No bets found. Create one to get started!
+            </div>
+          </div>
+        ) : (
+          <BetsTable bets={bets} />
+        )}
       </main>
 
       <WelcomeModal

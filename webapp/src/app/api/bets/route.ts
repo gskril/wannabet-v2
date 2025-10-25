@@ -1,4 +1,9 @@
-import { BetStatusEnum } from '@/lib/types'
+import {
+  type Bet,
+  type BetStatus,
+  BetStatusEnum,
+  type FarcasterUser,
+} from '@/lib/types'
 
 interface EnvioResponse {
   data: {
@@ -31,6 +36,26 @@ const INDEXER_URL = 'https://indexer.dev.hyperindex.xyz/3a938cb/v1/graphql'
 const ASSETS = new Map<string, string>([
   ['0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', 'USDC'],
 ])
+
+// Zero address constant
+const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
+
+// Map blockchain status to UI status
+function mapStatus(status: BetStatusEnum): BetStatus {
+  switch (status) {
+    case BetStatusEnum.PENDING:
+      return 'open'
+    case BetStatusEnum.ACTIVE:
+      return 'active'
+    case BetStatusEnum.RESOLVED:
+      return 'completed'
+    case BetStatusEnum.CANCELLED:
+    case BetStatusEnum.EXPIRED:
+      return 'cancelled'
+    default:
+      return 'open'
+  }
+}
 
 export async function GET(request: Request) {
   const response = await fetch(INDEXER_URL, {
@@ -73,8 +98,40 @@ export async function GET(request: Request) {
 
   const { data }: EnvioResponse = await response.json()
 
-  // Aggregate the data into a single array of bets
-  const bets = data.Bet_BetCreated.map((bet) => {
+  // Extract unique addresses to resolve to Farcaster users
+  const uniqueAddresses = new Set<string>()
+  data.Bet_BetCreated.forEach((bet) => {
+    uniqueAddresses.add(bet.maker.toLowerCase())
+    // Don't add zero address for open bets
+    if (bet.taker.toLowerCase() !== ZERO_ADDRESS.toLowerCase()) {
+      uniqueAddresses.add(bet.taker.toLowerCase())
+    }
+  })
+
+  // Fetch user data for all addresses
+  let userMap: Record<string, FarcasterUser> = {}
+  if (uniqueAddresses.size > 0) {
+    try {
+      const addressList = Array.from(uniqueAddresses).join(',')
+      const baseUrl = request.url.includes('localhost')
+        ? 'http://localhost:3000'
+        : request.url.split('/api/')[0]
+
+      const userResponse = await fetch(
+        `${baseUrl}/api/neynar/bulk-users-by-address?addresses=${encodeURIComponent(addressList)}`
+      )
+
+      if (userResponse.ok) {
+        const userData = await userResponse.json()
+        userMap = userData.users || {}
+      }
+    } catch (error) {
+      console.error('Error fetching users:', error)
+    }
+  }
+
+  // Transform blockchain data to UI Bet format
+  const bets: Bet[] = data.Bet_BetCreated.map((bet) => {
     const accepted = !!data.Bet_BetAccepted.find(
       (accepted) => accepted.address === bet.address
     )
@@ -87,7 +144,7 @@ export async function GET(request: Request) {
       (cancelled) => cancelled.address === bet.address
     )
 
-    // TODO: Derive the status from the other events
+    // Derive the status from the events
     let status: BetStatusEnum = BetStatusEnum.PENDING
 
     if (resolved) {
@@ -109,25 +166,40 @@ export async function GET(request: Request) {
       }
     }
 
-    return {
-      address: bet.address,
-      maker: bet.maker,
-      taker: bet.taker,
-      asset: {
-        symbol: ASSETS.get(bet.asset),
-        address: bet.asset,
-      },
-      makerStake: bet.makerStake,
-      takerStake: bet.takerStake,
-      acceptBy: bet.acceptBy,
-      resolveBy: bet.resolveBy,
-      createdAt: bet.createdAt,
-      accepted,
-      resolved,
-      cancelled,
-      status,
+    // Get user data
+    const makerUser = userMap[bet.maker.toLowerCase()]
+    const takerAddress = bet.taker.toLowerCase()
+    const takerUser =
+      takerAddress === ZERO_ADDRESS.toLowerCase() ? null : userMap[takerAddress]
+
+    // Filter out bets where maker couldn't be resolved
+    if (!makerUser) {
+      return null
     }
-  })
+
+    // For non-open bets, filter out if taker couldn't be resolved
+    if (takerAddress !== ZERO_ADDRESS.toLowerCase() && !takerUser) {
+      return null
+    }
+
+    // Convert amount from wei to USDC (6 decimals)
+    const amountInUsdc = (Number(bet.makerStake) / 1_000_000).toString()
+
+    return {
+      id: bet.address,
+      description: 'Bet details', // Placeholder for MVP
+      maker: makerUser,
+      taker: takerUser,
+      judge: null, // Skip for MVP
+      amount: amountInUsdc,
+      status: mapStatus(status),
+      createdAt: new Date(bet.createdAt * 1000),
+      expiresAt: new Date(Number(bet.resolveBy) * 1000),
+      winner: null, // Skip for MVP
+      acceptedBy: accepted && takerUser ? takerUser : null,
+      acceptedAt: accepted ? new Date(bet.createdAt * 1000) : null, // Approximate - we don't have exact acceptance time
+    } as Bet
+  }).filter((bet): bet is Bet => bet !== null)
 
   return Response.json(bets)
 }
