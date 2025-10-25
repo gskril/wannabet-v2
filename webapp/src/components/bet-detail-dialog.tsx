@@ -231,7 +231,7 @@ export function BetDetailDialog({
         if (!isOpen) handleReset()
       }}
     >
-      <DrawerContent className="mx-auto max-h-[85vh] max-w-3xl overflow-y-auto">
+      <DrawerContent className="mx-auto max-h-[75vh] max-w-3xl overflow-y-auto sm:max-h-[85vh]">
         <DrawerHeader className="pb-2">
           {/* Status Badge - Minimal in top right */}
           <div className="absolute right-4 top-4">
