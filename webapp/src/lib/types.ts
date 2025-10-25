@@ -1,3 +1,5 @@
+import { Address } from 'viem'
+
 // Comes from IBet.sol
 export enum BetStatusEnum {
   PENDING = 'pending',
@@ -18,6 +20,12 @@ export interface FarcasterUser {
   bio?: string
 }
 
+export interface Asset {
+  address: string
+  symbol: string
+  decimals: number
+}
+
 export interface Bet {
   id: string
   description: string
@@ -26,6 +34,7 @@ export interface Bet {
   taker: FarcasterUser | null // specific opponent, null means open to anyone (smart contract terminology)
   takerAddress: string | null // Ethereum address of taker (null or zero address for open bets)
   judge: FarcasterUser | null // who decides the outcome
+  asset: Asset
   amount: string // in USDC
   status: BetStatus
   createdAt: Date
