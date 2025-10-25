@@ -96,6 +96,7 @@ export async function GET(request: Request) {
             takerStake
             acceptBy
             resolveBy
+            description
             createdAt
           }
           
@@ -120,7 +121,15 @@ export async function GET(request: Request) {
     },
   })
 
+  if (!response.ok) {
+    console.error('Failed to fetch bets', response.status, response.statusText)
+    return Response.json({ error: 'Failed to fetch bets' }, { status: 500 })
+  }
+
   const { data }: EnvioResponse = await response.json()
+
+  console.log('Got Envio response')
+  console.log(data)
 
   // Extract unique addresses to resolve to Farcaster users (include judge)
   const uniqueAddresses = new Set<string>()

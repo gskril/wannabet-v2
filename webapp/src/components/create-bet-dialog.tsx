@@ -458,6 +458,7 @@ export function CreateBetDialog() {
       switchChainAsync,
       formData.amount,
       formData.expiresAt,
+      formData.description,
       formData.judgeUser?.fid,
       formData.takerUser?.fid,
       approveWrite,
