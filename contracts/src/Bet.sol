@@ -224,10 +224,6 @@ contract Bet is IBet, Initializable {
         return _status(_bet);
     }
 
-    function balanceOfAsset() external view returns (uint256) {
-        return IERC20(_bet.asset).balanceOf(address(this));
-    }
-
     /*//////////////////////////////////////////////////////////////
                            INTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/

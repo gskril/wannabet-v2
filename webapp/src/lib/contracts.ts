@@ -596,19 +596,6 @@ export const BET_ABI = [
   },
   {
     inputs: [],
-    name: 'balanceOfAsset',
-    outputs: [
-      {
-        internalType: 'uint256',
-        name: '',
-        type: 'uint256',
-      },
-    ],
-    stateMutability: 'view',
-    type: 'function',
-  },
-  {
-    inputs: [],
     name: 'bet',
     outputs: [
       {
