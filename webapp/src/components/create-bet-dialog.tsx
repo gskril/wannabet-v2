@@ -71,7 +71,7 @@ export function CreateBetDialog() {
   // Wagmi hooks
   const { address, isConnected, chain } = useAccount()
   const { connect, connectors } = useConnect()
-  const { switchChain, isPending: isSwitchingChain } = useSwitchChain()
+  const { switchChainAsync, isPending: isSwitchingChain } = useSwitchChain()
 
   // Log network info when it changes
   useEffect(() => {
@@ -196,60 +196,63 @@ export function CreateBetDialog() {
   }, [step, currentUser, formData.description])
 
   // When approval is confirmed, automatically create bet
-  useEffect(() => {
-    if (approvalConfirmed && step === 5 && address && predictedBetAddress) {
-      refetchAllowance().then(async () => {
-        // Now that allowance is updated, proceed with bet creation
-        const amountInUnits = parseUnits(formData.amount, 6)
+  // useEffect(() => {
+  //   if (approvalConfirmed && step === 5 && address && predictedBetAddress) {
+  //     refetchAllowance().then(async () => {
+  //       // Now that allowance is updated, proceed with bet creation
+  //       const amountInUnits = parseUnits(formData.amount, 6)
 
-        // Resolve addresses from Farcaster users (must match prediction)
-        const takerAddress: Address = formData.takerUser?.fid
-          ? (await resolveAddressFromFid(formData.takerUser.fid)) ||
-            ('0x0000000000000000000000000000000000000000' as Address)
-          : ('0x0000000000000000000000000000000000000000' as Address)
+  //       // Resolve addresses from Farcaster users (must match prediction)
+  //       const takerAddress: Address = formData.takerUser?.fid
+  //         ? (await resolveAddressFromFid(formData.takerUser.fid)) ||
+  //           ('0x0000000000000000000000000000000000000000' as Address)
+  //         : ('0x0000000000000000000000000000000000000000' as Address)
 
-        const judgeAddress: Address = formData.judgeUser?.fid
-          ? (await resolveAddressFromFid(formData.judgeUser.fid)) ||
-            ('0x0000000000000000000000000000000000000000' as Address)
-          : ('0x0000000000000000000000000000000000000000' as Address)
+  //       const judgeAddress: Address = formData.judgeUser?.fid
+  //         ? (await resolveAddressFromFid(formData.judgeUser.fid)) ||
+  //           ('0x0000000000000000000000000000000000000000' as Address)
+  //         : ('0x0000000000000000000000000000000000000000' as Address)
 
-        // Calculate timestamps (must match prediction)
-        const acceptByTimestamp =
-          Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60
-        const expiresAtTimestamp = Math.floor(
-          new Date(formData.expiresAt).getTime() / 1000
-        )
-        const resolveByTimestamp = expiresAtTimestamp + 90 * 24 * 60 * 60
+  //       // Calculate timestamps (must match prediction)
+  //       // const acceptByTimestamp =
+  //       //   Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60
+  //       // const expiresAtTimestamp = Math.floor(
+  //       //   new Date(formData.expiresAt).getTime() / 1000
+  //       // )
+  //       // const resolveByTimestamp = expiresAtTimestamp + 90 * 24 * 60 * 60
 
-        await createBet({
-          address: BETFACTORY_ADDRESS,
-          abi: BETFACTORY_ABI,
-          functionName: 'createBet',
-          args: [
-            takerAddress,
-            judgeAddress,
-            USDC_ADDRESS,
-            amountInUnits,
-            amountInUnits,
-            acceptByTimestamp,
-            resolveByTimestamp,
-          ],
-          chainId: 8453, // Force Base network
-        })
-      })
-    }
-  }, [
-    approvalConfirmed,
-    refetchAllowance,
-    step,
-    address,
-    predictedBetAddress,
-    formData.amount,
-    formData.takerUser,
-    formData.judgeUser,
-    formData.expiresAt,
-    createBet,
-  ])
+  //       const acceptByTimestamp = 1761454907
+  //       const resolveByTimestamp = 1761454907 + 90 * 24 * 60 * 60
+
+  //       await createBet({
+  //         address: BETFACTORY_ADDRESS,
+  //         abi: BETFACTORY_ABI,
+  //         functionName: 'createBet',
+  //         args: [
+  //           takerAddress,
+  //           judgeAddress,
+  //           USDC_ADDRESS,
+  //           amountInUnits,
+  //           amountInUnits,
+  //           acceptByTimestamp,
+  //           resolveByTimestamp,
+  //         ],
+  //         chainId: 8453, // Force Base network
+  //       })
+  //     })
+  //   }
+  // }, [
+  //   approvalConfirmed,
+  //   refetchAllowance,
+  //   step,
+  //   address,
+  //   predictedBetAddress,
+  //   formData.amount,
+  //   formData.takerUser,
+  //   formData.judgeUser,
+  //   formData.expiresAt,
+  //   createBet,
+  // ])
 
   // Read bet data from the created contract
   const { data: betData } = useReadContract({
@@ -434,7 +437,7 @@ export function CreateBetDialog() {
       if (chain?.id !== 8453) {
         console.log('🔄 Wrong network detected, switching to Base...')
         try {
-          await switchChain({ chainId: 8453 })
+          await switchChainAsync({ chainId: 8453 })
           console.log('✅ Switched to Base network')
           // After switching, the user needs to click the button again
           alert(
@@ -464,25 +467,25 @@ export function CreateBetDialog() {
         })
         console.log('✅ Approval transaction submitted:', hash)
         // The useEffect will handle creating the bet after approval confirms
-      } else {
-        console.log('✅ Already approved, creating bet directly...')
-        const hash = await createBet({
-          address: BETFACTORY_ADDRESS,
-          abi: BETFACTORY_ABI,
-          functionName: 'createBet',
-          args: [
-            takerAddress,
-            judgeAddress,
-            USDC_ADDRESS,
-            amountInUnits,
-            amountInUnits,
-            acceptByTimestamp,
-            resolveByTimestamp,
-          ],
-          chainId: 8453, // Force Base network
-        })
-        console.log('✅ Bet creation transaction submitted:', hash)
       }
+
+      console.log('✅ Already approved, creating bet directly...')
+      const hash = await createBet({
+        address: BETFACTORY_ADDRESS,
+        abi: BETFACTORY_ABI,
+        functionName: 'createBet',
+        args: [
+          takerAddress,
+          judgeAddress,
+          USDC_ADDRESS,
+          amountInUnits,
+          amountInUnits,
+          acceptByTimestamp,
+          resolveByTimestamp,
+        ],
+        chainId: 8453, // Force Base network
+      })
+      console.log('✅ Bet creation transaction submitted:', hash)
     } catch (error) {
       console.error('❌ Error creating bet:', error)
       if (error instanceof Error) {
@@ -831,7 +834,9 @@ export function CreateBetDialog() {
                     </div>
                     <Button
                       size="sm"
-                      onClick={() => switchChain({ chainId: 8453 })}
+                      onClick={async () =>
+                        await switchChainAsync({ chainId: 8453 })
+                      }
                       disabled={isSwitchingChain}
                     >
                       {isSwitchingChain ? (
@@ -1047,12 +1052,8 @@ export function CreateBetDialog() {
                 </Button>
               ) : !betCreationConfirmed ? (
                 <Button
-                  type="button"
+                  type="submit"
                   className="h-12 flex-1 text-base"
-                  onClick={() => {
-                    console.log('Create Bet button clicked')
-                    handleCreateBet()
-                  }}
                   disabled={
                     !canProceed() ||
                     chain?.id !== 8453 ||
