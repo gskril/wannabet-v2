@@ -5,7 +5,7 @@ import { buildModule } from '@nomicfoundation/hardhat-ignition/modules'
 export default buildModule('DeployModule', (m) => {
   const betFactory = m.contract('BetFactory', [
     '0x179A862703a4adfb29896552DF9e307980D19285',
-    '0xA5470ED010aad98A08B50474199B7Ae4D371Ba17',
+    '0x8BE8ee562DA346F57D8BE4591FBD73B3D7f7327f',
   ])
 
   return { betFactory }
