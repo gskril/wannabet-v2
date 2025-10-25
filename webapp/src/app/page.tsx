@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react'
 import { BetsTable } from '@/components/bets-table'
 import { ConnectWalletButton } from '@/components/connect-wallet-button'
 import { CreateBetDialog } from '@/components/create-bet-dialog'
+import { TestBetContract } from '@/components/test-bet-contract'
 import { WelcomeModal } from '@/components/welcome-modal'
 import { DUMMY_BETS } from '@/lib/dummy-data'
 
@@ -64,6 +65,11 @@ export default function HomePage() {
               </button>
             </div>
           </div>
+        </div>
+
+        {/* Test Bet Contract Section */}
+        <div className="mb-8">
+          <TestBetContract />
         </div>
 
         <BetsTable bets={DUMMY_BETS} />
