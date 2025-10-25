@@ -35,7 +35,7 @@ interface EnvioResponse {
   }
 }
 
-const INDEXER_URL = 'https://indexer.dev.hyperindex.xyz/3a938cb/v1/graphql'
+const INDEXER_URL = 'https://indexer.dev.hyperindex.xyz/8aa4f1b/v1/graphql'
 
 // Note: This should be done in the indexer, but since the frontend only allows USDC this is easier for now
 const ASSETS: Asset[] = [
