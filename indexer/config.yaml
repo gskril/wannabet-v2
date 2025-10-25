@@ -9,7 +9,7 @@ networks:
         events:
           - event: BetAccepted()
           - event: BetCancelled()
-          - event: BetCreated(address indexed maker, address indexed taker, address indexed asset, uint40 acceptBy, uint40 resolveBy, uint256 makerStake, uint256 takerStake)
+          - event: BetCreated(address indexed maker, address indexed taker, address indexed judge, address asset, uint40 acceptBy, uint40 resolveBy, uint256 makerStake, uint256 takerStake, string description)
           - event: BetResolved(address indexed winner, uint256 amount)
           - event: Initialized(uint64 version)
       - name: BetFactory

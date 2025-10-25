@@ -56,7 +56,8 @@ contract BetFactoryTest is Test {
                 1000,
                 1000,
                 uint40(block.timestamp + 1000),
-                uint40(block.timestamp + 2000)
+                uint40(block.timestamp + 2000),
+                "Test bet"
             )
         );
         vm.stopPrank();
@@ -95,7 +96,8 @@ contract BetFactoryTest is Test {
                 1000,
                 1000,
                 uint40(block.timestamp + 1000),
-                uint40(block.timestamp + 2000)
+                uint40(block.timestamp + 2000),
+                "Test bet"
             )
         );
         vm.stopPrank();

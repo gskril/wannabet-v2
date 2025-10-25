@@ -13,11 +13,13 @@ type Bet_BetCreated {
   address: String!
   maker: String!
   taker: String!
+  judge: String!
   asset: String!
   acceptBy: BigInt!
   resolveBy: BigInt!
   makerStake: BigInt!
   takerStake: BigInt!
+  description: String!
   createdAt: Int!
 }
 

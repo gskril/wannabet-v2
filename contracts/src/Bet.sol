@@ -36,6 +36,7 @@ contract Bet is IBet, Initializable {
     /// @param pool The Aave V3 pool address
     function initialize(
         IBet.Bet calldata initialBet,
+        string calldata description,
         address pool,
         address treasury
     ) external initializer {
@@ -99,11 +100,13 @@ contract Bet is IBet, Initializable {
         emit BetCreated(
             initialBet.maker,
             initialBet.taker,
+            initialBet.judge,
             initialBet.asset,
             initialBet.acceptBy,
             initialBet.resolveBy,
             initialBet.makerStake,
-            initialBet.takerStake
+            initialBet.takerStake,
+            description
         );
     }
 

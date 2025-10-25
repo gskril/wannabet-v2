@@ -40,11 +40,13 @@ Bet.BetCreated.handler(async ({ event, context }) => {
     address: event.srcAddress,
     maker: event.params.maker,
     taker: event.params.taker,
+    judge: event.params.judge,
     asset: event.params.asset,
     acceptBy: event.params.acceptBy,
     resolveBy: event.params.resolveBy,
     makerStake: event.params.makerStake,
     takerStake: event.params.takerStake,
+    description: event.params.description,
     createdAt: event.block.timestamp,
   }
 

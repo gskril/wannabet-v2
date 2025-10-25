@@ -68,7 +68,8 @@ contract BetFactory is Ownable {
         uint256 makerStake,
         uint256 takerStake,
         uint40 acceptBy,
-        uint40 resolveBy
+        uint40 resolveBy,
+        string calldata description
     ) external returns (address) {
         betCount++;
         address newBet = Clones.cloneDeterministic(
@@ -100,6 +101,7 @@ contract BetFactory is Ownable {
                 makerStake: makerStake,
                 takerStake: takerStake
             }),
+            description,
             tokenToPool[asset],
             treasury
         );

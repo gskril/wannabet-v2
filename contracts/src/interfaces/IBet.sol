@@ -38,11 +38,13 @@ interface IBet {
     event BetCreated(
         address indexed maker,
         address indexed taker,
-        address indexed asset,
+        address indexed judge,
+        address asset,
         uint40 acceptBy,
         uint40 resolveBy,
         uint256 makerStake,
-        uint256 takerStake
+        uint256 takerStake,
+        string description
     );
     event BetAccepted();
     event BetResolved(address indexed winner, uint256 amount);
@@ -63,7 +65,8 @@ interface IBet {
     //////////////////////////////////////////////////////////////*/
 
     function initialize(
-        IBet.Bet memory initialBet,
+        IBet.Bet calldata initialBet,
+        string calldata description,
         address pool,
         address treasury
     ) external;
