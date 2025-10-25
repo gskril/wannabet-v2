@@ -191,10 +191,23 @@ contract Bet is IBet, Initializable {
             }
         }
 
+        uint256 makerRefund = b.makerStake;
+        uint256 takerRefund = b.takerStake;
+
+        // If there is a pool, withdraw the funds from Aave first
+        if (address(aavePool) != address(0)) {
+            uint256 aTokenBalance = IERC20(aavePool.getReserveAToken(b.asset))
+                .balanceOf(address(this));
+            aavePool.withdraw(b.asset, aTokenBalance, address(this));
+
+            makerRefund = _min(makerRefund, aTokenBalance);
+            takerRefund = _min(takerRefund, aTokenBalance - makerRefund);
+        }
+
         // Transfer the funds back to the maker and taker
         // We don't track which party has deposited, so we can try/catch both transfers starting with the maker
-        try IERC20(b.asset).transfer(b.maker, b.makerStake) {} catch {}
-        try IERC20(b.asset).transfer(b.taker, b.takerStake) {} catch {}
+        try IERC20(b.asset).transfer(b.maker, makerRefund) {} catch {}
+        try IERC20(b.asset).transfer(b.taker, takerRefund) {} catch {}
 
         // Update the bet struct
         _bet.status = IBet.Status.CANCELLED;

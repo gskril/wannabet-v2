@@ -172,28 +172,55 @@ contract BetFactoryTest is Test {
     }
 
     // Maker or taker doesn't deposit in time
-    function test_BetExpiresBeforeStarting() public {
+    function test_BetNoPoolExpiresBeforeStarting() public {
         vm.warp(block.timestamp + 1001);
 
         // At this point, the bet should be expired
         assertEq(uint(betNoPool.bet().status), uint(IBet.Status.EXPIRED));
 
-        // Nobody can deposit to an expired bet
+        // Can't deposit to a bet after `acceptBy` has passed
         vm.startPrank(taker);
         usdc.approve(address(betNoPool), 1000);
         vm.expectRevert(IBet.InvalidStatus.selector);
         betNoPool.accept();
         vm.stopPrank();
 
-        // Anybody can cancel an expired bet, which sends funds back to each party
+        // Anybody can refund/cancel an expired bet, which sends funds back to each party
         uint256 makerBalanceBefore = usdc.balanceOf(maker);
         betNoPool.cancel();
         assertEq(usdc.balanceOf(maker) - makerBalanceBefore, 1000);
     }
 
+    // Check Aave logic in the `cancel` function
+    function test_BetWithPoolExpiresBeforeStarting() public {
+        vm.warp(block.timestamp + 1001);
+
+        // Anybody can refund/cancel an expired bet, which sends funds back to each party
+        uint256 makerBalanceBefore = usdc.balanceOf(maker);
+        betWithPool.cancel();
+        assertGt(usdc.balanceOf(maker) - makerBalanceBefore, 0);
+    }
+
     // Judge doesn't resolve the bet in time
-    function test_BetExpiresAfterNoResolution() public {
-        // TODO
+    function test_BetWithPoolExpiresAfterNoResolution() public {
+        vm.startPrank(taker);
+        usdc.approve(address(betWithPool), 1000);
+        betWithPool.accept();
+        vm.stopPrank();
+
+        vm.warp(block.timestamp + 5000);
+
+        // At this point, the bet should be expired (passed `resolveBy`)
+        assertEq(uint(betWithPool.bet().status), uint(IBet.Status.EXPIRED));
+
+        // Anybody can refund/cancel an expired bet, which sends funds back to each party
+        uint256 makerBalanceBefore = usdc.balanceOf(maker);
+        uint256 takerBalanceBefore = usdc.balanceOf(taker);
+        betWithPool.cancel();
+        assertGt(usdc.balanceOf(maker) - makerBalanceBefore, 0);
+
+        // The taker should have their funds refunded too
+        assertGt(usdc.balanceOf(taker) - takerBalanceBefore, 0);
     }
 
     function test_BetCancelled() public {
