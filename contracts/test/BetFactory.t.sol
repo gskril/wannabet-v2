@@ -9,6 +9,7 @@ import {Bet} from "../src/Bet.sol";
 import {BetFactory} from "../src/BetFactory.sol";
 import {IBet} from "../src/interfaces/IBet.sol";
 
+// Note: Tests that involve Aave pools have some margin for error due to their tiny rounding cases
 contract BetFactoryTest is Test {
     BetFactory betFactory;
     // address maker = makeAddr("maker");
@@ -223,7 +224,23 @@ contract BetFactoryTest is Test {
         assertGt(usdc.balanceOf(taker) - takerBalanceBefore, 0);
     }
 
-    function test_BetCancelled() public {
-        // TODO
+    function test_BetNoPoolCancelledByMaker() public {
+        uint256 makerBalanceBefore = usdc.balanceOf(maker);
+        vm.prank(maker);
+        betNoPool.cancel();
+        assertEq(uint(betNoPool.bet().status), uint(IBet.Status.CANCELLED));
+
+        // The maker should have their funds refunded
+        assertEq(usdc.balanceOf(maker) - makerBalanceBefore, 1000);
+    }
+
+    function test_BetWithPoolCancelledByMaker() public {
+        uint256 makerBalanceBefore = usdc.balanceOf(maker);
+        vm.prank(maker);
+        betWithPool.cancel();
+        assertEq(uint(betWithPool.bet().status), uint(IBet.Status.CANCELLED));
+
+        // The maker should have their funds refunded
+        assertGt(usdc.balanceOf(maker) - makerBalanceBefore, 0);
     }
 }
