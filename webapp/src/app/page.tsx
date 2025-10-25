@@ -35,7 +35,16 @@ export default function HomePage() {
         }
 
         const data = await response.json()
-        setBets(data)
+
+        // Convert date strings back to Date objects
+        const betsWithDates = data.map((bet: Bet) => ({
+          ...bet,
+          createdAt: new Date(bet.createdAt),
+          expiresAt: new Date(bet.expiresAt),
+          acceptedAt: bet.acceptedAt ? new Date(bet.acceptedAt) : null,
+        }))
+
+        setBets(betsWithDates)
       } catch (err) {
         console.error('Error fetching bets:', err)
         setError(err instanceof Error ? err.message : 'Failed to load bets')
