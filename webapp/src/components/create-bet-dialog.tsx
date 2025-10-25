@@ -2,17 +2,20 @@
 
 import { Calendar, Loader2, Plus } from 'lucide-react'
 import Image from 'next/image'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { type Address, decodeEventLog, parseUnits } from 'viem'
 import {
   useAccount,
   useConnect,
   useReadContract,
   useSwitchChain,
-  useWaitForTransactionReceipt,
   useWriteContract,
 } from 'wagmi'
-import { readContract } from 'wagmi/actions'
+import {
+  readContract,
+  waitForTransactionReceipt,
+  writeContract,
+} from 'wagmi/actions'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -37,7 +40,21 @@ import {
 import type { FarcasterUser } from '@/lib/types'
 import { wagmiConfig } from '@/lib/wagmi-config'
 
+/** -----------------------------
+ * constants & types
+ * ------------------------------ */
+const BASE_CHAIN_ID = 8453 as const
 type DateOption = '1day' | '7days' | '30days' | 'custom'
+type SubmitPhase =
+  | 'idle'
+  | 'precheck'
+  | 'predicting'
+  | 'approving'
+  | 'creating'
+  | 'confirming'
+  | 'verifying'
+  | 'done'
+type Step = 1 | 2 | 3 | 4 | 5
 
 interface FormData {
   taker: string
@@ -50,10 +67,50 @@ interface FormData {
   description: string
 }
 
+interface UiError {
+  title: string
+  detail?: string
+}
+
+/** tiny helpers */
+const ZERO_ADDR = '0x0000000000000000000000000000000000000000' as Address
+const isNonEmpty = (s?: string) => !!s && s.trim().length > 0
+const fmtDate = (iso?: string) =>
+  !iso
+    ? ''
+    : new Date(iso).toLocaleDateString('en-US', {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      })
+
+/** centralize feature logging behind a flag */
+const DEBUG = false
+const log = (...args: any[]) => {
+  if (DEBUG) console.log('[CreateBet]', ...args)
+}
+
 export function CreateBetDialog() {
   const { user: currentUser } = useAuth()
+
+  /** dialog + wizard state */
   const [open, setOpen] = useState(false)
-  const [step, setStep] = useState(1)
+  const [step, setStep] = useState<Step>(1)
+  const [uiError, setUiError] = useState<UiError | null>(null)
+
+  /** result/derived state */
+  const [createdBetAddress, setCreatedBetAddress] = useState<Address | null>(
+    null
+  )
+  const [predictedBetAddress, setPredictedBetAddress] =
+    useState<Address | null>(null)
+  const [betCreationHash, setBetCreationHash] = useState<`0x${string}` | null>(
+    null
+  )
+  const [phase, setPhase] = useState<SubmitPhase>('idle')
+
+  /** form state */
   const [formData, setFormData] = useState<FormData>({
     taker: '',
     judge: '',
@@ -62,115 +119,34 @@ export function CreateBetDialog() {
     dateOption: null,
     description: '',
   })
-  const [createdBetAddress, setCreatedBetAddress] = useState<Address | null>(
-    null
-  )
-  const [predictedBetAddress, setPredictedBetAddress] =
-    useState<Address | null>(null)
 
-  // Wagmi hooks
+  /** web3 hooks */
   const { address, isConnected, chain } = useAccount()
   const { connect, connectors } = useConnect()
   const { switchChainAsync, isPending: isSwitchingChain } = useSwitchChain()
-
-  // Log network info when it changes
-  useEffect(() => {
-    if (chain) {
-      console.log('🌐 Connected to chain:', {
-        id: chain.id,
-        name: chain.name,
-        expected: 'Base (8453)',
-        isCorrect: chain.id === 8453,
-      })
-      if (chain.id !== 8453) {
-        console.warn(
-          '⚠️ WARNING: Not connected to Base network! Switch to Base (chain ID 8453)'
-        )
-      }
-    }
-  }, [chain])
-
-  // USDC approval hooks
-  const {
-    data: approvalHash,
-    writeContractAsync: approveUsdc,
-    isPending: isApproving,
-    isSuccess: approvalWritten,
-    error: approvalError,
-    reset: resetApproval,
-  } = useWriteContract()
-
-  // Log approval errors
-  useEffect(() => {
-    if (approvalError) {
-      console.error('❌ Approval error:', approvalError)
-    }
-  }, [approvalError])
-
-  const { isSuccess: approvalConfirmed } = useWaitForTransactionReceipt({
-    hash: approvalHash,
-    query: {
-      enabled: !!approvalHash, // Only watch when there's a hash
-    },
-  })
-
-  // Bet creation hooks
-  const {
-    data: betCreationHash,
-    writeContractAsync: createBet,
-    isPending: isCreatingBet,
-    isSuccess: betCreationWritten,
-    error: betCreationError,
-    reset: resetBetCreation,
-  } = useWriteContract()
-
-  const {
-    data: betCreationReceipt,
-    isSuccess: betCreationConfirmed,
-    isLoading: isWaitingForBetCreation,
-  } = useWaitForTransactionReceipt({
-    hash: betCreationHash,
-    query: {
-      enabled: !!betCreationHash, // Only watch when there's a hash
-    },
-  })
-
-  // Check USDC balance
+  const { writeContractAsync: approveWrite, isPending: isApprovingWrite } =
+    useWriteContract()
   const { data: usdcBalance } = useReadContract({
     address: USDC_ADDRESS,
     abi: ERC20_ABI,
     functionName: 'balanceOf',
-    args: address ? [address] : undefined,
-    query: {
-      enabled: isConnected && step === 5,
-    },
+    args: [address!],
+    chainId: BASE_CHAIN_ID, // <--- force to Base
+    query: { enabled: isConnected && step === 5 },
   })
 
-  // Check USDC allowance for the predicted bet address
-  const { data: allowance, refetch: refetchAllowance } = useReadContract({
-    address: USDC_ADDRESS,
-    abi: ERC20_ABI,
-    functionName: 'allowance',
-    args:
-      address && predictedBetAddress
-        ? [address, predictedBetAddress] // Check allowance for bet contract, not factory
-        : undefined,
-    query: {
-      enabled: isConnected && step === 5 && !!predictedBetAddress,
-      refetchInterval: false,
-      staleTime: 30000,
-    },
-  })
-
-  const DATE_PRESETS: { key: DateOption; label: string; days: number }[] = [
-    { key: '1day', label: 'Day', days: 1 },
-    { key: '7days', label: 'Days', days: 7 },
-    { key: '30days', label: 'Days', days: 30 },
-  ]
-
-  // Allow opening via #create hash
+  /** mounted ref to avoid state updates after unmount */
+  const mounted = useRef(true)
   useEffect(() => {
-    const handleHashChange = () => {
+    mounted.current = true
+    return () => {
+      mounted.current = false
+    }
+  }, [])
+
+  /** open via #create hash */
+  useEffect(() => {
+    const onHash = () => {
       if (window.location.hash === '#create') {
         setOpen(true)
         window.history.replaceState(
@@ -180,13 +156,14 @@ export function CreateBetDialog() {
         )
       }
     }
-    window.addEventListener('hashchange', handleHashChange)
-    return () => window.removeEventListener('hashchange', handleHashChange)
+    window.addEventListener('hashchange', onHash)
+    onHash()
+    return () => window.removeEventListener('hashchange', onHash)
   }, [])
 
-  // Prefill description when entering step 4
+  /** prefill description at entry to step 4 */
   useEffect(() => {
-    if (step === 4 && !formData.description) {
+    if (step === 4 && !isNonEmpty(formData.description)) {
       const username = currentUser?.username || 'testuser'
       setFormData((prev) => ({
         ...prev,
@@ -195,119 +172,44 @@ export function CreateBetDialog() {
     }
   }, [step, currentUser, formData.description])
 
-  // When approval is confirmed, automatically create bet
-  // useEffect(() => {
-  //   if (approvalConfirmed && step === 5 && address && predictedBetAddress) {
-  //     refetchAllowance().then(async () => {
-  //       // Now that allowance is updated, proceed with bet creation
-  //       const amountInUnits = parseUnits(formData.amount, 6)
-
-  //       // Resolve addresses from Farcaster users (must match prediction)
-  //       const takerAddress: Address = formData.takerUser?.fid
-  //         ? (await resolveAddressFromFid(formData.takerUser.fid)) ||
-  //           ('0x0000000000000000000000000000000000000000' as Address)
-  //         : ('0x0000000000000000000000000000000000000000' as Address)
-
-  //       const judgeAddress: Address = formData.judgeUser?.fid
-  //         ? (await resolveAddressFromFid(formData.judgeUser.fid)) ||
-  //           ('0x0000000000000000000000000000000000000000' as Address)
-  //         : ('0x0000000000000000000000000000000000000000' as Address)
-
-  //       // Calculate timestamps (must match prediction)
-  //       // const acceptByTimestamp =
-  //       //   Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60
-  //       // const expiresAtTimestamp = Math.floor(
-  //       //   new Date(formData.expiresAt).getTime() / 1000
-  //       // )
-  //       // const resolveByTimestamp = expiresAtTimestamp + 90 * 24 * 60 * 60
-
-  //       const acceptByTimestamp = 1761454907
-  //       const resolveByTimestamp = 1761454907 + 90 * 24 * 60 * 60
-
-  //       await createBet({
-  //         address: BETFACTORY_ADDRESS,
-  //         abi: BETFACTORY_ABI,
-  //         functionName: 'createBet',
-  //         args: [
-  //           takerAddress,
-  //           judgeAddress,
-  //           USDC_ADDRESS,
-  //           amountInUnits,
-  //           amountInUnits,
-  //           acceptByTimestamp,
-  //           resolveByTimestamp,
-  //         ],
-  //         chainId: 8453, // Force Base network
-  //       })
-  //     })
-  //   }
-  // }, [
-  //   approvalConfirmed,
-  //   refetchAllowance,
-  //   step,
-  //   address,
-  //   predictedBetAddress,
-  //   formData.amount,
-  //   formData.takerUser,
-  //   formData.judgeUser,
-  //   formData.expiresAt,
-  //   createBet,
-  // ])
-
-  // Read bet data from the created contract
-  const { data: betData } = useReadContract({
-    address: createdBetAddress || undefined,
-    abi: BET_ABI,
-    functionName: 'bet',
-    query: {
-      enabled: !!createdBetAddress,
-    },
-  })
-
-  // When bet creation is confirmed, extract bet address from logs
-  useEffect(() => {
-    if (betCreationConfirmed && betCreationReceipt) {
-      // Find the BetCreated event log
-      const betCreatedLog = betCreationReceipt.logs.find(
-        (log) => log.address.toLowerCase() === BETFACTORY_ADDRESS.toLowerCase()
-      )
-
-      if (betCreatedLog) {
-        try {
-          const decodedLog = decodeEventLog({
-            abi: BETFACTORY_ABI,
-            data: betCreatedLog.data,
-            topics: betCreatedLog.topics,
-          })
-
-          if (decodedLog.eventName === 'BetCreated') {
-            const betAddr = decodedLog.args.bet as Address
-            setCreatedBetAddress(betAddr)
-            console.log('✅ Bet created at address:', betAddr)
-          }
-        } catch (error) {
-          console.error('Error decoding BetCreated event:', error)
-        }
+  /** simple wizard guards */
+  const canProceed = useMemo(() => {
+    switch (step) {
+      case 1:
+        // judge required
+        return isNonEmpty(formData.judge)
+      case 2: {
+        const n = Number(formData.amount)
+        return isFinite(n) && n > 0
       }
+      case 3:
+        return formData.dateOption !== null && isNonEmpty(formData.expiresAt)
+      case 4: {
+        const username = currentUser?.username || 'testuser'
+        const prefill = `${username} bets that `
+        return (formData.description || '').length > prefill.length
+      }
+      case 5:
+        return true
+      default:
+        return false
     }
-  }, [betCreationConfirmed, betCreationReceipt])
+  }, [step, formData, currentUser])
 
-  // Log bet data when it's loaded from contract
-  useEffect(() => {
-    if (betData) {
-      console.log('✅ Bet data from contract:', betData)
-      console.log('   Maker:', betData.maker)
-      console.log('   Taker:', betData.taker)
-      console.log('   Judge:', betData.judge)
-      console.log('   Asset:', betData.asset)
-      console.log('   Status:', betData.status) // 0=PENDING, 1=ACTIVE, 2=RESOLVED, 3=CANCELLED, 4=EXPIRED
-      console.log('   Maker Stake:', betData.makerStake.toString())
-      console.log('   Taker Stake:', betData.takerStake.toString())
-    }
-  }, [betData])
+  const DATE_PRESETS: { key: DateOption; label: string; days: number }[] =
+    useMemo(
+      () => [
+        { key: '1day', label: 'Day', days: 1 },
+        { key: '7days', label: 'Days', days: 7 },
+        { key: '30days', label: 'Days', days: 30 },
+      ],
+      []
+    )
 
-  const handleReset = () => {
+  /** reset everything cleanly */
+  const handleReset = useCallback(() => {
     setStep(1)
+    setUiError(null)
     setFormData({
       taker: '',
       judge: '',
@@ -318,232 +220,25 @@ export function CreateBetDialog() {
     })
     setCreatedBetAddress(null)
     setPredictedBetAddress(null)
-    resetApproval()
-    resetBetCreation()
-  }
+    setBetCreationHash(null)
+    setPhase('idle')
+  }, [])
 
-  const getFullDescription = (): string => {
-    const parts = [formData.description]
-    if (formData.expiresAt) {
-      parts.push('by', formatDisplayDate(formData.expiresAt))
-    }
-    return parts.join(' ')
-  }
+  /** step navigation */
+  const handleNext = useCallback(() => {
+    if (!canProceed || step >= 5) return
+    setStep((s) => (s < 5 ? ((s + 1) as Step) : s))
+  }, [canProceed, step])
 
-  const handleCreateBet = async () => {
-    console.log('🚀 handleCreateBet called, current step:', step)
-    // Only allow actual submission on step 5
-    if (step !== 5 || !address) {
-      console.log('❌ Blocked submission - not on step 5 or no address')
-      return
-    }
+  const handleBack = useCallback(() => {
+    if (step <= 1) return
+    setStep((s) => (s - 1) as Step)
+  }, [step])
 
-    try {
-      // Convert amount to proper units (USDC has 6 decimals)
-      const amountInUnits = parseUnits(formData.amount, 6)
-      console.log('💰 Amount in USDC units:', amountInUnits.toString())
-
-      // Check USDC balance
-      const balance = usdcBalance || BigInt(0)
-      console.log('💵 Your USDC balance:', {
-        balance: balance.toString(),
-        needed: amountInUnits.toString(),
-        hasEnough: balance >= amountInUnits,
-      })
-
-      if (balance < amountInUnits) {
-        alert(
-          `Insufficient USDC balance. You have ${(Number(balance) / 1e6).toFixed(2)} USDC but need ${formData.amount} USDC`
-        )
-        return
-      }
-
-      // Resolve addresses from Farcaster users
-      const takerAddress: Address = formData.takerUser?.fid
-        ? (await resolveAddressFromFid(formData.takerUser.fid)) ||
-          ('0x0000000000000000000000000000000000000000' as Address)
-        : ('0x0000000000000000000000000000000000000000' as Address)
-
-      const judgeAddress: Address = formData.judgeUser?.fid
-        ? (await resolveAddressFromFid(formData.judgeUser.fid)) ||
-          ('0x0000000000000000000000000000000000000000' as Address)
-        : ('0x0000000000000000000000000000000000000000' as Address)
-
-      console.log('👥 Addresses:', {
-        maker: address,
-        taker: takerAddress,
-        judge: judgeAddress,
-      })
-
-      if (
-        judgeAddress === '0x0000000000000000000000000000000000000000' &&
-        formData.judgeUser?.fid
-      ) {
-        alert(
-          'Could not resolve judge address. Please ensure the judge has a verified Ethereum address on Farcaster.'
-        )
-        return
-      }
-
-      // Calculate timestamps with new logic:
-      // - acceptBy: 7 days from now (users have 7 days to accept the bet)
-      // - resolveBy: expiresAt + 90 days (judge has 90 days after bet ends to resolve)
-      const acceptByTimestamp = Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60
-      const expiresAtTimestamp = Math.floor(
-        new Date(formData.expiresAt).getTime() / 1000
-      )
-      const resolveByTimestamp = expiresAtTimestamp + 90 * 24 * 60 * 60
-
-      console.log('⏰ Timestamps:', {
-        acceptBy: acceptByTimestamp,
-        expiresAt: expiresAtTimestamp,
-        resolveBy: resolveByTimestamp,
-      })
-
-      // Predict bet address before approval
-      console.log('🔮 Predicting bet address...')
-      const predictedAddress = await readContract(wagmiConfig, {
-        address: BETFACTORY_ADDRESS,
-        abi: BETFACTORY_ABI,
-        functionName: 'predictBetAddress',
-        args: [
-          address, // maker (current user)
-          takerAddress, // taker
-          USDC_ADDRESS, // asset
-          amountInUnits, // makerStake
-          amountInUnits, // takerStake
-          acceptByTimestamp, // acceptBy
-          resolveByTimestamp, // resolveBy
-        ],
-      })
-
-      console.log('✅ Predicted bet address:', predictedAddress)
-      setPredictedBetAddress(predictedAddress)
-
-      // Wait a moment for React to update, then check allowance
-      await new Promise((resolve) => setTimeout(resolve, 100))
-      const { data: currentAllowance } = await refetchAllowance()
-      const allowanceAmount = currentAllowance || BigInt(0)
-
-      console.log('💳 USDC allowance check:', {
-        owner: address,
-        spender: predictedAddress,
-        allowance: allowanceAmount.toString(),
-        needed: amountInUnits.toString(),
-        needsApproval: allowanceAmount < amountInUnits,
-      })
-
-      // Ensure we're on Base network
-      if (chain?.id !== 8453) {
-        console.log('🔄 Wrong network detected, switching to Base...')
-        try {
-          await switchChainAsync({ chainId: 8453 })
-          console.log('✅ Switched to Base network')
-          // After switching, the user needs to click the button again
-          alert(
-            'Successfully switched to Base! Please click "Create Bet" again.'
-          )
-          return
-        } catch (error) {
-          console.error('❌ Failed to switch network:', error)
-          alert('Please manually switch to Base network in your wallet')
-          return
-        }
-      }
-
-      if (allowanceAmount < amountInUnits) {
-        console.log('📝 Approving USDC to predicted bet address...')
-        console.log('   USDC address:', USDC_ADDRESS)
-        console.log('   Spender (bet contract):', predictedAddress)
-        console.log('   Amount:', amountInUnits.toString())
-        console.log('   Chain ID:', 8453, '(Base)')
-
-        const hash = await approveUsdc({
-          address: USDC_ADDRESS,
-          abi: ERC20_ABI,
-          functionName: 'approve',
-          args: [predictedAddress, amountInUnits],
-          chainId: 8453, // Force Base network
-        })
-        console.log('✅ Approval transaction submitted:', hash)
-        // The useEffect will handle creating the bet after approval confirms
-      }
-
-      console.log('✅ Already approved, creating bet directly...')
-      const hash = await createBet({
-        address: BETFACTORY_ADDRESS,
-        abi: BETFACTORY_ABI,
-        functionName: 'createBet',
-        args: [
-          takerAddress,
-          judgeAddress,
-          USDC_ADDRESS,
-          amountInUnits,
-          amountInUnits,
-          acceptByTimestamp,
-          resolveByTimestamp,
-        ],
-        chainId: 8453, // Force Base network
-      })
-      console.log('✅ Bet creation transaction submitted:', hash)
-    } catch (error) {
-      console.error('❌ Error creating bet:', error)
-      if (error instanceof Error) {
-        console.error('   Error message:', error.message)
-        console.error('   Error stack:', error.stack)
-      }
-      alert(
-        `Error: ${error instanceof Error ? error.message : 'Unknown error'}`
-      )
-    }
-  }
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    handleCreateBet()
-  }
-
-  const handleNext = () => {
-    console.log('handleNext called, current step:', step)
-    if (canProceed() && step < 5) {
-      console.log('Advancing from step', step, 'to', step + 1)
-      setStep((prev) => {
-        console.log('setState: prev=', prev, 'next=', prev + 1)
-        return prev < 5 ? prev + 1 : prev
-      })
-    }
-  }
-
-  const handleBack = () => {
-    if (step > 1) setStep((prev) => prev - 1)
-  }
-
-  const canProceed = (): boolean => {
-    switch (step) {
-      case 1:
-        return formData.judge.trim().length > 0
-      case 2:
-        return (
-          formData.amount.trim().length > 0 && parseFloat(formData.amount) > 0
-        )
-      case 3:
-        return formData.dateOption !== null && formData.expiresAt !== ''
-      case 4: {
-        const username = currentUser?.username || 'testuser'
-        const prefill = `${username} bets that `
-        // User must have added content beyond the prefill
-        return formData.description.length > prefill.length
-      }
-      case 5:
-        return true
-      default:
-        return false
-    }
-  }
-
+  /** date helpers */
   const handleDateSelect = (option: DateOption) => {
     const now = new Date()
-    let expiryDate: Date
+    let expiryDate: Date | null = null
 
     if (option === '1day') {
       expiryDate = new Date(now)
@@ -555,41 +250,247 @@ export function CreateBetDialog() {
       expiryDate = new Date(now)
       expiryDate.setDate(now.getDate() + 30)
     } else {
-      setFormData({ ...formData, dateOption: option, expiresAt: '' })
+      setFormData((p) => ({ ...p, dateOption: option, expiresAt: '' }))
       return
     }
 
-    setFormData({
-      ...formData,
+    setFormData((p) => ({
+      ...p,
       dateOption: option,
       expiresAt: expiryDate.toISOString(),
-    })
+    }))
   }
 
   const handleCustomDateChange = (dateString: string) => {
     if (dateString) {
-      const date = new Date(dateString)
-      date.setHours(23, 59, 59, 999)
-      setFormData({
-        ...formData,
+      const d = new Date(dateString)
+      d.setHours(23, 59, 59, 999)
+      setFormData((p) => ({
+        ...p,
         dateOption: 'custom',
-        expiresAt: date.toISOString(),
-      })
+        expiresAt: d.toISOString(),
+      }))
     } else {
-      setFormData({ ...formData, dateOption: 'custom', expiresAt: '' })
+      setFormData((p) => ({ ...p, dateOption: 'custom', expiresAt: '' }))
     }
   }
 
-  const formatDisplayDate = (isoString: string): string => {
-    if (!isoString) return ''
-    const date = new Date(isoString)
-    return date.toLocaleDateString('en-US', {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    })
-  }
+  /** submission flow */
+  const handleSubmit = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault()
+      setUiError(null)
+
+      if (!isConnected || !address) {
+        setUiError({ title: 'Connect your wallet to continue.' })
+        return
+      }
+      if (chain?.id !== BASE_CHAIN_ID) {
+        try {
+          setPhase('precheck')
+          await switchChainAsync({ chainId: BASE_CHAIN_ID })
+        } catch (err: any) {
+          setUiError({ title: 'Please switch to Base (8453) in your wallet.' })
+          setPhase('idle')
+          return
+        }
+      }
+
+      try {
+        setPhase('precheck')
+
+        // validate amount & balance
+        const amountNum = Number(formData.amount)
+        if (!isFinite(amountNum) || amountNum <= 0) {
+          throw new Error('Enter a valid USDC amount.')
+        }
+        const amountInUnits = parseUnits(formData.amount, 6)
+
+        // resolve optional taker/judge
+        const takerAddress: Address = formData.takerUser?.fid
+          ? ((await resolveAddressFromFid(
+              formData.takerUser.fid
+            )) as Address) || ZERO_ADDR
+          : ZERO_ADDR
+
+        const judgeAddress: Address = formData.judgeUser?.fid
+          ? ((await resolveAddressFromFid(
+              formData.judgeUser.fid
+            )) as Address) || ZERO_ADDR
+          : ZERO_ADDR
+
+        if (formData.judgeUser?.fid && judgeAddress === ZERO_ADDR) {
+          throw new Error(
+            'Could not resolve judge address. Ensure judge has a verified ETH address.'
+          )
+        }
+
+        // compute timing windows
+        const acceptBy = Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60
+        const expiresAtTs = Math.floor(
+          new Date(formData.expiresAt).getTime() / 1000
+        )
+        const resolveBy = expiresAtTs + 90 * 24 * 60 * 60
+
+        // predict address (source of truth for allowance + verification)
+        setPhase('predicting')
+        const predicted = (await readContract(wagmiConfig, {
+          address: BETFACTORY_ADDRESS,
+          abi: BETFACTORY_ABI,
+          functionName: 'predictBetAddress',
+          args: [
+            address,
+            takerAddress,
+            USDC_ADDRESS,
+            amountInUnits,
+            amountInUnits,
+            acceptBy,
+            resolveBy,
+          ],
+          chainId: BASE_CHAIN_ID,
+        })) as Address
+
+        if (!mounted.current) return
+        setPredictedBetAddress(predicted)
+        log('predicted address:', predicted)
+
+        // ensure allowance for predicted spender
+        setPhase('approving')
+        const currentAllowance = (await readContract(wagmiConfig, {
+          address: USDC_ADDRESS,
+          abi: ERC20_ABI,
+          functionName: 'allowance',
+          args: [address, predicted],
+          chainId: BASE_CHAIN_ID,
+        })) as bigint
+
+        if (currentAllowance < amountInUnits) {
+          const approveHash = await approveWrite({
+            address: USDC_ADDRESS,
+            abi: ERC20_ABI,
+            functionName: 'approve',
+            args: [predicted, amountInUnits],
+            chainId: BASE_CHAIN_ID,
+          })
+
+          await waitForTransactionReceipt(wagmiConfig, {
+            hash: approveHash,
+            chainId: BASE_CHAIN_ID,
+          })
+        }
+
+        if (!mounted.current) return
+
+        // create bet
+        setPhase('creating')
+        const createHash = await writeContract(wagmiConfig, {
+          address: BETFACTORY_ADDRESS,
+          abi: BETFACTORY_ABI,
+          functionName: 'createBet',
+          args: [
+            takerAddress,
+            judgeAddress,
+            USDC_ADDRESS,
+            amountInUnits,
+            amountInUnits,
+            acceptBy,
+            resolveBy,
+          ],
+          chainId: BASE_CHAIN_ID,
+        })
+        setBetCreationHash(createHash)
+
+        // confirm bet creation
+        setPhase('confirming')
+        const receipt = await waitForTransactionReceipt(wagmiConfig, {
+          hash: createHash,
+          chainId: BASE_CHAIN_ID,
+        })
+
+        // extract emitted bet address
+        setPhase('verifying')
+        const factoryLog = receipt.logs.find(
+          (l) => l.address.toLowerCase() === BETFACTORY_ADDRESS.toLowerCase()
+        )
+        if (!factoryLog) throw new Error('No BetFactory log found.')
+
+        const decoded = decodeEventLog({
+          abi: BETFACTORY_ABI,
+          data: factoryLog.data,
+          topics: factoryLog.topics,
+        })
+
+        if (decoded.eventName !== 'BetCreated')
+          throw new Error('Unexpected event emitted.')
+
+        const emittedBet = decoded.args.bet as Address
+        setCreatedBetAddress(emittedBet)
+
+        // hard verify against predicted
+        if (emittedBet.toLowerCase() !== predicted.toLowerCase()) {
+          setUiError({
+            title: 'Address mismatch',
+            detail: `Predicted ${predicted} but emitted ${emittedBet}. Please contact support.`,
+          })
+          setPhase('idle')
+          return
+        }
+
+        setPhase('done')
+        setStep(5)
+      } catch (err: any) {
+        if (!mounted.current) return
+        setPhase('idle')
+        setUiError({
+          title: 'Transaction failed',
+          detail: err?.shortMessage || err?.message || 'Unknown error',
+        })
+      }
+    },
+    [
+      isConnected,
+      address,
+      chain?.id,
+      switchChainAsync,
+      formData.amount,
+      formData.expiresAt,
+      formData.judgeUser?.fid,
+      formData.takerUser?.fid,
+      usdcBalance,
+      approveWrite,
+    ]
+  )
+
+  /** derived ui booleans */
+  const isBusy =
+    phase === 'precheck' ||
+    phase === 'predicting' ||
+    phase === 'approving' ||
+    phase === 'creating' ||
+    phase === 'confirming' ||
+    phase === 'verifying' ||
+    isSwitchingChain ||
+    isApprovingWrite
+
+  const submitCta = (() => {
+    if (isSwitchingChain) return 'Switching Network...'
+    switch (phase) {
+      case 'precheck':
+        return 'Checking...'
+      case 'predicting':
+        return 'Predicting Address...'
+      case 'approving':
+        return 'Approving USDC...'
+      case 'creating':
+        return 'Creating Bet...'
+      case 'confirming':
+        return 'Confirming...'
+      case 'verifying':
+        return 'Verifying...'
+      default:
+        return chain?.id !== BASE_CHAIN_ID ? 'Wrong Network' : 'Create Bet'
+    }
+  })()
 
   return (
     <Dialog
@@ -613,7 +514,7 @@ export function CreateBetDialog() {
           <DialogTitle>Create a New Bet</DialogTitle>
         </DialogHeader>
 
-        {/* Progress Indicator */}
+        {/* progress */}
         <div className="mb-6 flex items-center justify-center gap-2">
           {[1, 2, 3, 4, 5].map((s) => (
             <div
@@ -630,22 +531,18 @@ export function CreateBetDialog() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Wallet Connection Check */}
+          {/* connect */}
           {!isConnected && (
             <div className="space-y-4 text-center">
               <Label className="text-lg font-semibold">Connect Wallet</Label>
               <p className="text-muted-foreground text-sm">
-                Connect your wallet to create a bet
+                Connect your wallet to create a bet.
               </p>
               <Button
                 type="button"
                 onClick={() => {
-                  const injectedConnector = connectors.find(
-                    (c) => c.type === 'injected'
-                  )
-                  if (injectedConnector) {
-                    connect({ connector: injectedConnector })
-                  }
+                  const injected = connectors.find((c) => c.type === 'injected')
+                  if (injected) connect({ connector: injected })
                 }}
                 className="w-full"
               >
@@ -654,7 +551,7 @@ export function CreateBetDialog() {
             </div>
           )}
 
-          {/* Step 1 */}
+          {/* step 1: participants */}
           {isConnected && step === 1 && (
             <div className="space-y-4">
               <UserSearch
@@ -663,7 +560,7 @@ export function CreateBetDialog() {
                 helperText="Leave empty to allow anyone to accept"
                 value={formData.taker}
                 onChange={(value, user) =>
-                  setFormData({ ...formData, taker: value, takerUser: user })
+                  setFormData((p) => ({ ...p, taker: value, takerUser: user }))
                 }
               />
               <UserSearch
@@ -673,13 +570,13 @@ export function CreateBetDialog() {
                 required
                 value={formData.judge}
                 onChange={(value, user) =>
-                  setFormData({ ...formData, judge: value, judgeUser: user })
+                  setFormData((p) => ({ ...p, judge: value, judgeUser: user }))
                 }
               />
             </div>
           )}
 
-          {/* Step 2 */}
+          {/* step 2: amount */}
           {isConnected && step === 2 && (
             <div className="space-y-4">
               <Label className="text-lg font-semibold">How much USDC?</Label>
@@ -689,10 +586,10 @@ export function CreateBetDialog() {
                     key={preset}
                     type="button"
                     onClick={() =>
-                      setFormData({ ...formData, amount: preset.toString() })
+                      setFormData((p) => ({ ...p, amount: String(preset) }))
                     }
                     className={`flex h-20 flex-col items-center justify-center rounded-lg border-2 transition-all ${
-                      formData.amount === preset.toString()
+                      formData.amount === String(preset)
                         ? 'border-primary bg-primary text-primary-foreground'
                         : 'border-muted bg-primary/10 hover:border-primary/50'
                     }`}
@@ -720,7 +617,7 @@ export function CreateBetDialog() {
                   placeholder="Custom amount"
                   value={formData.amount}
                   onChange={(e) =>
-                    setFormData({ ...formData, amount: e.target.value })
+                    setFormData((p) => ({ ...p, amount: e.target.value }))
                   }
                   required
                   className="h-14 pl-14 pr-16 text-xl font-semibold"
@@ -730,12 +627,12 @@ export function CreateBetDialog() {
                 </span>
               </div>
               <p className="text-muted-foreground text-sm">
-                Both you and your opponent will put up this amount
+                Both you and your opponent will put up this amount.
               </p>
             </div>
           )}
 
-          {/* Step 3 */}
+          {/* step 3: end date */}
           {isConnected && step === 3 && (
             <div className="space-y-4">
               <Label className="text-lg font-semibold">
@@ -784,7 +681,7 @@ export function CreateBetDialog() {
             </div>
           )}
 
-          {/* Step 4 */}
+          {/* step 4: description */}
           {isConnected && step === 4 && (
             <div className="space-y-4">
               <Label className="text-lg font-semibold">
@@ -799,7 +696,7 @@ export function CreateBetDialog() {
                   type="text"
                   value={formData.description}
                   onChange={(e) =>
-                    setFormData({ ...formData, description: e.target.value })
+                    setFormData((p) => ({ ...p, description: e.target.value }))
                   }
                   required
                   autoFocus
@@ -809,7 +706,7 @@ export function CreateBetDialog() {
                   <p className="text-muted-foreground text-sm">
                     Bet ends:{' '}
                     <span className="font-medium">
-                      {formatDisplayDate(formData.expiresAt)}
+                      {fmtDate(formData.expiresAt)}
                     </span>
                   </p>
                 )}
@@ -817,25 +714,24 @@ export function CreateBetDialog() {
             </div>
           )}
 
-          {/* Step 5 */}
+          {/* step 5: review + submit */}
           {isConnected && step === 5 && (
             <div className="space-y-4">
-              {/* Wrong Network Warning */}
-              {chain?.id !== 8453 && (
+              {chain?.id !== BASE_CHAIN_ID && (
                 <div className="rounded-lg border border-yellow-500/20 bg-yellow-500/10 p-4">
                   <div className="flex items-center gap-3">
                     <div className="text-2xl">⚠️</div>
                     <div className="flex-1">
                       <p className="text-sm font-semibold">Wrong Network</p>
                       <p className="text-muted-foreground text-xs">
-                        You're on {chain?.name || 'Unknown'}. Switch to Base to
-                        create a bet.
+                        You&apos;re on {chain?.name || 'Unknown'}. Switch to
+                        Base to create a bet.
                       </p>
                     </div>
                     <Button
                       size="sm"
                       onClick={async () =>
-                        await switchChainAsync({ chainId: 8453 })
+                        await switchChainAsync({ chainId: BASE_CHAIN_ID })
                       }
                       disabled={isSwitchingChain}
                     >
@@ -852,37 +748,48 @@ export function CreateBetDialog() {
                 </div>
               )}
 
-              {/* Success State */}
-              {betCreationConfirmed && createdBetAddress ? (
-                <>
-                  <div className="space-y-4 text-center">
-                    <div className="text-4xl">🎉</div>
-                    <Label className="text-lg font-semibold">
-                      Bet Created Successfully!
-                    </Label>
-                    <div className="bg-muted/50 space-y-2 rounded-lg p-4 text-sm">
-                      <p className="text-muted-foreground text-xs">
-                        Bet Contract Address
-                      </p>
-                      <p className="break-all font-mono text-xs">
-                        {createdBetAddress}
-                      </p>
-                    </div>
-                    <div className="flex flex-col gap-2">
-                      <Button
-                        asChild
-                        variant="default"
-                        className="w-full"
-                        size="lg"
+              {/* success block */}
+              {phase === 'done' && createdBetAddress ? (
+                <div className="space-y-4 text-center">
+                  <div className="text-4xl">🎉</div>
+                  <Label className="text-lg font-semibold">
+                    Bet Created Successfully!
+                  </Label>
+
+                  <div className="bg-muted/50 space-y-2 rounded-lg p-4 text-sm">
+                    <p className="text-muted-foreground text-xs">
+                      Predicted Address
+                    </p>
+                    <p className="break-all font-mono text-xs">
+                      {predictedBetAddress}
+                    </p>
+                  </div>
+
+                  <div className="bg-muted/50 space-y-2 rounded-lg p-4 text-sm">
+                    <p className="text-muted-foreground text-xs">
+                      Emitted Address
+                    </p>
+                    <p className="break-all font-mono text-xs">
+                      {createdBetAddress}
+                    </p>
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    <Button
+                      asChild
+                      variant="default"
+                      className="w-full"
+                      size="lg"
+                    >
+                      <a
+                        href={`/bet/${createdBetAddress}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
                       >
-                        <a
-                          href={`/bet/${createdBetAddress}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          View Bet
-                        </a>
-                      </Button>
+                        View Bet
+                      </a>
+                    </Button>
+                    {betCreationHash && (
                       <Button
                         asChild
                         variant="outline"
@@ -897,80 +804,20 @@ export function CreateBetDialog() {
                           View on BaseScan
                         </a>
                       </Button>
-                      <Button
-                        variant="ghost"
-                        onClick={() => {
-                          handleReset()
-                          setOpen(false)
-                        }}
-                        className="w-full"
-                      >
-                        Create Another
-                      </Button>
-                    </div>
+                    )}
+                    <Button
+                      variant="ghost"
+                      onClick={() => {
+                        handleReset()
+                        setOpen(false)
+                      }}
+                      className="w-full"
+                    >
+                      Create Another
+                    </Button>
                   </div>
-                </>
-              ) : /* Loading States */ isApproving ||
-                approvalWritten ||
-                isCreatingBet ||
-                isWaitingForBetCreation ? (
-                <>
-                  <div className="space-y-4 text-center">
-                    <Loader2 className="text-primary mx-auto h-12 w-12 animate-spin" />
-                    <Label className="text-lg font-semibold">
-                      {isApproving || approvalWritten
-                        ? 'Approving USDC...'
-                        : isCreatingBet
-                          ? 'Creating Bet...'
-                          : 'Waiting for Confirmation...'}
-                    </Label>
-                    <p className="text-muted-foreground text-sm">
-                      {isApproving
-                        ? 'Please approve USDC spending in your wallet'
-                        : approvalWritten
-                          ? 'Waiting for approval confirmation...'
-                          : isCreatingBet
-                            ? 'Please confirm the transaction in your wallet'
-                            : 'Waiting for bet creation confirmation...'}
-                    </p>
-                  </div>
-                </>
-              ) : /* Error State */ betCreationError ? (
-                <>
-                  <div className="space-y-4 text-center">
-                    <div className="text-4xl">❌</div>
-                    <Label className="text-destructive text-lg font-semibold">
-                      Transaction Failed
-                    </Label>
-                    <p className="text-muted-foreground text-sm">
-                      {betCreationError.message}
-                    </p>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          resetBetCreation()
-                          resetApproval()
-                        }}
-                        className="flex-1"
-                      >
-                        Try Again
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        onClick={() => {
-                          handleReset()
-                          setOpen(false)
-                        }}
-                        className="flex-1"
-                      >
-                        Cancel
-                      </Button>
-                    </div>
-                  </div>
-                </>
+                </div>
               ) : (
-                /* Normal Review */
                 <>
                   <Label className="text-lg font-semibold">
                     Review Your Bet
@@ -1006,7 +853,7 @@ export function CreateBetDialog() {
                           End Date
                         </p>
                         <p className="font-medium">
-                          {formatDisplayDate(formData.expiresAt)}
+                          {fmtDate(formData.expiresAt)}
                         </p>
                       </div>
                       <div>
@@ -1015,75 +862,73 @@ export function CreateBetDialog() {
                         </p>
                         <p className="font-medium">{formData.description}</p>
                       </div>
+                      {predictedBetAddress && (
+                        <div>
+                          <p className="text-muted-foreground text-xs">
+                            Predicted Address
+                          </p>
+                          <p className="break-all font-mono text-xs">
+                            {predictedBetAddress}
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </div>
+
+                  {/* inline error */}
+                  {uiError && (
+                    <div className="border-destructive/30 bg-destructive/10 rounded-md border p-3">
+                      <p className="text-destructive-foreground text-sm font-semibold">
+                        {uiError.title}
+                      </p>
+                      {uiError.detail && (
+                        <p className="text-destructive-foreground/80 text-xs">
+                          {uiError.detail}
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </>
               )}
             </div>
           )}
 
-          {/* Navigation */}
+          {/* nav */}
           {isConnected && (
             <div className="flex gap-3 pt-4">
-              {step > 1 && !betCreationConfirmed && (
+              {step > 1 && phase !== 'done' && (
                 <Button
                   type="button"
                   variant="outline"
                   className="h-12 flex-1 text-base"
                   onClick={handleBack}
-                  disabled={
-                    isApproving ||
-                    approvalWritten ||
-                    isCreatingBet ||
-                    isWaitingForBetCreation
-                  }
+                  disabled={isBusy}
                 >
                   Back
                 </Button>
               )}
+
               {step < 5 ? (
                 <Button
                   type="button"
                   className="h-12 flex-1 text-base"
                   onClick={handleNext}
-                  disabled={!canProceed()}
+                  disabled={!canProceed || isBusy}
                 >
                   Next
                 </Button>
-              ) : !betCreationConfirmed ? (
+              ) : phase !== 'done' ? (
                 <Button
                   type="submit"
                   className="h-12 flex-1 text-base"
                   disabled={
-                    !canProceed() ||
-                    chain?.id !== 8453 ||
-                    isSwitchingChain ||
-                    isApproving ||
-                    approvalWritten ||
-                    isCreatingBet ||
-                    isWaitingForBetCreation
+                    !canProceed || chain?.id !== BASE_CHAIN_ID || isBusy
                   }
                 >
-                  {isSwitchingChain ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Switching Network...
-                    </>
-                  ) : isApproving || approvalWritten ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Approving...
-                    </>
-                  ) : isCreatingBet || isWaitingForBetCreation ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Creating...
-                    </>
-                  ) : chain?.id !== 8453 ? (
-                    'Wrong Network'
-                  ) : (
-                    'Create Bet'
-                  )}
+                  {isBusy ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : null}
+                  {submitCta}
                 </Button>
               ) : null}
             </div>
