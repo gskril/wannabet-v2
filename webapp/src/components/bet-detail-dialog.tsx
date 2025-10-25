@@ -214,7 +214,12 @@ export function BetDetailDialog({
                 {/* Player 1 */}
                 <div className="flex flex-col items-center gap-2">
                   <UserAvatar user={bet.maker} size="lg" clickable={false} />
-                  <p className="font-semibold">{bet.maker.displayName}</p>
+                  <div className="text-center">
+                    <p className="font-semibold">{bet.maker.displayName}</p>
+                    <p className="text-muted-foreground font-mono text-xs">
+                      {shortenAddress(bet.makerAddress)}
+                    </p>
+                  </div>
                 </div>
 
                 {/* VS + Amount Badge */}
@@ -238,14 +243,26 @@ export function BetDetailDialog({
                     size="lg"
                     clickable={false}
                   />
-                  <p className="font-semibold">{bet.acceptedBy.displayName}</p>
+                  <div className="text-center">
+                    <p className="font-semibold">
+                      {bet.acceptedBy.displayName}
+                    </p>
+                    <p className="text-muted-foreground font-mono text-xs">
+                      {shortenAddress(bet.takerAddress || '')}
+                    </p>
+                  </div>
                 </div>
               </div>
             ) : (
               <div className="flex flex-col items-center gap-4">
                 <div className="flex flex-col items-center gap-2">
                   <UserAvatar user={bet.maker} size="lg" clickable={false} />
-                  <p className="font-semibold">{bet.maker.displayName}</p>
+                  <div className="text-center">
+                    <p className="font-semibold">{bet.maker.displayName}</p>
+                    <p className="text-muted-foreground font-mono text-xs">
+                      {shortenAddress(bet.makerAddress)}
+                    </p>
+                  </div>
                 </div>
 
                 {/* Amount Badge for Open Bet */}
@@ -277,17 +294,23 @@ export function BetDetailDialog({
           )}
 
           {/* Judge Section - Minimal */}
-          {bet.judge && (
-            <div className="flex items-center justify-center gap-2">
-              <UserAvatar user={bet.judge} size="sm" />
-              <p className="text-muted-foreground text-sm">
-                Judge:{' '}
-                <span className="text-foreground font-medium">
-                  {bet.judge.displayName}
-                </span>
+          <div className="flex items-center justify-center gap-2">
+            {bet.judge ? (
+              <>
+                <UserAvatar user={bet.judge} size="sm" />
+                <p className="text-muted-foreground text-sm">
+                  Judge:{' '}
+                  <span className="text-foreground font-medium">
+                    {bet.judge.displayName}
+                  </span>
+                </p>
+              </>
+            ) : (
+              <p className="text-muted-foreground text-sm italic">
+                Judge: To be announced
               </p>
-            </div>
-          )}
+            )}
+          </div>
 
           {/* Contract Details */}
           <div className="border-t pt-6">
