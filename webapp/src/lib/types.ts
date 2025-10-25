@@ -22,7 +22,9 @@ export interface Bet {
   id: string
   description: string
   maker: FarcasterUser // bet creator (smart contract terminology)
+  makerAddress: string // Ethereum address of maker
   taker: FarcasterUser | null // specific opponent, null means open to anyone (smart contract terminology)
+  takerAddress: string | null // Ethereum address of taker (null or zero address for open bets)
   judge: FarcasterUser | null // who decides the outcome
   amount: string // in USDC
   status: BetStatus

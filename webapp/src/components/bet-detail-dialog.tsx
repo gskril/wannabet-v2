@@ -1,7 +1,14 @@
 'use client'
 
 import { format } from 'date-fns'
-import { Calendar, ChevronDown, ChevronUp, Coins, Trophy } from 'lucide-react'
+import {
+  Calendar,
+  ChevronDown,
+  ChevronUp,
+  Coins,
+  ExternalLink,
+  Trophy,
+} from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { type Address, parseUnits } from 'viem'
 import {
@@ -17,6 +24,12 @@ import { Dialog, DialogContent, DialogHeader } from '@/components/ui/dialog'
 import { UserAvatar } from '@/components/user-avatar'
 import { BET_ABI, ERC20_ABI, USDC_ADDRESS } from '@/lib/contracts'
 import type { Bet } from '@/lib/types'
+
+const BASE_EXPLORER = 'https://basescan.org'
+
+function shortenAddress(address: string): string {
+  return `${address.slice(0, 6)}...${address.slice(-4)}`
+}
 
 interface BetDetailDialogProps {
   bet: Bet
@@ -99,6 +112,17 @@ export function BetDetailDialog({
     abi: ERC20_ABI,
     functionName: 'allowance',
     args: address ? [address, betAddress] : undefined,
+    query: {
+      enabled: !!address,
+    },
+  })
+
+  // Check USDC balance
+  const { data: usdcBalance } = useReadContract({
+    address: USDC_ADDRESS,
+    abi: ERC20_ABI,
+    functionName: 'balanceOf',
+    args: address ? [address] : undefined,
     query: {
       enabled: !!address,
     },
@@ -265,6 +289,28 @@ export function BetDetailDialog({
             </div>
           )}
 
+          {/* Contract Details */}
+          <div className="border-t pt-6">
+            <div className="space-y-3 text-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Contract Address</span>
+                <a
+                  href={`${BASE_EXPLORER}/address/${bet.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-foreground hover:text-primary flex items-center gap-1 font-mono text-xs transition-colors"
+                >
+                  {shortenAddress(bet.id)}
+                  <ExternalLink className="h-3 w-3" />
+                </a>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Amount (each)</span>
+                <span className="font-medium">{bet.amount} USDC</span>
+              </div>
+            </div>
+          </div>
+
           {/* Timeline - Collapsible */}
           <div className="border-t pt-6">
             <button
@@ -285,21 +331,21 @@ export function BetDetailDialog({
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Created</span>
                   <span className="font-medium">
-                    {format(bet.createdAt, 'MMM d, yyyy')}
+                    {format(bet.createdAt, 'MMM d, yyyy h:mm a')}
                   </span>
                 </div>
                 {bet.acceptedAt && (
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Accepted</span>
                     <span className="font-medium">
-                      {format(bet.acceptedAt, 'MMM d, yyyy')}
+                      {format(bet.acceptedAt, 'MMM d, yyyy h:mm a')}
                     </span>
                   </div>
                 )}
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Expires</span>
                   <span className="font-medium">
-                    {format(bet.expiresAt, 'MMM d, yyyy')}
+                    {format(bet.expiresAt, 'MMM d, yyyy h:mm a')}
                   </span>
                 </div>
               </div>
@@ -307,13 +353,57 @@ export function BetDetailDialog({
           </div>
 
           {/* Actions */}
-          {bet.status === 'open' && !bet.taker && (
-            <div className="pb-2">
-              <Button onClick={handleAcceptBet} className="w-full" size="lg">
-                Accept Bet ({bet.amount} USDC)
-              </Button>
-            </div>
-          )}
+          {bet.status === 'open' &&
+            bet.takerAddress &&
+            address &&
+            bet.takerAddress.toLowerCase() === address.toLowerCase() && (
+              <div className="space-y-3 pb-2">
+                {/* Balance warning */}
+                {usdcBalance !== undefined && (
+                  <div className="text-center text-xs">
+                    {parseUnits(bet.amount.toString(), 6) > usdcBalance ? (
+                      <p className="text-destructive">
+                        Insufficient USDC balance. You have{' '}
+                        {(Number(usdcBalance) / 1_000_000).toFixed(2)} USDC but
+                        need {bet.amount} USDC
+                      </p>
+                    ) : (
+                      <p className="text-muted-foreground">
+                        Your balance:{' '}
+                        {(Number(usdcBalance) / 1_000_000).toFixed(2)} USDC
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {/* Accept button */}
+                <Button
+                  onClick={handleAcceptBet}
+                  className="w-full"
+                  size="lg"
+                  disabled={
+                    isApproving ||
+                    isAccepting ||
+                    isWaitingForAccept ||
+                    (usdcBalance !== undefined &&
+                      parseUnits(bet.amount.toString(), 6) > usdcBalance)
+                  }
+                >
+                  {isApproving
+                    ? 'Approving USDC...'
+                    : isAccepting || isWaitingForAccept
+                      ? 'Accepting Bet...'
+                      : `Accept Bet (${bet.amount} USDC)`}
+                </Button>
+
+                {/* Confirmation message */}
+                {bet.taker && (
+                  <p className="text-muted-foreground text-center text-xs">
+                    You are accepting this bet as @{bet.taker.username}
+                  </p>
+                )}
+              </div>
+            )}
         </div>
       </DialogContent>
     </Dialog>

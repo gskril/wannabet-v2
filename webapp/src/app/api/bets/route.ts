@@ -189,7 +189,10 @@ export async function GET(request: Request) {
       id: bet.address,
       description: 'Bet details', // Placeholder for MVP
       maker: makerUser,
+      makerAddress: bet.maker,
       taker: takerUser,
+      takerAddress:
+        takerAddress === ZERO_ADDRESS.toLowerCase() ? null : bet.taker,
       judge: null, // Skip for MVP
       amount: amountInUsdc,
       status: mapStatus(status),
