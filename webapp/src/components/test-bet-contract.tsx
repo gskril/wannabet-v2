@@ -2,7 +2,7 @@
 
 import { Loader2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { type Address, formatUnits, isAddress, parseUnits } from 'viem'
+import { type Address, formatUnits, isAddress } from 'viem'
 import {
   useAccount,
   useReadContract,
@@ -35,7 +35,6 @@ export function TestBetContract() {
   const [validAddress, setValidAddress] = useState<Address | null>(null)
   const [error, setError] = useState<string>('')
   const [txHash, setTxHash] = useState<Address | null>(null)
-  const [successMessage, setSuccessMessage] = useState<string>('')
 
   // Read bet data from contract
   const {
@@ -99,7 +98,6 @@ export function TestBetContract() {
   const handleAddressChange = (value: string) => {
     setContractAddress(value)
     setError('')
-    setSuccessMessage('')
     setTxHash(null)
 
     if (value.trim() && isAddress(value)) {
@@ -116,7 +114,6 @@ export function TestBetContract() {
 
     try {
       setError('')
-      setSuccessMessage('')
       setTxHash(null)
 
       writeContract({
@@ -125,8 +122,8 @@ export function TestBetContract() {
         functionName: 'approve',
         args: [validAddress, betData.takerStake],
       })
-    } catch (err: any) {
-      setError(err.message || 'Failed to approve USDC')
+    } catch (err: unknown) {
+      setError((err as Error).message || 'Failed to approve USDC')
     }
   }
 
@@ -135,7 +132,6 @@ export function TestBetContract() {
 
     try {
       setError('')
-      setSuccessMessage('')
       setTxHash(null)
 
       writeContract({
@@ -143,8 +139,8 @@ export function TestBetContract() {
         abi: BET_ABI,
         functionName: 'accept',
       })
-    } catch (err: any) {
-      setError(err.message || 'Failed to accept bet')
+    } catch (err: unknown) {
+      setError((err as Error).message || 'Failed to accept bet')
     }
   }
 
@@ -153,7 +149,6 @@ export function TestBetContract() {
 
     try {
       setError('')
-      setSuccessMessage('')
       setTxHash(null)
 
       writeContract({
@@ -162,8 +157,8 @@ export function TestBetContract() {
         functionName: 'resolve',
         args: [winner],
       })
-    } catch (err: any) {
-      setError(err.message || 'Failed to resolve bet')
+    } catch (err: unknown) {
+      setError((err as Error).message || 'Failed to resolve bet')
     }
   }
 
@@ -172,7 +167,6 @@ export function TestBetContract() {
 
     try {
       setError('')
-      setSuccessMessage('')
       setTxHash(null)
 
       writeContract({
@@ -180,8 +174,8 @@ export function TestBetContract() {
         abi: BET_ABI,
         functionName: 'cancel',
       })
-    } catch (err: any) {
-      setError(err.message || 'Failed to cancel bet')
+    } catch (err: unknown) {
+      setError((err as Error).message || 'Failed to cancel bet')
     }
   }
 

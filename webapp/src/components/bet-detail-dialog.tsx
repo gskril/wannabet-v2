@@ -1,14 +1,7 @@
 'use client'
 
 import { format } from 'date-fns'
-import {
-  Calendar,
-  ChevronDown,
-  ChevronUp,
-  Coins,
-  Loader2,
-  Trophy,
-} from 'lucide-react'
+import { Calendar, ChevronDown, ChevronUp, Coins, Trophy } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { type Address, parseUnits } from 'viem'
 import {
@@ -62,52 +55,43 @@ export function BetDetailDialog({
     data: acceptHash,
     writeContractAsync: acceptBet,
     isPending: isAccepting,
-    isSuccess: acceptWritten,
-    error: acceptError,
     reset: resetAccept,
   } = useWriteContract()
 
-  const { isSuccess: acceptConfirmed, isLoading: isWaitingForAccept } =
-    useWaitForTransactionReceipt({
-      hash: acceptHash,
-      query: {
-        enabled: !!acceptHash,
-      },
-    })
+  const { isLoading: isWaitingForAccept } = useWaitForTransactionReceipt({
+    hash: acceptHash,
+    query: {
+      enabled: !!acceptHash,
+    },
+  })
 
   // Resolve bet hooks
   const {
     data: resolveHash,
-    writeContractAsync: resolveBet,
     isPending: isResolving,
-    error: resolveError,
     reset: resetResolve,
   } = useWriteContract()
 
-  const { isSuccess: resolveConfirmed, isLoading: isWaitingForResolve } =
-    useWaitForTransactionReceipt({
-      hash: resolveHash,
-      query: {
-        enabled: !!resolveHash,
-      },
-    })
+  const { isLoading: isWaitingForResolve } = useWaitForTransactionReceipt({
+    hash: resolveHash,
+    query: {
+      enabled: !!resolveHash,
+    },
+  })
 
   // Cancel bet hooks
   const {
     data: cancelHash,
-    writeContractAsync: cancelBet,
     isPending: isCanceling,
-    error: cancelError,
     reset: resetCancel,
   } = useWriteContract()
 
-  const { isSuccess: cancelConfirmed, isLoading: isWaitingForCancel } =
-    useWaitForTransactionReceipt({
-      hash: cancelHash,
-      query: {
-        enabled: !!cancelHash,
-      },
-    })
+  const { isLoading: isWaitingForCancel } = useWaitForTransactionReceipt({
+    hash: cancelHash,
+    query: {
+      enabled: !!cancelHash,
+    },
+  })
 
   // Check USDC allowance
   const { data: allowance, refetch: refetchAllowance } = useReadContract({
@@ -168,58 +152,12 @@ export function BetDetailDialog({
     }
   }
 
-  const handleResolveBet = async (winner: Address) => {
-    if (!address) {
-      alert('Please connect your wallet')
-      return
-    }
-
-    try {
-      await resolveBet({
-        address: betAddress,
-        abi: BET_ABI,
-        functionName: 'resolve',
-        args: [winner],
-        chainId: 8453, // Force Base network
-      })
-    } catch (error) {
-      console.error('Error resolving bet:', error)
-    }
-  }
-
-  const handleCancelBet = async () => {
-    if (!address) {
-      alert('Please connect your wallet')
-      return
-    }
-
-    try {
-      await cancelBet({
-        address: betAddress,
-        abi: BET_ABI,
-        functionName: 'cancel',
-        chainId: 8453, // Force Base network
-      })
-    } catch (error) {
-      console.error('Error canceling bet:', error)
-    }
-  }
-
   const handleReset = () => {
     resetApproval()
     resetAccept()
     resetResolve()
     resetCancel()
   }
-
-  const isProcessing =
-    isApproving ||
-    isAccepting ||
-    isWaitingForAccept ||
-    isResolving ||
-    isWaitingForResolve ||
-    isCanceling ||
-    isWaitingForCancel
 
   return (
     <Dialog

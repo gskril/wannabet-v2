@@ -33,7 +33,6 @@ import { useAuth } from '@/lib/auth-context'
 import {
   BETFACTORY_ABI,
   BETFACTORY_ADDRESS,
-  BET_ABI,
   ERC20_ABI,
   USDC_ADDRESS,
 } from '@/lib/contracts'
@@ -87,7 +86,7 @@ const fmtDate = (iso?: string) =>
 
 /** centralize feature logging behind a flag */
 const DEBUG = false
-const log = (...args: any[]) => {
+const log = (...args: unknown[]) => {
   if (DEBUG) console.log('[CreateBet]', ...args)
 }
 
@@ -289,7 +288,7 @@ export function CreateBetDialog() {
         try {
           setPhase('precheck')
           await switchChainAsync({ chainId: BASE_CHAIN_ID })
-        } catch (err: any) {
+        } catch {
           setUiError({ title: 'Please switch to Base (8453) in your wallet.' })
           setPhase('idle')
           return
@@ -438,12 +437,16 @@ export function CreateBetDialog() {
 
         setPhase('done')
         setStep(5)
-      } catch (err: any) {
+      } catch (err: unknown) {
         if (!mounted.current) return
         setPhase('idle')
         setUiError({
           title: 'Transaction failed',
-          detail: err?.shortMessage || err?.message || 'Unknown error',
+          detail:
+            (err as { shortMessage?: string; message?: string })
+              ?.shortMessage ||
+            (err as { shortMessage?: string; message?: string })?.message ||
+            'Unknown error',
         })
       }
     },
@@ -456,7 +459,6 @@ export function CreateBetDialog() {
       formData.expiresAt,
       formData.judgeUser?.fid,
       formData.takerUser?.fid,
-      usdcBalance,
       approveWrite,
     ]
   )
