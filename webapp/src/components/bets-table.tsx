@@ -38,16 +38,15 @@ function getTimeRemaining(expiresAt: Date): string {
 export function BetsTable({ bets }: BetsTableProps) {
   const [selectedBet, setSelectedBet] = useState<Bet | null>(null)
 
-  // Filter out open bets (MVP doesn't support "anyone" bets)
-  const filteredBets = bets.filter((bet) => bet.status !== 'open')
-
   return (
     <>
       <div className="space-y-3">
-        {filteredBets.map((bet) => (
+        {bets.map((bet) => (
           <Card
             key={bet.id}
-            className="hover:border-primary/50 cursor-pointer p-4 transition-all hover:shadow-md"
+            className={`hover:border-primary/50 cursor-pointer p-4 transition-all hover:shadow-md ${
+              bet.status === 'open' ? 'opacity-60' : ''
+            }`}
             onClick={() => setSelectedBet(bet)}
           >
             <div className="flex gap-4">
