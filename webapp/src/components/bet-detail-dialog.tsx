@@ -20,7 +20,12 @@ import {
 
 import { BetStatusBadge } from '@/components/bet-status-badge'
 import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogHeader } from '@/components/ui/dialog'
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+} from '@/components/ui/drawer'
 import { UserAvatar } from '@/components/user-avatar'
 import { BET_ABI, ERC20_ABI, USDC_ADDRESS } from '@/lib/contracts'
 import type { Bet } from '@/lib/types'
@@ -184,15 +189,15 @@ export function BetDetailDialog({
   }
 
   return (
-    <Dialog
+    <Drawer
       open={open}
       onOpenChange={(isOpen) => {
         onOpenChange(isOpen)
         if (!isOpen) handleReset()
       }}
     >
-      <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
-        <DialogHeader>
+      <DrawerContent className="mx-auto max-h-[90vh] max-w-3xl overflow-y-auto">
+        <DrawerHeader>
           {/* Status Badge - Minimal in top right */}
           <div className="absolute right-6 top-6">
             <BetStatusBadge status={bet.status} />
@@ -200,11 +205,11 @@ export function BetDetailDialog({
 
           {/* Hero Bet Description */}
           <div className="px-4 py-8 text-center">
-            <h2 className="text-3xl font-bold leading-tight tracking-tight md:text-4xl">
+            <DrawerTitle className="text-3xl font-bold leading-tight tracking-tight md:text-4xl">
               {bet.description}
-            </h2>
+            </DrawerTitle>
           </div>
-        </DialogHeader>
+        </DrawerHeader>
 
         <div className="space-y-8 px-2">
           {/* Players Section with Floating Amount */}
@@ -428,7 +433,7 @@ export function BetDetailDialog({
               </div>
             )}
         </div>
-      </DialogContent>
-    </Dialog>
+      </DrawerContent>
+    </Drawer>
   )
 }

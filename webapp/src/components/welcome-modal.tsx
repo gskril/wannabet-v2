@@ -4,11 +4,11 @@ import Image from 'next/image'
 
 import { Button } from '@/components/ui/button'
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+} from '@/components/ui/drawer'
 
 interface WelcomeModalProps {
   open: boolean
@@ -27,9 +27,9 @@ export function WelcomeModal({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
+    <Drawer open={open} onOpenChange={onOpenChange}>
+      <DrawerContent className="mx-auto max-w-lg">
+        <DrawerHeader>
           <div className="flex flex-col items-center gap-4">
             <Image
               src="/img/bettingmutt.png"
@@ -38,13 +38,13 @@ export function WelcomeModal({
               height={120}
               className="rounded-full"
             />
-            <DialogTitle className="text-center text-2xl">
+            <DrawerTitle className="text-center text-2xl">
               Welcome to WannaBet!
-            </DialogTitle>
+            </DrawerTitle>
           </div>
-        </DialogHeader>
+        </DrawerHeader>
 
-        <div className="space-y-4">
+        <div className="space-y-4 px-4 pb-6">
           <h3 className="text-lg font-semibold">How it works</h3>
 
           <div className="space-y-3">
@@ -84,7 +84,7 @@ export function WelcomeModal({
             Let&apos;s Go! 🎲
           </Button>
         </div>
-      </DialogContent>
-    </Dialog>
+      </DrawerContent>
+    </Drawer>
   )
 }

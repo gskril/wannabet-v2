@@ -19,12 +19,12 @@ import {
 
 import { Button } from '@/components/ui/button'
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+} from '@/components/ui/drawer'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { UserSearch } from '@/components/user-search'
@@ -495,14 +495,14 @@ export function CreateBetDialog() {
   })()
 
   return (
-    <Dialog
+    <Drawer
       open={open}
       onOpenChange={(isOpen) => {
         setOpen(isOpen)
         if (!isOpen) handleReset()
       }}
     >
-      <DialogTrigger asChild>
+      <DrawerTrigger asChild>
         <Button
           size="lg"
           className="hidden sm:fixed sm:bottom-4 sm:right-4 sm:z-50 sm:flex sm:h-auto sm:w-auto sm:items-center sm:gap-2 sm:rounded-md sm:px-6 sm:shadow-lg"
@@ -510,14 +510,14 @@ export function CreateBetDialog() {
           <Plus className="h-5 w-5" />
           <span>Create Bet</span>
         </Button>
-      </DialogTrigger>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>Create a New Bet</DialogTitle>
-        </DialogHeader>
+      </DrawerTrigger>
+      <DrawerContent className="mx-auto max-h-[90vh] max-w-md overflow-y-auto">
+        <DrawerHeader>
+          <DrawerTitle>Create a New Bet</DrawerTitle>
+        </DrawerHeader>
 
         {/* progress */}
-        <div className="mb-6 flex items-center justify-center gap-2">
+        <div className="mb-6 flex items-center justify-center gap-2 px-6">
           {[1, 2, 3, 4, 5].map((s) => (
             <div
               key={s}
@@ -532,7 +532,7 @@ export function CreateBetDialog() {
           ))}
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6 px-6 pb-6">
           {/* connect */}
           {!isConnected && (
             <div className="space-y-4 text-center">
@@ -936,7 +936,7 @@ export function CreateBetDialog() {
             </div>
           )}
         </form>
-      </DialogContent>
-    </Dialog>
+      </DrawerContent>
+    </Drawer>
   )
 }
