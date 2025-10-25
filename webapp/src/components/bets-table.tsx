@@ -2,6 +2,7 @@
 
 import { formatDistanceStrict } from 'date-fns'
 import { ExternalLink } from 'lucide-react'
+import Image from 'next/image'
 import { useState } from 'react'
 
 import { BetDetailDialog } from '@/components/bet-detail-dialog'
@@ -51,13 +52,22 @@ export function BetsTable({ bets }: BetsTableProps) {
         {bets.map((bet) => (
           <Card
             key={bet.id}
-            className={`hover:border-primary/50 cursor-pointer p-4 transition-all hover:shadow-md ${
+            className={`hover:border-primary/50 relative cursor-pointer p-4 transition-all hover:shadow-md ${
               bet.status === 'open' ? 'opacity-60' : ''
             }`}
             onClick={() => setSelectedBet(bet)}
           >
-            <div className="flex gap-4">
-              <div className="flex gap-2">
+            {/* Badge positioned absolutely in top-right */}
+            {bet.status !== 'active' && (
+              <div className="absolute right-2 top-2">
+                <div className="opacity-60">
+                  <BetStatusBadge status={bet.status} />
+                </div>
+              </div>
+            )}
+
+            <div className="flex flex-col gap-4">
+              <div className="mx-auto flex gap-2">
                 <UserAvatar user={bet.maker} size="lg" clickable={false} />
                 {bet.taker && (
                   <>
@@ -68,6 +78,25 @@ export function BetsTable({ bets }: BetsTableProps) {
                   </>
                 )}
               </div>
+              <div className="mx-auto flex items-center gap-1.5">
+                <span className="text-primary text-xl font-bold">
+                  {bet.amount}
+                </span>
+                <Image
+                  src="/img/usdc.png"
+                  alt="USDC"
+                  width={24}
+                  height={24}
+                  className="rounded-full"
+                />
+              </div>
+              {bet.status === 'active' && (
+                <div className="text-center">
+                  <span className="text-muted-foreground whitespace-nowrap text-xs">
+                    {getTimeRemaining(bet.expiresAt)}
+                  </span>
+                </div>
+              )}
               <div className="min-w-0 flex-1">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex flex-wrap items-baseline gap-1.5 text-sm">
@@ -86,18 +115,6 @@ export function BetsTable({ bets }: BetsTableProps) {
                       <span className="font-semibold">
                         {bet.acceptedBy.displayName}
                       </span>
-                    )}
-                    <span className="text-primary font-bold">
-                      {bet.amount} USDC
-                    </span>
-                  </div>
-                  <div className="shrink-0">
-                    {bet.status === 'active' ? (
-                      <span className="text-muted-foreground whitespace-nowrap text-xs">
-                        {getTimeRemaining(bet.expiresAt)}
-                      </span>
-                    ) : (
-                      <BetStatusBadge status={bet.status} />
                     )}
                   </div>
                 </div>

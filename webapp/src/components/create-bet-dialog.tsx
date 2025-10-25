@@ -512,13 +512,13 @@ export function CreateBetDialog() {
           <span>Create Bet</span>
         </Button>
       </DrawerTrigger>
-      <DrawerContent className="mx-auto max-h-[90vh] max-w-md overflow-y-auto">
-        <DrawerHeader>
+      <DrawerContent className="mx-auto max-h-[85vh] max-w-md overflow-y-auto">
+        <DrawerHeader className="pb-3">
           <DrawerTitle>Create a New Bet</DrawerTitle>
         </DrawerHeader>
 
         {/* progress */}
-        <div className="mb-6 flex items-center justify-center gap-2 px-6">
+        <div className="mb-4 flex items-center justify-center gap-2 px-6">
           {[1, 2, 3, 4, 5].map((s) => (
             <div
               key={s}
@@ -533,7 +533,7 @@ export function CreateBetDialog() {
           ))}
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6 px-6 pb-6">
+        <form onSubmit={handleSubmit} className="space-y-5 px-6 pb-6">
           {/* connect */}
           {!isConnected && (
             <div className="space-y-4 text-center">
@@ -822,16 +822,16 @@ export function CreateBetDialog() {
                 </div>
               ) : (
                 <>
-                  <Label className="text-lg font-semibold">
+                  <Label className="text-base font-semibold">
                     Review Your Bet
                   </Label>
-                  <div className="space-y-3">
-                    <div className="bg-card space-y-3 rounded-lg border p-4">
+                  <div className="space-y-2">
+                    <div className="bg-card space-y-2 rounded-lg border p-3">
                       <div>
                         <p className="text-muted-foreground text-xs">
                           Opponent
                         </p>
-                        <p className="font-medium">
+                        <p className="text-sm font-medium">
                           {formData.takerUser
                             ? `@${formData.takerUser.username}`
                             : 'Open to anyone'}
@@ -839,7 +839,7 @@ export function CreateBetDialog() {
                       </div>
                       <div>
                         <p className="text-muted-foreground text-xs">Judge</p>
-                        <p className="font-medium">
+                        <p className="text-sm font-medium">
                           {formData.judgeUser
                             ? `@${formData.judgeUser.username}`
                             : formData.judge}
@@ -847,7 +847,7 @@ export function CreateBetDialog() {
                       </div>
                       <div>
                         <p className="text-muted-foreground text-xs">Amount</p>
-                        <p className="font-medium">
+                        <p className="text-sm font-medium">
                           {formData.amount} USDC (each)
                         </p>
                       </div>
@@ -855,7 +855,7 @@ export function CreateBetDialog() {
                         <p className="text-muted-foreground text-xs">
                           End Date
                         </p>
-                        <p className="font-medium">
+                        <p className="text-sm font-medium">
                           {fmtDate(formData.expiresAt)}
                         </p>
                       </div>
@@ -863,7 +863,9 @@ export function CreateBetDialog() {
                         <p className="text-muted-foreground text-xs">
                           Bet Description
                         </p>
-                        <p className="font-medium">{formData.description}</p>
+                        <p className="text-sm font-medium">
+                          {formData.description}
+                        </p>
                       </div>
                       {predictedBetAddress && (
                         <div>
@@ -880,7 +882,7 @@ export function CreateBetDialog() {
 
                   {/* inline error */}
                   {uiError && (
-                    <div className="border-destructive/30 bg-destructive/10 rounded-md border p-3">
+                    <div className="border-destructive/30 bg-destructive/10 rounded-md border p-2">
                       <p className="text-destructive-foreground text-sm font-semibold">
                         {uiError.title}
                       </p>
@@ -898,7 +900,7 @@ export function CreateBetDialog() {
 
           {/* nav */}
           {isConnected && (
-            <div className="flex gap-3 pt-4">
+            <div className="flex gap-3 pt-2">
               {step > 1 && phase !== 'done' && (
                 <Button
                   type="button"

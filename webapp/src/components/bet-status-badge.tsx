@@ -18,5 +18,9 @@ export function BetStatusBadge({ status }: BetStatusBadgeProps) {
 
   const config = variants[status]
 
-  return <Badge variant={config.variant}>{config.label}</Badge>
+  return (
+    <Badge variant={config.variant} className="text-xs">
+      {config.label}
+    </Badge>
+  )
 }

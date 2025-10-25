@@ -196,31 +196,33 @@ export function BetDetailDialog({
         if (!isOpen) handleReset()
       }}
     >
-      <DrawerContent className="mx-auto max-h-[90vh] max-w-3xl overflow-y-auto">
-        <DrawerHeader>
+      <DrawerContent className="mx-auto max-h-[85vh] max-w-3xl overflow-y-auto">
+        <DrawerHeader className="pb-2">
           {/* Status Badge - Minimal in top right */}
-          <div className="absolute right-6 top-6">
+          <div className="absolute right-4 top-4">
             <BetStatusBadge status={bet.status} />
           </div>
 
           {/* Hero Bet Description */}
-          <div className="px-4 py-8 text-center">
-            <DrawerTitle className="text-3xl font-bold leading-tight tracking-tight md:text-4xl">
+          <div className="pr-20 text-center">
+            <DrawerTitle className="text-xl font-bold leading-tight tracking-tight md:text-2xl">
               {bet.description}
             </DrawerTitle>
           </div>
         </DrawerHeader>
 
-        <div className="space-y-8 px-2">
+        <div className="space-y-4 px-4 pb-6">
           {/* Players Section with Floating Amount */}
           <div className="relative">
             {bet.acceptedBy ? (
-              <div className="flex items-start justify-center gap-10">
+              <div className="flex items-center justify-center gap-4">
                 {/* Player 1 */}
-                <div className="flex flex-col items-center gap-2">
-                  <UserAvatar user={bet.maker} size="lg" clickable={false} />
+                <div className="flex flex-col items-center gap-1">
+                  <UserAvatar user={bet.maker} size="md" clickable={false} />
                   <div className="text-center">
-                    <p className="font-semibold">{bet.maker.displayName}</p>
+                    <p className="text-sm font-semibold">
+                      {bet.maker.displayName}
+                    </p>
                     <p className="text-muted-foreground font-mono text-xs">
                       {shortenAddress(bet.makerAddress)}
                     </p>
@@ -228,12 +230,12 @@ export function BetDetailDialog({
                 </div>
 
                 {/* VS + Amount Badge */}
-                <div className="flex flex-col items-center gap-2">
-                  <span className="text-muted-foreground/40 text-xl font-light">
+                <div className="flex flex-col items-center gap-1">
+                  <span className="text-muted-foreground/40 text-sm font-light">
                     vs
                   </span>
                   {/* Floating Amount Badge */}
-                  <div className="bg-muted/30 flex items-center gap-2 rounded-full border px-3 py-1 shadow-sm">
+                  <div className="bg-muted/30 flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 shadow-sm">
                     <Coins className="text-muted-foreground h-3 w-3" />
                     <span className="text-xs font-medium">
                       {bet.amount} USDC
@@ -242,14 +244,14 @@ export function BetDetailDialog({
                 </div>
 
                 {/* Player 2 */}
-                <div className="flex flex-col items-center gap-2">
+                <div className="flex flex-col items-center gap-1">
                   <UserAvatar
                     user={bet.acceptedBy}
-                    size="lg"
+                    size="md"
                     clickable={false}
                   />
                   <div className="text-center">
-                    <p className="font-semibold">
+                    <p className="text-sm font-semibold">
                       {bet.acceptedBy.displayName}
                     </p>
                     <p className="text-muted-foreground font-mono text-xs">
@@ -259,11 +261,13 @@ export function BetDetailDialog({
                 </div>
               </div>
             ) : (
-              <div className="flex flex-col items-center gap-4">
-                <div className="flex flex-col items-center gap-2">
-                  <UserAvatar user={bet.maker} size="lg" clickable={false} />
+              <div className="flex flex-col items-center gap-2">
+                <div className="flex flex-col items-center gap-1">
+                  <UserAvatar user={bet.maker} size="md" clickable={false} />
                   <div className="text-center">
-                    <p className="font-semibold">{bet.maker.displayName}</p>
+                    <p className="text-sm font-semibold">
+                      {bet.maker.displayName}
+                    </p>
                     <p className="text-muted-foreground font-mono text-xs">
                       {shortenAddress(bet.makerAddress)}
                     </p>
@@ -271,7 +275,7 @@ export function BetDetailDialog({
                 </div>
 
                 {/* Amount Badge for Open Bet */}
-                <div className="bg-muted/30 flex items-center gap-2 rounded-full border px-3 py-1 shadow-sm">
+                <div className="bg-muted/30 flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 shadow-sm">
                   <Coins className="text-muted-foreground h-3 w-3" />
                   <span className="text-xs font-medium">{bet.amount} USDC</span>
                 </div>
@@ -288,8 +292,8 @@ export function BetDetailDialog({
 
           {/* Winner Section - Compact */}
           {bet.winner && (
-            <div className="flex items-center justify-center gap-3 rounded-xl border bg-green-500/5 px-4 py-3">
-              <Trophy className="h-4 w-4 text-yellow-500" />
+            <div className="flex items-center justify-center gap-2 rounded-lg border bg-green-500/5 px-3 py-2">
+              <Trophy className="h-3.5 w-3.5 text-yellow-500" />
               <UserAvatar user={bet.winner} size="sm" />
               <div>
                 <p className="text-sm font-medium">{bet.winner.displayName}</p>
@@ -303,7 +307,7 @@ export function BetDetailDialog({
             {bet.judge ? (
               <>
                 <UserAvatar user={bet.judge} size="sm" />
-                <p className="text-muted-foreground text-sm">
+                <p className="text-muted-foreground text-xs">
                   Judge:{' '}
                   <span className="text-foreground font-medium">
                     {bet.judge.displayName}
@@ -311,73 +315,48 @@ export function BetDetailDialog({
                 </p>
               </>
             ) : (
-              <p className="text-muted-foreground text-sm italic">
+              <p className="text-muted-foreground text-xs italic">
                 Judge: To be announced
               </p>
             )}
           </div>
 
           {/* Contract Details */}
-          <div className="border-t pt-6">
-            <div className="space-y-3 text-sm">
+          <div className="border-t pt-3">
+            <div className="space-y-2 text-xs">
               <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Contract Address</span>
+                <span className="text-muted-foreground">Contract</span>
                 <a
                   href={`${BASE_EXPLORER}/address/${bet.id}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-foreground hover:text-primary flex items-center gap-1 font-mono text-xs transition-colors"
+                  className="text-foreground hover:text-primary flex items-center gap-1 font-mono transition-colors"
                 >
                   {shortenAddress(bet.id)}
                   <ExternalLink className="h-3 w-3" />
                 </a>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Amount (each)</span>
-                <span className="font-medium">{bet.amount} USDC</span>
+                <span className="text-muted-foreground">Created</span>
+                <span className="font-medium">
+                  {format(bet.createdAt, 'MMM d, yyyy')}
+                </span>
+              </div>
+              {bet.acceptedAt && (
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Accepted</span>
+                  <span className="font-medium">
+                    {format(bet.acceptedAt, 'MMM d, yyyy')}
+                  </span>
+                </div>
+              )}
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Expires</span>
+                <span className="font-medium">
+                  {format(bet.expiresAt, 'MMM d, yyyy')}
+                </span>
               </div>
             </div>
-          </div>
-
-          {/* Timeline - Collapsible */}
-          <div className="border-t pt-6">
-            <button
-              onClick={() => setTimelineExpanded(!timelineExpanded)}
-              className="text-muted-foreground hover:text-foreground flex w-full items-center justify-center gap-2 text-sm transition-colors"
-            >
-              <Calendar className="h-3.5 w-3.5" />
-              <span>Timeline</span>
-              {timelineExpanded ? (
-                <ChevronUp className="h-3.5 w-3.5" />
-              ) : (
-                <ChevronDown className="h-3.5 w-3.5" />
-              )}
-            </button>
-
-            {timelineExpanded && (
-              <div className="mt-4 space-y-2 text-xs">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Created</span>
-                  <span className="font-medium">
-                    {format(bet.createdAt, 'MMM d, yyyy h:mm a')}
-                  </span>
-                </div>
-                {bet.acceptedAt && (
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Accepted</span>
-                    <span className="font-medium">
-                      {format(bet.acceptedAt, 'MMM d, yyyy h:mm a')}
-                    </span>
-                  </div>
-                )}
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Expires</span>
-                  <span className="font-medium">
-                    {format(bet.expiresAt, 'MMM d, yyyy h:mm a')}
-                  </span>
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Actions */}
@@ -385,7 +364,7 @@ export function BetDetailDialog({
             bet.takerAddress &&
             address &&
             bet.takerAddress.toLowerCase() === address.toLowerCase() && (
-              <div className="space-y-3 pb-2">
+              <div className="space-y-2 pt-2">
                 {/* Balance warning */}
                 {usdcBalance !== undefined && (
                   <div className="text-center text-xs">
