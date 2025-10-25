@@ -7,8 +7,7 @@ import { BetsTable } from '@/components/bets-table'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { UserAvatar } from '@/components/user-avatar'
-import { getBetsByUser, getUserStats } from '@/lib/dummy-data'
-import type { FarcasterUser } from '@/lib/types'
+import type { Bet, FarcasterUser, UserStats } from '@/lib/types'
 
 const NEYNAR_API_KEY = process.env.NEYNAR_API_KEY || ''
 const NEYNAR_BASE_URL = 'https://api.neynar.com/v2'
@@ -56,6 +55,75 @@ async function fetchUserProfile(fid: number): Promise<FarcasterUser | null> {
   }
 }
 
+async function fetchBets(): Promise<Bet[]> {
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
+    const response = await fetch(`${baseUrl}/api/bets`, {
+      next: { revalidate: 60 },
+    })
+
+    if (!response.ok) {
+      return []
+    }
+
+    const data = await response.json()
+
+    // Convert date strings back to Date objects
+    return data.map((bet: Bet) => ({
+      ...bet,
+      createdAt: new Date(bet.createdAt),
+      expiresAt: new Date(bet.expiresAt),
+      acceptedAt: bet.acceptedAt ? new Date(bet.acceptedAt) : null,
+    }))
+  } catch (error) {
+    console.error('Error fetching bets:', error)
+    return []
+  }
+}
+
+function getBetsByUser(fid: number, bets: Bet[]): Bet[] {
+  return bets.filter(
+    (bet) =>
+      bet.maker.fid === fid ||
+      bet.acceptedBy?.fid === fid ||
+      bet.taker?.fid === fid
+  )
+}
+
+function getUserStats(fid: number, userBets: Bet[]): UserStats {
+  const totalBets = userBets.length
+  const activeBets = userBets.filter((b) => b.status === 'active').length
+  const wonBets = userBets.filter((b) => b.winner?.fid === fid).length
+  const lostBets = userBets.filter(
+    (b) => b.status === 'completed' && b.winner && b.winner.fid !== fid
+  ).length
+
+  const totalWagered = userBets
+    .reduce((sum, bet) => sum + parseFloat(bet.amount), 0)
+    .toFixed(2)
+
+  const totalWon = userBets
+    .filter((b) => b.winner?.fid === fid)
+    .reduce((sum, bet) => sum + parseFloat(bet.amount) * 2, 0) // Winner gets double
+    .toFixed(2)
+
+  const winRate =
+    wonBets + lostBets > 0
+      ? Math.round((wonBets / (wonBets + lostBets)) * 100)
+      : 0
+
+  return {
+    fid,
+    totalBets,
+    activeBets,
+    wonBets,
+    lostBets,
+    totalWagered,
+    totalWon,
+    winRate,
+  }
+}
+
 export async function generateMetadata({
   params,
 }: {
@@ -99,9 +167,10 @@ export default async function ProfilePage({
     notFound()
   }
 
-  // Stats and bets still use dummy data (will be replaced with blockchain data later)
-  const stats = getUserStats(fid)
-  const userBets = getBetsByUser(fid)
+  // Fetch all bets and filter by user
+  const allBets = await fetchBets()
+  const userBets = getBetsByUser(fid, allBets)
+  const stats = getUserStats(fid, userBets)
 
   return (
     <div className="bg-background min-h-screen pb-20 sm:pb-4">

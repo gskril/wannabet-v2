@@ -5,7 +5,34 @@ import { notFound } from 'next/navigation'
 
 import { BetDetailDialog } from '@/components/bet-detail-dialog'
 import { Button } from '@/components/ui/button'
-import { DUMMY_BETS } from '@/lib/dummy-data'
+import type { Bet } from '@/lib/types'
+
+async function fetchBets(): Promise<Bet[]> {
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
+
+  try {
+    const response = await fetch(`${baseUrl}/api/bets`, {
+      next: { revalidate: 60 }, // Revalidate every minute
+    })
+
+    if (!response.ok) {
+      return []
+    }
+
+    const data = await response.json()
+
+    // Convert date strings back to Date objects
+    return data.map((bet: Bet) => ({
+      ...bet,
+      createdAt: new Date(bet.createdAt),
+      expiresAt: new Date(bet.expiresAt),
+      acceptedAt: bet.acceptedAt ? new Date(bet.acceptedAt) : null,
+    }))
+  } catch (error) {
+    console.error('Error fetching bets:', error)
+    return []
+  }
+}
 
 export async function generateMetadata({
   params,
@@ -13,7 +40,8 @@ export async function generateMetadata({
   params: Promise<{ id: string }>
 }): Promise<Metadata> {
   const { id } = await params
-  const bet = DUMMY_BETS.find((b) => b.id === id)
+  const bets = await fetchBets()
+  const bet = bets.find((b) => b.id.toLowerCase() === id.toLowerCase())
 
   if (!bet) {
     return {
@@ -61,7 +89,8 @@ export default async function BetPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-  const bet = DUMMY_BETS.find((b) => b.id === id)
+  const bets = await fetchBets()
+  const bet = bets.find((b) => b.id.toLowerCase() === id.toLowerCase())
 
   if (!bet) {
     notFound()

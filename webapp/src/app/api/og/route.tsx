@@ -1,12 +1,32 @@
 import { NextRequest } from 'next/server'
 
-import { DUMMY_BETS } from '@/lib/dummy-data'
+import type { Bet } from '@/lib/types'
+
+async function fetchBets(): Promise<Bet[]> {
+  try {
+    // Use full URL in production, localhost in dev
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
+    const response = await fetch(`${baseUrl}/api/bets`, {
+      next: { revalidate: 60 },
+    })
+
+    if (!response.ok) {
+      return []
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error('Error fetching bets:', error)
+    return []
+  }
+}
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const id = searchParams.get('id')
 
-  const bet = DUMMY_BETS.find((b) => b.id === id)
+  const bets = await fetchBets()
+  const bet = bets.find((b) => b.id.toLowerCase() === id?.toLowerCase())
 
   if (!bet) {
     return new Response('Bet not found', { status: 404 })
