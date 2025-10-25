@@ -1,3 +1,13 @@
+// Comes from IBet.sol
+export enum BetStatusEnum {
+  PENDING = 'pending',
+  ACTIVE = 'active',
+  RESOLVED = 'resolved',
+  CANCELLED = 'cancelled',
+  EXPIRED = 'expired',
+}
+
+// TODO: We should probably pick 1 set of statuses and use that everywhere
 export type BetStatus = 'open' | 'active' | 'completed' | 'cancelled'
 
 export interface FarcasterUser {
