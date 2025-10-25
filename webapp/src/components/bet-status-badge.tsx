@@ -8,12 +8,13 @@ interface BetStatusBadgeProps {
 export function BetStatusBadge({ status }: BetStatusBadgeProps) {
   const variants: Record<
     BetStatus,
-    { variant: 'success' | 'warning' | 'default' | 'secondary'; label: string }
+    { variant: 'success' | 'warning' | 'default' | 'secondary' | 'destructive'; label: string }
   > = {
-    open: { variant: 'success', label: 'Open' },
+    pending: { variant: 'secondary', label: 'Pending' },
     active: { variant: 'warning', label: 'Active' },
-    completed: { variant: 'default', label: 'Completed' },
-    cancelled: { variant: 'secondary', label: 'Cancelled' },
+    resolved: { variant: 'success', label: 'Resolved' },
+    cancelled: { variant: 'destructive', label: 'Cancelled' },
+    expired: { variant: 'destructive', label: 'Expired' },
   }
 
   const config = variants[status]

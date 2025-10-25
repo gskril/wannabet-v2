@@ -35,11 +35,18 @@ function getTimeRemaining(expiresAt: Date): string {
   return `${distance} left`
 }
 
+function getTimeElapsed(createdAt: Date): string {
+  const now = new Date()
+  return formatDistanceStrict(createdAt, now, {
+    addSuffix: true,
+  })
+}
+
 export function BetsTable({ bets }: BetsTableProps) {
   const [selectedBet, setSelectedBet] = useState<Bet | null>(null)
 
-  // Filter out open bets (MVP doesn't support "anyone" bets)
-  const filteredBets = bets.filter((bet) => bet.status !== 'open')
+  // Show all bets
+  const filteredBets = bets
 
   return (
     <>
@@ -53,6 +60,7 @@ export function BetsTable({ bets }: BetsTableProps) {
             <div className="flex gap-4">
               <UserAvatar user={bet.maker} size="lg" clickable={false} />
               <div className="min-w-0 flex-1">
+                {/* Top section: User info and USDC amount */}
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex flex-wrap items-baseline gap-1.5 text-sm">
                     <span className="font-semibold">
@@ -64,23 +72,32 @@ export function BetsTable({ bets }: BetsTableProps) {
                         {bet.acceptedBy.displayName}
                       </span>
                     )}
-                    <span className="text-primary font-bold">
-                      {bet.amount} USDC
-                    </span>
                   </div>
-                  <div className="shrink-0">
-                    {bet.status === 'active' ? (
-                      <span className="text-muted-foreground whitespace-nowrap text-xs">
-                        {getTimeRemaining(bet.expiresAt)}
-                      </span>
-                    ) : (
-                      <BetStatusBadge status={bet.status} />
-                    )}
+                  <div className="flex shrink-0 items-center gap-1.5">
+                    <span className="whitespace-nowrap font-bold text-black dark:text-white">
+                      {bet.amount}
+                    </span>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src="/img/usdc.png"
+                      alt="USDC"
+                      className="h-5 w-5"
+                    />
                   </div>
                 </div>
+                
+                {/* Middle section: Bet description */}
                 <p className="mt-1.5 line-clamp-2 text-base font-medium leading-snug">
                   {bet.description}
                 </p>
+                
+                {/* Bottom section: Time elapsed and status */}
+                <div className="mt-2 flex items-center justify-between gap-2">
+                  <span className="text-muted-foreground text-xs">
+                    {getTimeElapsed(bet.createdAt)}
+                  </span>
+                  <BetStatusBadge status={bet.status} />
+                </div>
               </div>
             </div>
           </Card>

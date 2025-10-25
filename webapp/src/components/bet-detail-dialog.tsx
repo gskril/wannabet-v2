@@ -1,7 +1,7 @@
 'use client'
 
 import { format } from 'date-fns'
-import { Calendar, ChevronDown, ChevronUp, Coins, Trophy } from 'lucide-react'
+import { Calendar, ExternalLink, Share2, Trophy } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { type Address, parseUnits } from 'viem'
 import {
@@ -29,8 +29,16 @@ export function BetDetailDialog({
   open,
   onOpenChange,
 }: BetDetailDialogProps) {
-  const [timelineExpanded, setTimelineExpanded] = useState(false)
+  const [permissionError, setPermissionError] = useState<string | null>(null)
   const { address } = useAccount()
+  
+  // Helper to check if current user has permission for an action
+  const canTakeAction = (role: 'maker' | 'taker' | 'judge'): boolean => {
+    if (!address) return false
+    // In production, this would map wallet address to FID
+    // For now, we'll disable all actions if no wallet connected
+    return false
+  }
 
   // Bet contract address (in real usage, this would come from bet.id)
   const betAddress = bet.id as Address
@@ -157,6 +165,37 @@ export function BetDetailDialog({
     resetAccept()
     resetResolve()
     resetCancel()
+    setPermissionError(null)
+  }
+  
+  const handleUnauthorizedAction = (role: string) => {
+    setPermissionError(`Only the ${role} can do this`)
+    setTimeout(() => setPermissionError(null), 3000)
+  }
+  
+  const handleShare = async () => {
+    const url = `${window.location.origin}/bet/${bet.id}`
+    if (navigator.share) {
+      await navigator.share({
+        title: 'WannaBet',
+        text: bet.description,
+        url,
+      })
+    } else {
+      await navigator.clipboard.writeText(url)
+      alert('Link copied to clipboard!')
+    }
+  }
+  
+  const getTimeRemaining = () => {
+    const now = new Date()
+    const diff = bet.expiresAt.getTime() - now.getTime()
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+    
+    if (days > 0) return `${days} day${days !== 1 ? 's' : ''}`
+    if (hours > 0) return `${hours} hour${hours !== 1 ? 's' : ''}`
+    return 'Less than 1 hour'
   }
 
   return (
@@ -167,153 +206,231 @@ export function BetDetailDialog({
         if (!isOpen) handleReset()
       }}
     >
-      <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
-        <DialogHeader>
-          {/* Status Badge - Minimal in top right */}
-          <div className="absolute right-6 top-6">
+      <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto p-0">
+        <div className="space-y-6 p-6">
+          {/* 1. User Profiles at Top */}
+          <div className="flex items-center justify-center gap-12">
+            <div className="relative flex flex-col items-center gap-3">
+              {bet.winner && bet.winner.fid === bet.maker.fid && (
+                <div className="bg-background absolute -right-1 -top-1 z-10 rounded-full border-2 border-yellow-500 p-1.5 shadow-lg">
+                  <Trophy className="h-5 w-5 text-yellow-500" fill="currentColor" />
+                </div>
+              )}
+              <UserAvatar user={bet.maker} size="xl" clickable={false} />
+              <p className="text-center text-sm font-semibold">{bet.maker.displayName}</p>
+            </div>
+
+            <div className="flex flex-col items-center gap-2">
+              <span className="text-muted-foreground text-2xl font-light">vs</span>
+            </div>
+
+            {bet.acceptedBy || bet.taker ? (
+              <div className="relative flex flex-col items-center gap-3">
+                {bet.winner &&
+                  bet.acceptedBy &&
+                  bet.winner.fid === bet.acceptedBy.fid && (
+                    <div className="bg-background absolute -right-1 -top-1 z-10 rounded-full border-2 border-yellow-500 p-1.5 shadow-lg">
+                      <Trophy className="h-5 w-5 text-yellow-500" fill="currentColor" />
+                    </div>
+                  )}
+                <UserAvatar
+                  user={bet.acceptedBy || bet.taker!}
+                  size="xl"
+                  clickable={false}
+                />
+                <p className="text-center text-sm font-semibold">
+                  {(bet.acceptedBy || bet.taker)!.displayName}
+                </p>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center gap-3">
+                <div className="bg-muted flex h-20 w-20 items-center justify-center rounded-full border-2 border-dashed border-muted-foreground/30">
+                  <span className="text-muted-foreground text-2xl">?</span>
+                </div>
+                <p className="text-muted-foreground text-xs font-medium">Open</p>
+              </div>
+            )}
+          </div>
+
+          {/* 2. Bet Description */}
+          <div className="text-center">
+            <h2 className="text-2xl font-bold leading-tight tracking-tight">{bet.description}</h2>
+          </div>
+
+          {/* 3. Amount & Status (Same Line) */}
+          <div className="flex items-center justify-center gap-2.5">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/img/usdc.png" alt="USDC" className="h-5 w-5" />
+            <span className="text-lg font-bold">{bet.amount} USDC</span>
+            <span className="text-muted-foreground">•</span>
             <BetStatusBadge status={bet.status} />
           </div>
 
-          {/* Hero Bet Description */}
-          <div className="px-4 py-8 text-center">
-            <h2 className="text-3xl font-bold leading-tight tracking-tight md:text-4xl">
-              {bet.description}
-            </h2>
-          </div>
-        </DialogHeader>
-
-        <div className="space-y-8 px-2">
-          {/* Players Section with Floating Amount */}
-          <div className="relative">
-            {bet.acceptedBy ? (
-              <div className="flex items-start justify-center gap-10">
-                {/* Player 1 */}
-                <div className="flex flex-col items-center gap-2">
-                  <UserAvatar user={bet.maker} size="lg" clickable={false} />
-                  <p className="font-semibold">{bet.maker.displayName}</p>
-                </div>
-
-                {/* VS + Amount Badge */}
-                <div className="flex flex-col items-center gap-2">
-                  <span className="text-muted-foreground/40 text-xl font-light">
-                    vs
+          {/* 4. Bet End Date & Judge (Same Line) */}
+          <div className="text-muted-foreground flex items-center justify-center gap-4 text-sm">
+            <div className="flex items-center gap-2">
+              <Calendar className="h-4 w-4" />
+              <span>Ends: {format(bet.expiresAt, 'MMM d, yyyy')}</span>
+            </div>
+            {bet.judge && (
+              <>
+                <span>•</span>
+                <div className="flex items-center gap-2">
+                  <UserAvatar user={bet.judge} size="sm" />
+                  <span>
+                    Judge: <span className="text-foreground font-semibold">{bet.judge.displayName}</span>
                   </span>
-                  {/* Floating Amount Badge */}
-                  <div className="bg-muted/30 flex items-center gap-2 rounded-full border px-3 py-1 shadow-sm">
-                    <Coins className="text-muted-foreground h-3 w-3" />
-                    <span className="text-xs font-medium">
-                      {bet.amount} USDC
-                    </span>
-                  </div>
                 </div>
+              </>
+            )}
+          </div>
 
-                {/* Player 2 */}
-                <div className="flex flex-col items-center gap-2">
-                  <UserAvatar
-                    user={bet.acceptedBy}
+          {/* Permission Error Alert */}
+          {permissionError && (
+            <div className="animate-in fade-in slide-in-from-top-2 rounded-lg border-2 border-red-300 bg-red-50 px-4 py-3 text-center text-sm font-medium text-red-900 shadow-sm dark:border-red-800 dark:bg-red-950/50 dark:text-red-200">
+              {permissionError}
+            </div>
+          )}
+
+          {/* 6. Status-Specific Sections */}
+          <div className="space-y-4 pt-2">
+            {bet.status === 'pending' && (
+              <div className="space-y-4">
+                <div className="bg-blue-50/70 rounded-lg px-4 py-3 text-center dark:bg-blue-950/20">
+                  <p className="text-sm font-medium text-blue-900 dark:text-blue-200">
+                    Waiting for {bet.taker?.displayName || 'opponent'} to accept • Expires{' '}
+                    {format(bet.expiresAt, 'MMM d')}
+                  </p>
+                </div>
+                <div className="flex gap-3">
+                  <Button
+                    onClick={() => {
+                      if (!canTakeAction('taker')) {
+                        handleUnauthorizedAction('taker')
+                      } else {
+                        handleAcceptBet()
+                      }
+                    }}
+                    disabled={!canTakeAction('taker') || isApproving || isAccepting}
+                    className="flex-1"
                     size="lg"
-                    clickable={false}
-                  />
-                  <p className="font-semibold">{bet.acceptedBy.displayName}</p>
+                  >
+                    Accept Bet
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      if (!canTakeAction('maker')) {
+                        handleUnauthorizedAction('maker')
+                      }
+                    }}
+                    disabled={!canTakeAction('maker')}
+                    variant="outline"
+                    className="flex-1"
+                    size="lg"
+                  >
+                    Cancel Bet
+                  </Button>
                 </div>
               </div>
-            ) : (
-              <div className="flex flex-col items-center gap-4">
-                <div className="flex flex-col items-center gap-2">
-                  <UserAvatar user={bet.maker} size="lg" clickable={false} />
-                  <p className="font-semibold">{bet.maker.displayName}</p>
-                </div>
+            )}
 
-                {/* Amount Badge for Open Bet */}
-                <div className="bg-muted/30 flex items-center gap-2 rounded-full border px-3 py-1 shadow-sm">
-                  <Coins className="text-muted-foreground h-3 w-3" />
-                  <span className="text-xs font-medium">{bet.amount} USDC</span>
+            {bet.status === 'active' && (
+              <div className="space-y-4">
+                <div className="bg-yellow-50/70 rounded-lg px-4 py-3 text-center dark:bg-yellow-950/20">
+                  <p className="text-sm font-medium text-yellow-900 dark:text-yellow-200">
+                    Time remaining: {getTimeRemaining()}
+                  </p>
                 </div>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={() => {
+                      if (!canTakeAction('judge')) {
+                        handleUnauthorizedAction('judge')
+                      }
+                    }}
+                    disabled={!canTakeAction('judge')}
+                    className="flex-1"
+                    size="sm"
+                  >
+                    {bet.maker.displayName} Wins
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      if (!canTakeAction('judge')) {
+                        handleUnauthorizedAction('judge')
+                      }
+                    }}
+                    disabled={!canTakeAction('judge')}
+                    className="flex-1"
+                    size="sm"
+                  >
+                    {bet.acceptedBy?.displayName || 'Opponent'} Wins
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      if (!canTakeAction('judge')) {
+                        handleUnauthorizedAction('judge')
+                      }
+                    }}
+                    disabled={!canTakeAction('judge')}
+                    variant="outline"
+                    className="flex-1"
+                    size="sm"
+                  >
+                    Tie
+                  </Button>
+                </div>
+              </div>
+            )}
 
-                {/* Challenge Status - Minimal */}
-                <p className="text-muted-foreground text-xs">
-                  {bet.taker
-                    ? `Waiting for @${bet.taker.username} to accept`
-                    : 'Open challenge'}
+            {bet.status === 'resolved' && bet.winner && (
+              <div className="rounded-lg bg-green-50/70 px-4 py-3.5 text-center dark:bg-green-950/20">
+                <p className="text-sm font-medium text-green-900 dark:text-green-200">
+                  Resolved on {format(bet.createdAt, 'MMM d, yyyy')} •{' '}
+                  <span className="font-bold">Winner: {bet.winner.displayName}</span>
+                </p>
+              </div>
+            )}
+
+            {bet.status === 'expired' && (
+              <div className="space-y-4">
+                <div className="rounded-lg bg-orange-50/70 px-4 py-3 text-center dark:bg-orange-950/20">
+                  <p className="text-sm font-medium text-orange-900 dark:text-orange-200">
+                    Expired on {format(bet.expiresAt, 'MMM d, yyyy')}
+                  </p>
+                </div>
+                <Button onClick={() => {}} variant="outline" className="w-full" size="lg">
+                  Return Funds
+                </Button>
+              </div>
+            )}
+
+            {bet.status === 'cancelled' && (
+              <div className="rounded-lg bg-gray-50/70 px-4 py-3.5 text-center dark:bg-gray-900/30">
+                <p className="text-sm font-medium text-gray-900 dark:text-gray-200">
+                  Cancelled by {bet.maker.displayName} on{' '}
+                  {format(bet.createdAt, 'MMM d, yyyy')}
                 </p>
               </div>
             )}
           </div>
 
-          {/* Winner Section - Compact */}
-          {bet.winner && (
-            <div className="flex items-center justify-center gap-3 rounded-xl border bg-green-500/5 px-4 py-3">
-              <Trophy className="h-4 w-4 text-yellow-500" />
-              <UserAvatar user={bet.winner} size="sm" />
-              <div>
-                <p className="text-sm font-medium">{bet.winner.displayName}</p>
-                <p className="text-muted-foreground text-xs">Winner</p>
-              </div>
-            </div>
-          )}
-
-          {/* Judge Section - Minimal */}
-          {bet.judge && (
-            <div className="flex items-center justify-center gap-2">
-              <UserAvatar user={bet.judge} size="sm" />
-              <p className="text-muted-foreground text-sm">
-                Judge:{' '}
-                <span className="text-foreground font-medium">
-                  {bet.judge.displayName}
-                </span>
-              </p>
-            </div>
-          )}
-
-          {/* Timeline - Collapsible */}
-          <div className="border-t pt-6">
-            <button
-              onClick={() => setTimelineExpanded(!timelineExpanded)}
-              className="text-muted-foreground hover:text-foreground flex w-full items-center justify-center gap-2 text-sm transition-colors"
+          {/* 7. Footer Actions - Always Present */}
+          <div className="space-y-3 pt-2">
+            <Button onClick={handleShare} variant="default" className="w-full shadow-sm" size="lg">
+              <Share2 className="mr-2 h-4 w-4" />
+              Share Bet
+            </Button>
+            <a
+              href={`https://basescan.org/address/${bet.id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-muted-foreground hover:text-foreground flex items-center justify-center gap-2 text-sm font-medium transition-colors hover:underline"
             >
-              <Calendar className="h-3.5 w-3.5" />
-              <span>Timeline</span>
-              {timelineExpanded ? (
-                <ChevronUp className="h-3.5 w-3.5" />
-              ) : (
-                <ChevronDown className="h-3.5 w-3.5" />
-              )}
-            </button>
-
-            {timelineExpanded && (
-              <div className="mt-4 space-y-2 text-xs">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Created</span>
-                  <span className="font-medium">
-                    {format(bet.createdAt, 'MMM d, yyyy')}
-                  </span>
-                </div>
-                {bet.acceptedAt && (
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Accepted</span>
-                    <span className="font-medium">
-                      {format(bet.acceptedAt, 'MMM d, yyyy')}
-                    </span>
-                  </div>
-                )}
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Expires</span>
-                  <span className="font-medium">
-                    {format(bet.expiresAt, 'MMM d, yyyy')}
-                  </span>
-                </div>
-              </div>
-            )}
+              <span>View on Basescan</span>
+              <ExternalLink className="h-3.5 w-3.5" />
+            </a>
           </div>
-
-          {/* Actions */}
-          {bet.status === 'open' && !bet.taker && (
-            <div className="pb-2">
-              <Button onClick={handleAcceptBet} className="w-full" size="lg">
-                Accept Bet ({bet.amount} USDC)
-              </Button>
-            </div>
-          )}
         </div>
       </DialogContent>
     </Dialog>

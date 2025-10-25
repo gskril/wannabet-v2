@@ -8,7 +8,7 @@ export enum BetStatusEnum {
 }
 
 // TODO: We should probably pick 1 set of statuses and use that everywhere
-export type BetStatus = 'open' | 'active' | 'completed' | 'cancelled'
+export type BetStatus = 'pending' | 'active' | 'resolved' | 'cancelled' | 'expired'
 
 export interface FarcasterUser {
   fid: number

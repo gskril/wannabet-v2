@@ -8,14 +8,15 @@ export async function getUserByFid(fid: number): Promise<FarcasterUser | null> {
     const response = await fetch(`/api/neynar/user/${fid}`)
 
     if (!response.ok) {
-      console.error('User fetch API error:', response.status)
+      console.warn('User fetch API error:', response.status, '- API key may not be configured')
+      // Return null gracefully instead of throwing
       return null
     }
 
     const data = await response.json()
     return data.user || null
   } catch (error) {
-    console.error('Error fetching user by FID:', error)
+    console.warn('Error fetching user by FID (API may not be configured):', error)
     return null
   }
 }
