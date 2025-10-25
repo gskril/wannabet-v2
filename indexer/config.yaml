@@ -1,0 +1,26 @@
+# yaml-language-server: $schema=./node_modules/envio/evm.schema.json
+name: indexer
+networks:
+  - id: 8453
+    start_block: 0
+    contracts:
+      - name: Bet
+        handler: src/EventHandlers.ts
+        events:
+          - event: BetAccepted()
+          - event: BetCancelled()
+          - event: BetCreated(address indexed maker, address indexed taker, address indexed asset, uint40 acceptBy, uint40 resolveBy, uint256 makerStake, uint256 takerStake)
+          - event: BetResolved(address indexed winner, uint256 amount)
+          - event: Initialized(uint64 version)
+      - name: BetFactory
+        address:
+          - 0xD2b65180db0f6cB666138872D05a036Cc574CD1b
+        handler: src/EventHandlers.ts
+        events:
+          - event: BetCreated(address indexed bet)
+          - event: ImplementationUpdated(address indexed newImplementation)
+          - event: OwnershipTransferred(address indexed previousOwner, address indexed newOwner)
+          - event: PoolConfigured(address indexed token, address indexed pool)
+          - event: TreasuryUpdated(address indexed newTreasury)
+unordered_multichain_mode: true
+preload_handlers: true

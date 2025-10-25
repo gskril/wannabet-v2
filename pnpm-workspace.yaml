@@ -1,8 +1,8 @@
 packages:
-  - web
   - webapp
   - shared
   - contracts
+  - indexer
 
 catalog:
   typescript: 5.8.3
