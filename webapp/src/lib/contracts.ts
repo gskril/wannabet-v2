@@ -2,7 +2,7 @@ import { Address } from 'viem'
 
 // BetFactory contract on Base
 export const BETFACTORY_ADDRESS: Address =
-  '0xD2b65180db0f6cB666138872D05a036Cc574CD1b'
+  '0xc1285D12f175c32C4A7FCd4B324Aa3BC9C1dceA3'
 
 // USDC contract on Base
 export const USDC_ADDRESS: Address =
@@ -285,6 +285,11 @@ export const BETFACTORY_ABI = [
         name: 'resolveBy',
         type: 'uint40',
       },
+      {
+        internalType: 'string',
+        name: 'description',
+        type: 'string',
+      },
     ],
     name: 'createBet',
     outputs: [
@@ -461,6 +466,11 @@ export const BETFACTORY_ABI = [
 export const BET_ABI = [
   {
     inputs: [],
+    stateMutability: 'nonpayable',
+    type: 'constructor',
+  },
+  {
+    inputs: [],
     name: 'InvalidAddress',
     type: 'error',
   },
@@ -524,6 +534,12 @@ export const BET_ABI = [
       {
         indexed: true,
         internalType: 'address',
+        name: 'judge',
+        type: 'address',
+      },
+      {
+        indexed: false,
+        internalType: 'address',
         name: 'asset',
         type: 'address',
       },
@@ -550,6 +566,12 @@ export const BET_ABI = [
         internalType: 'uint256',
         name: 'takerStake',
         type: 'uint256',
+      },
+      {
+        indexed: false,
+        internalType: 'string',
+        name: 'description',
+        type: 'string',
       },
     ],
     name: 'BetCreated',
@@ -724,6 +746,11 @@ export const BET_ABI = [
         internalType: 'struct IBet.Bet',
         name: 'initialBet',
         type: 'tuple',
+      },
+      {
+        internalType: 'string',
+        name: 'description',
+        type: 'string',
       },
       {
         internalType: 'address',

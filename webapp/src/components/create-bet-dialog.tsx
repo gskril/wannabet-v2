@@ -394,6 +394,7 @@ export function CreateBetDialog() {
             amountInUnits,
             acceptBy,
             resolveBy,
+            formData.description,
           ],
           chainId: BASE_CHAIN_ID,
         })

@@ -14,7 +14,7 @@ networks:
           - event: Initialized(uint64 version)
       - name: BetFactory
         address:
-          - 0xD2b65180db0f6cB666138872D05a036Cc574CD1b
+          - 0xc1285D12f175c32C4A7FCd4B324Aa3BC9C1dceA3
         handler: src/EventHandlers.ts
         events:
           - event: BetCreated(address indexed bet)

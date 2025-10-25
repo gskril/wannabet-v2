@@ -2,10 +2,10 @@
 
 ## Deployments
 
-| Contract       | Address                                                                                                                      |
-| -------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| Implementation | [0x8BE8ee562DA346F57D8BE4591FBD73B3D7f7327f](https://base.blockscout.com/address/0x8BE8ee562DA346F57D8BE4591FBD73B3D7f7327f) |
-| Factory        | [0xD2b65180db0f6cB666138872D05a036Cc574CD1b](https://base.blockscout.com/address/0xD2b65180db0f6cB666138872D05a036Cc574CD1b) |
+| Contract       | Address                                                                                                               |
+| -------------- | --------------------------------------------------------------------------------------------------------------------- |
+| Implementation | [0x51f4E1df3A1F5527Bd076cE2c9b46B0AE76a4332](https://basescan.org/address/0x51f4E1df3A1F5527Bd076cE2c9b46B0AE76a4332) |
+| Factory        | [0xc1285D12f175c32C4A7FCd4B324Aa3BC9C1dceA3](https://basescan.org/address/0xc1285D12f175c32C4A7FCd4B324Aa3BC9C1dceA3) |
 
 ## Usage
 

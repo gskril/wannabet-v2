@@ -14,11 +14,13 @@ interface EnvioResponse {
       address: Address
       maker: Address
       taker: Address
+      judge: Address
       asset: Address
       makerStake: string
       takerStake: string
       acceptBy: string
       resolveBy: string
+      description: string
       createdAt: number
     }>
     Bet_BetAccepted: Array<{
@@ -88,6 +90,7 @@ export async function GET(request: Request) {
             address
             maker
             taker
+            judge
             asset
             makerStake
             takerStake
@@ -119,14 +122,12 @@ export async function GET(request: Request) {
 
   const { data }: EnvioResponse = await response.json()
 
-  // Extract unique addresses to resolve to Farcaster users
+  // Extract unique addresses to resolve to Farcaster users (include judge)
   const uniqueAddresses = new Set<string>()
   data.Bet_BetCreated.forEach((bet) => {
     uniqueAddresses.add(bet.maker.toLowerCase())
-    // Don't add zero address for open bets
-    if (bet.taker.toLowerCase() !== ZERO_ADDRESS.toLowerCase()) {
-      uniqueAddresses.add(bet.taker.toLowerCase())
-    }
+    uniqueAddresses.add(bet.taker.toLowerCase())
+    uniqueAddresses.add(bet.judge.toLowerCase())
   })
 
   const baseUrl = request.url.includes('localhost')
@@ -195,6 +196,8 @@ export async function GET(request: Request) {
     let makerUser = userMap[makerAddress]
     const takerAddress = bet.taker.toLowerCase()
     let takerUser = userMap[takerAddress]
+    const judgeAddress = bet.judge.toLowerCase()
+    let judgeUser = userMap[judgeAddress]
 
     // If users don't have a Farcaster account, return "Unknown" username
     if (!makerUser) {
@@ -217,6 +220,12 @@ export async function GET(request: Request) {
       }
     }
 
+    // If judge address is empty or zero, treat as no judge
+    let judgeField: FarcasterUser | null = null
+    if (bet.judge && bet.judge !== ZERO_ADDRESS && judgeUser) {
+      judgeField = judgeUser
+    }
+
     // Convert amount from wei to USDC (6 decimals)
     const amountInUsdc = formatUnits(BigInt(bet.makerStake), asset.decimals)
 
@@ -227,7 +236,8 @@ export async function GET(request: Request) {
       makerAddress: bet.maker,
       taker: takerUser,
       takerAddress: bet.taker,
-      judge: null, // Skip for MVP
+      asset: asset,
+      judge: judgeField,
       amount: amountInUsdc,
       status: mapStatus(status),
       createdAt: new Date(bet.createdAt * 1000),
