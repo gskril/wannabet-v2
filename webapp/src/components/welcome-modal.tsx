@@ -53,10 +53,7 @@ export function WelcomeModal({
                 1
               </div>
               <div>
-                <h4 className="font-semibold">Create a bet</h4>
-                <p className="text-muted-foreground text-sm">
-                  Set the terms, stake, and judge.
-                </p>
+                <h4 className="font-semibold">Create a peer-to-peer bet</h4>
               </div>
             </div>
 
@@ -66,9 +63,6 @@ export function WelcomeModal({
               </div>
               <div>
                 <h4 className="font-semibold">Opponent Accepts</h4>
-                <p className="text-muted-foreground text-sm">
-                  Opponent accepts the bet by depositing bet amount.
-                </p>
               </div>
             </div>
 
@@ -78,16 +72,12 @@ export function WelcomeModal({
               </div>
               <div>
                 <h4 className="font-semibold">Judge Settles</h4>
-                <p className="text-muted-foreground text-sm">
-                  After the bet end date, the judge picks the winner and the
-                  payouts are distributed.
-                </p>
               </div>
             </div>
           </div>
 
           <Button
-            onClick={handleGetStarted}
+            onClick={() => onOpenChange(false)}
             className="h-12 w-full text-base font-semibold"
             size="lg"
           >
