@@ -229,10 +229,14 @@ export async function GET(request: Request) {
       }
     }
 
-    // If judge address is empty or zero, treat as no judge
-    let judgeField: FarcasterUser | null = null
-    if (bet.judge && bet.judge !== ZERO_ADDRESS && judgeUser) {
-      judgeField = judgeUser
+    if (!judgeUser) {
+      judgeUser = {
+        fid: 0,
+        username: 'Unknown',
+        displayName: 'Unknown',
+        pfpUrl: `${baseUrl}/fallback-pfp.png`,
+        bio: '',
+      }
     }
 
     // Convert amount from wei to USDC (6 decimals)
@@ -246,7 +250,8 @@ export async function GET(request: Request) {
       taker: takerUser,
       takerAddress: bet.taker,
       asset: asset,
-      judge: judgeField,
+      judge: judgeUser,
+      judgeAddress: bet.judge,
       amount: amountInUsdc,
       status: mapStatus(status),
       createdAt: new Date(bet.createdAt * 1000),
@@ -255,7 +260,7 @@ export async function GET(request: Request) {
       acceptedBy: accepted && takerUser ? takerUser : null,
       acceptedAt: accepted ? new Date(bet.createdAt * 1000) : null, // Approximate - we don't have exact acceptance time
     } as Bet
-  }).filter((bet): bet is Bet => bet !== null)
+  })
 
   return Response.json(bets)
 }

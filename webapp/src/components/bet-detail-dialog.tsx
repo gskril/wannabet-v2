@@ -1,14 +1,7 @@
 'use client'
 
 import { format } from 'date-fns'
-import {
-  Calendar,
-  ChevronDown,
-  ChevronUp,
-  Coins,
-  ExternalLink,
-  Trophy,
-} from 'lucide-react'
+import { Coins, ExternalLink, Trophy } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { type Address, parseUnits } from 'viem'
 import {

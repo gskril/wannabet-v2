@@ -13,19 +13,9 @@ import {
 interface WelcomeModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onGetStarted: () => void
 }
 
-export function WelcomeModal({
-  open,
-  onOpenChange,
-  onGetStarted,
-}: WelcomeModalProps) {
-  const handleGetStarted = () => {
-    onOpenChange(false)
-    onGetStarted()
-  }
-
+export function WelcomeModal({ open, onOpenChange }: WelcomeModalProps) {
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent className="mx-auto max-w-lg">
