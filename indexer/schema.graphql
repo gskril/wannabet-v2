@@ -1,13 +1,16 @@
 type Bet_BetAccepted {
   id: ID!
+  address: String!
 }
 
 type Bet_BetCancelled {
   id: ID!
+  address: String!
 }
 
 type Bet_BetCreated {
   id: ID!
+  address: String!
   maker: String!
   taker: String!
   asset: String!
@@ -19,12 +22,14 @@ type Bet_BetCreated {
 
 type Bet_BetResolved {
   id: ID!
+  address: String!
   winner: String!
   amount: BigInt!
 }
 
 type Bet_Initialized {
   id: ID!
+  address: String!
   version: BigInt!
 }
 
@@ -54,4 +59,3 @@ type BetFactory_TreasuryUpdated {
   id: ID!
   newTreasury: String!
 }
-

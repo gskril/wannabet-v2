@@ -2,7 +2,7 @@
 name: indexer
 networks:
   - id: 8453
-    start_block: 0
+    start_block: 37284620
     contracts:
       - name: Bet
         handler: src/EventHandlers.ts

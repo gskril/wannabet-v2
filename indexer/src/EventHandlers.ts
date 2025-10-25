@@ -19,6 +19,7 @@ import {
 Bet.BetAccepted.handler(async ({ event, context }) => {
   const entity: Bet_BetAccepted = {
     id: `${event.chainId}_${event.block.number}_${event.logIndex}`,
+    address: event.srcAddress,
   }
 
   context.Bet_BetAccepted.set(entity)
@@ -27,6 +28,7 @@ Bet.BetAccepted.handler(async ({ event, context }) => {
 Bet.BetCancelled.handler(async ({ event, context }) => {
   const entity: Bet_BetCancelled = {
     id: `${event.chainId}_${event.block.number}_${event.logIndex}`,
+    address: event.srcAddress,
   }
 
   context.Bet_BetCancelled.set(entity)
@@ -35,6 +37,7 @@ Bet.BetCancelled.handler(async ({ event, context }) => {
 Bet.BetCreated.handler(async ({ event, context }) => {
   const entity: Bet_BetCreated = {
     id: `${event.chainId}_${event.block.number}_${event.logIndex}`,
+    address: event.srcAddress,
     maker: event.params.maker,
     taker: event.params.taker,
     asset: event.params.asset,
@@ -50,6 +53,7 @@ Bet.BetCreated.handler(async ({ event, context }) => {
 Bet.BetResolved.handler(async ({ event, context }) => {
   const entity: Bet_BetResolved = {
     id: `${event.chainId}_${event.block.number}_${event.logIndex}`,
+    address: event.srcAddress,
     winner: event.params.winner,
     amount: event.params.amount,
   }
@@ -60,6 +64,7 @@ Bet.BetResolved.handler(async ({ event, context }) => {
 Bet.Initialized.handler(async ({ event, context }) => {
   const entity: Bet_Initialized = {
     id: `${event.chainId}_${event.block.number}_${event.logIndex}`,
+    address: event.srcAddress,
     version: event.params.version,
   }
 
