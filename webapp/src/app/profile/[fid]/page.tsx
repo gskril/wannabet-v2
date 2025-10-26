@@ -7,6 +7,7 @@ import { BetsTable } from '@/components/bets-table'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { UserAvatar } from '@/components/user-avatar'
+import { getBets } from '@/lib/get-bets'
 import type { Bet, FarcasterUser, UserStats } from '@/lib/types'
 
 const NEYNAR_API_KEY = process.env.NEYNAR_API_KEY || ''
@@ -55,38 +56,22 @@ async function fetchUserProfile(fid: number): Promise<FarcasterUser | null> {
   }
 }
 
-async function fetchBets(): Promise<Bet[]> {
-  try {
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
-    const response = await fetch(`${baseUrl}/api/bets`, {
-      next: { revalidate: 60 },
-    })
+async function fetchUserBets(fid: number): Promise<Bet[]> {
+  const allBets = await getBets()
 
-    if (!response.ok) {
-      return []
-    }
-
-    const data = await response.json()
-
-    // Convert date strings back to Date objects
-    return data.map((bet: Bet) => ({
-      ...bet,
-      createdAt: new Date(bet.createdAt),
-      expiresAt: new Date(bet.expiresAt),
-      acceptedAt: bet.acceptedAt ? new Date(bet.acceptedAt) : null,
-    }))
-  } catch (error) {
-    console.error('Error fetching bets:', error)
+  if (allBets.error) {
+    console.error('Error fetching bets:', allBets.error)
     return []
   }
-}
 
-function getBetsByUser(fid: number, bets: Bet[]): Bet[] {
-  return bets.filter(
-    (bet) =>
-      bet.maker.fid === fid ||
-      bet.acceptedBy?.fid === fid ||
-      bet.taker?.fid === fid
+  // Filter where the maker, taker, or judge is the user
+  return (
+    allBets.data?.filter(
+      (bet) =>
+        bet.maker.fid === fid ||
+        bet.taker?.fid === fid ||
+        bet.judge?.fid === fid
+    ) || []
   )
 }
 
@@ -160,16 +145,16 @@ export default async function ProfilePage({
   const { fid: fidString } = await params
   const fid = parseInt(fidString)
 
-  // Fetch real user data from Neynar
+  // Fetch user bets
+  const userBets = await fetchUserBets(fid)
+
+  // Fetch user profile
   const user = await fetchUserProfile(fid)
 
   if (!user) {
     notFound()
   }
 
-  // Fetch all bets and filter by user
-  const allBets = await fetchBets()
-  const userBets = getBetsByUser(fid, allBets)
   const stats = getUserStats(fid, userBets)
 
   return (
