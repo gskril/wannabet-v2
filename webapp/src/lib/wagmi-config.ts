@@ -8,12 +8,7 @@ const baseRpcUrl =
 
 export const wagmiConfig = createConfig({
   chains: [base], // Only Base - useSwitchChain will still work from other networks
-  connectors: [
-    injected({
-      // Support all injected wallets (MetaMask, Coinbase Wallet, etc.)
-      shimDisconnect: true,
-    }),
-  ],
+  connectors: [injected()],
   transports: {
     [base.id]: http(baseRpcUrl),
   },

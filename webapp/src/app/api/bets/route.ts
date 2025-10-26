@@ -62,9 +62,6 @@ const getAsset = (address: Address): Asset => {
   return asset
 }
 
-// Zero address constant
-const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
-
 // Map blockchain status to UI status
 function mapStatus(status: BetStatusEnum): BetStatus {
   switch (status) {
@@ -226,7 +223,7 @@ export async function GET(request: Request) {
       }
     }
 
-    if (!takerUser && bet.taker !== ZERO_ADDRESS) {
+    if (!takerUser) {
       const shortAddress = `${bet.taker.slice(0, 6)}...${bet.taker.slice(-4)}`
       takerUser = {
         fid: 0,
@@ -237,7 +234,7 @@ export async function GET(request: Request) {
       }
     }
 
-    if (!judgeUser && bet.judge !== ZERO_ADDRESS) {
+    if (!judgeUser) {
       const shortAddress = `${bet.judge.slice(0, 6)}...${bet.judge.slice(-4)}`
       judgeUser = {
         fid: 0,

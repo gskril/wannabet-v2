@@ -1,5 +1,6 @@
 'use client'
 
+import { useQuery } from '@tanstack/react-query'
 import { HelpCircle } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
@@ -12,9 +13,6 @@ import type { Bet } from '@/lib/types'
 
 export default function HomePage() {
   const [showWelcome, setShowWelcome] = useState(false)
-  const [bets, setBets] = useState<Bet[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
 
   // Load initial state from localStorage after client mounts
   useEffect(() => {
@@ -22,39 +20,31 @@ export default function HomePage() {
     setShowWelcome(!dismissed)
   }, [])
 
-  // Fetch real bets data
-  useEffect(() => {
-    async function fetchBets() {
-      try {
-        setLoading(true)
-        setError(null)
-        const response = await fetch('/api/bets')
-
-        if (!response.ok) {
-          throw new Error('Failed to fetch bets')
-        }
-
-        const data = await response.json()
-
-        // Convert date strings back to Date objects
-        const betsWithDates = data.map((bet: Bet) => ({
-          ...bet,
-          createdAt: new Date(bet.createdAt),
-          expiresAt: new Date(bet.expiresAt),
-          acceptedAt: bet.acceptedAt ? new Date(bet.acceptedAt) : null,
-        }))
-
-        setBets(betsWithDates)
-      } catch (err) {
-        console.error('Error fetching bets:', err)
-        setError(err instanceof Error ? err.message : 'Failed to load bets')
-      } finally {
-        setLoading(false)
+  // Fetch bets data
+  const {
+    data: bets,
+    isLoading: loading,
+    error,
+  } = useQuery({
+    queryKey: ['bets'],
+    queryFn: async () => {
+      const res = await fetch('/api/bets')
+      if (!res.ok) {
+        throw new Error('Failed to fetch bets')
       }
-    }
 
-    fetchBets()
-  }, [])
+      const json: Bet[] = await res.json()
+
+      const betsWithDates = json.map((bet: Bet) => ({
+        ...bet,
+        createdAt: new Date(bet.createdAt),
+        expiresAt: new Date(bet.expiresAt),
+        acceptedAt: bet.acceptedAt ? new Date(bet.acceptedAt) : null,
+      }))
+
+      return betsWithDates
+    },
+  })
 
   const handleCloseWelcome = (open: boolean) => {
     setShowWelcome(open)
@@ -116,16 +106,16 @@ export default function HomePage() {
           </div>
         ) : error ? (
           <div className="flex items-center justify-center py-12">
-            <div className="text-destructive">Error: {error}</div>
+            <div className="text-destructive">Error: {error.message}</div>
           </div>
-        ) : bets.length === 0 ? (
+        ) : bets && bets.length === 0 ? (
           <div className="flex items-center justify-center py-12">
             <div className="text-muted-foreground">
               No bets found. Create one to get started!
             </div>
           </div>
         ) : (
-          <BetsTable bets={bets} />
+          bets && bets.length > 0 && <BetsTable bets={bets} />
         )}
       </main>
 
