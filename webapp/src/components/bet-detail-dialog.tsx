@@ -4,10 +4,13 @@ import { format } from 'date-fns'
 import { Coins, ExternalLink, Trophy } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { type Address, parseUnits } from 'viem'
+import { type Address, encodeFunctionData, parseUnits } from 'viem'
+import { base } from 'viem/chains'
 import {
   useAccount,
   useReadContract,
+  useSendCalls,
+  useWaitForCallsStatus,
   useWaitForTransactionReceipt,
   useWriteContract,
 } from 'wagmi'
@@ -45,36 +48,20 @@ export function BetDetailDialog({
   // Bet contract address (in real usage, this would come from bet.id)
   const betAddress = bet.id as Address
 
-  // USDC approval hooks
+  // Batch call hook
   const {
-    data: approvalHash,
-    writeContractAsync: approveUsdc,
+    data: batchResult,
+    sendCalls: sendTransaction,
     isPending: isApproving,
     reset: resetApproval,
-  } = useWriteContract()
+  } = useSendCalls()
 
-  const { isSuccess: approvalConfirmed } = useWaitForTransactionReceipt({
-    hash: approvalHash,
+  const { isSuccess: isTransactionConfirmed } = useWaitForCallsStatus({
+    id: batchResult?.id,
     query: {
-      enabled: !!approvalHash,
+      enabled: !!batchResult?.id,
     },
   })
-
-  // Accept bet hooks
-  const {
-    data: acceptHash,
-    writeContractAsync: acceptBet,
-    isPending: isAccepting,
-    reset: resetAccept,
-  } = useWriteContract()
-
-  const { isLoading: isWaitingForAccept, isSuccess: isAcceptSuccess } =
-    useWaitForTransactionReceipt({
-      hash: acceptHash,
-      query: {
-        enabled: !!acceptHash,
-      },
-    })
 
   // Resolve bet hooks
   const {
@@ -128,35 +115,21 @@ export function BetDetailDialog({
     },
   })
 
-  // Auto-accept after approval is confirmed
-  useEffect(() => {
-    if (approvalConfirmed && address) {
-      refetchAllowance().then(async () => {
-        await acceptBet({
-          address: betAddress,
-          abi: BET_ABI,
-          functionName: 'accept',
-          chainId: 8453, // Force Base network
-        })
-      })
-    }
-  }, [approvalConfirmed, refetchAllowance, address, acceptBet, betAddress])
-
   // Refresh page after accept transaction succeeds
   useEffect(() => {
-    if (isAcceptSuccess) {
+    if (isTransactionConfirmed) {
       setTimeout(() => {
         router.refresh()
-      }, 2000)
+      }, 1000)
     }
-  }, [isAcceptSuccess, router])
+  }, [isTransactionConfirmed, router])
 
   // Refresh page after resolve transaction succeeds
   useEffect(() => {
     if (isResolveSuccess) {
       setTimeout(() => {
         router.refresh()
-      }, 2000)
+      }, 1000)
     }
   }, [isResolveSuccess, router])
 
@@ -169,26 +142,35 @@ export function BetDetailDialog({
     try {
       const amountInUnits = parseUnits(bet.amount.toString(), 6)
       const currentAllowance = allowance || BigInt(0)
+      const calls = []
 
       // Check if we need to approve USDC
       if (currentAllowance < amountInUnits) {
-        await approveUsdc({
-          address: USDC_ADDRESS,
+        const approveCall = encodeFunctionData({
           abi: ERC20_ABI,
           functionName: 'approve',
           args: [betAddress, amountInUnits],
-          chainId: 8453, // Force Base network
         })
-        // Actual acceptance will happen in useEffect after approval confirms
-      } else {
-        // Already approved, call accept directly
-        await acceptBet({
-          address: betAddress,
-          abi: BET_ABI,
-          functionName: 'accept',
-          chainId: 8453, // Force Base network
+        calls.push({
+          to: USDC_ADDRESS,
+          data: approveCall,
         })
       }
+
+      const acceptCall = encodeFunctionData({
+        abi: BET_ABI,
+        functionName: 'accept',
+        args: [],
+      })
+      calls.push({
+        to: betAddress,
+        data: acceptCall,
+      })
+
+      sendTransaction({
+        calls,
+        chainId: base.id,
+      })
     } catch (error) {
       console.error('Error accepting bet:', error)
     }
@@ -215,7 +197,6 @@ export function BetDetailDialog({
 
   const handleReset = () => {
     resetApproval()
-    resetAccept()
     resetResolve()
     resetCancel()
   }
@@ -472,17 +453,13 @@ export function BetDetailDialog({
                   size="lg"
                   disabled={
                     isApproving ||
-                    isAccepting ||
-                    isWaitingForAccept ||
                     (usdcBalance !== undefined &&
                       parseUnits(bet.amount.toString(), 6) > usdcBalance)
                   }
                 >
                   {isApproving
-                    ? 'Approving USDC...'
-                    : isAccepting || isWaitingForAccept
-                      ? 'Accepting Bet...'
-                      : `Accept Bet (${bet.amount} USDC)`}
+                    ? 'Accepting Bet...'
+                    : `Accept Bet (${bet.amount} USDC)`}
                 </Button>
 
                 {/* Confirmation message */}
