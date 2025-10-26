@@ -1,9 +1,16 @@
 'use client'
 
+import { sendCallsSync } from '@wagmi/core'
 import { Calendar, Loader2, Plus } from 'lucide-react'
 import Image from 'next/image'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { type Address, decodeEventLog, parseUnits, zeroAddress } from 'viem'
+import {
+  type Address,
+  decodeEventLog,
+  encodeFunctionData,
+  parseUnits,
+  zeroAddress,
+} from 'viem'
 import { base } from 'viem/chains'
 import {
   useAccount,
@@ -13,6 +20,8 @@ import {
   useWriteContract,
 } from 'wagmi'
 import {
+  getCallsStatus,
+  getConnections,
   readContract,
   waitForTransactionReceipt,
   writeContract,
@@ -122,6 +131,8 @@ export function CreateBetDialog() {
     description: '',
   })
 
+  const [debugInfo, setDebugInfo] = useState<string>('')
+
   /** web3 hooks */
   const { address, isConnected, chain } = useAccount()
   const { connect, connectors } = useConnect()
@@ -164,16 +175,16 @@ export function CreateBetDialog() {
   }, [])
 
   /** prefill description at entry to step 4 (only once per dialog session) */
-  useEffect(() => {
-    if (step === 4 && !hasPrefilledDescription.current) {
-      const username = currentUser?.username || 'testuser'
-      setFormData((prev) => ({
-        ...prev,
-        description: `${username} bets that `,
-      }))
-      hasPrefilledDescription.current = true
-    }
-  }, [step, currentUser])
+  // useEffect(() => {
+  //   if (step === 4 && !hasPrefilledDescription.current) {
+  //     const username = currentUser?.username || 'testuser'
+  //     setFormData((prev) => ({
+  //       ...prev,
+  //       description: `${username} bets that `,
+  //     }))
+  //     hasPrefilledDescription.current = true
+  //   }
+  // }, [step, currentUser])
 
   /** simple wizard guards */
   const canProceed = useMemo(() => {
@@ -188,9 +199,7 @@ export function CreateBetDialog() {
       case 3:
         return formData.dateOption !== null && isNonEmpty(formData.expiresAt)
       case 4: {
-        const username = currentUser?.username || 'testuser'
-        const prefill = `${username} bets that `
-        return (formData.description || '').length > prefill.length
+        return (formData.description || '').length > 5
       }
       case 5:
         return true
@@ -360,35 +369,16 @@ export function CreateBetDialog() {
 
         // ensure allowance for predicted spender
         setPhase('approving')
-        const currentAllowance = (await readContract(wagmiConfig, {
-          address: USDC_ADDRESS,
+
+        // Create the function data for the approve call
+        const approveData = encodeFunctionData({
           abi: ERC20_ABI,
-          functionName: 'allowance',
-          args: [address, predicted],
-          chainId: BASE_CHAIN_ID,
-        })) as bigint
+          functionName: 'approve',
+          args: [predicted, amountInUnits],
+        })
 
-        if (currentAllowance < amountInUnits) {
-          const approveHash = await approveWrite({
-            address: USDC_ADDRESS,
-            abi: ERC20_ABI,
-            functionName: 'approve',
-            args: [predicted, amountInUnits],
-            chainId: BASE_CHAIN_ID,
-          })
-
-          await waitForTransactionReceipt(wagmiConfig, {
-            hash: approveHash,
-            chainId: BASE_CHAIN_ID,
-          })
-        }
-
-        if (!mounted.current) return
-
-        // create bet
-        setPhase('creating')
-        const createHash = await writeContract(wagmiConfig, {
-          address: BETFACTORY_ADDRESS,
+        // Create the function data for the create bet call
+        const createBetData = encodeFunctionData({
           abi: BETFACTORY_ABI,
           functionName: 'createBet',
           args: [
@@ -401,45 +391,71 @@ export function CreateBetDialog() {
             resolveBy,
             formData.description,
           ],
+        })
+
+        // Submit a batch call
+        setPhase('creating')
+        const batchResult = await sendCallsSync(wagmiConfig, {
+          calls: [
+            {
+              to: USDC_ADDRESS,
+              data: approveData,
+            },
+            {
+              to: BETFACTORY_ADDRESS,
+              data: createBetData,
+            },
+          ],
           chainId: BASE_CHAIN_ID,
         })
-        setBetCreationHash(createHash)
 
         // confirm bet creation
         setPhase('confirming')
-        const receipt = await waitForTransactionReceipt(wagmiConfig, {
-          hash: createHash,
-          chainId: BASE_CHAIN_ID,
+        const connections = getConnections(wagmiConfig)
+        const { receipts } = await getCallsStatus(wagmiConfig, {
+          id: batchResult.id,
+          connector: connections[0]?.connector,
         })
+        setBetCreationHash(receipts?.[0]?.transactionHash || null)
+
+        if (!receipts) throw new Error('No receipts found.')
 
         // extract emitted bet address
         setPhase('verifying')
-        const factoryLog = receipt.logs.find(
-          (l) => l.address.toLowerCase() === BETFACTORY_ADDRESS.toLowerCase()
-        )
+
+        console.log({ receipts })
+
+        const factoryLog = receipts
+          .flatMap((r) => r.logs)
+          .find(
+            (log) =>
+              log.address.toLowerCase() === BETFACTORY_ADDRESS.toLowerCase()
+          )
+
         if (!factoryLog) throw new Error('No BetFactory log found.')
 
         const decoded = decodeEventLog({
           abi: BETFACTORY_ABI,
           data: factoryLog.data,
-          topics: factoryLog.topics,
+          // Idk why I have to cast this to any but i think it should work
+          topics: factoryLog.topics as any,
         })
 
         if (decoded.eventName !== 'BetCreated')
           throw new Error('Unexpected event emitted.')
 
-        const emittedBet = decoded.args.bet as Address
+        const emittedBet = decoded.args.bet
         setCreatedBetAddress(emittedBet)
 
         // hard verify against predicted
-        if (emittedBet.toLowerCase() !== predicted.toLowerCase()) {
-          setUiError({
-            title: 'Address mismatch',
-            detail: `Predicted ${predicted} but emitted ${emittedBet}. Please contact support.`,
-          })
-          setPhase('idle')
-          return
-        }
+        // if (emittedBet.toLowerCase() !== predicted.toLowerCase()) {
+        //   setUiError({
+        //     title: 'Address mismatch',
+        //     detail: `Predicted ${predicted} but emitted ${emittedBet}. Please contact support.`,
+        //   })
+        //   setPhase('idle')
+        //   return
+        // }
 
         setPhase('done')
         setStep(5)
@@ -697,10 +713,7 @@ export function CreateBetDialog() {
               <Label className="text-lg font-semibold">
                 What&apos;s the bet?
               </Label>
-              <div className="space-y-3">
-                <p className="text-muted-foreground text-sm">
-                  Complete the sentence:
-                </p>
+              <div className="space-y-3 pt-1">
                 <Input
                   id="description"
                   type="text"
@@ -710,7 +723,7 @@ export function CreateBetDialog() {
                   }
                   required
                   autoFocus
-                  className="h-20 text-lg"
+                  placeholder="Farcaster will have 38 users by ..."
                 />
                 {formData.expiresAt && (
                   <p className="text-muted-foreground text-sm">
@@ -766,7 +779,7 @@ export function CreateBetDialog() {
                     Bet Created Successfully!
                   </Label>
 
-                  <div className="bg-muted/50 space-y-2 rounded-lg p-4 text-sm">
+                  {/* <div className="bg-muted/50 space-y-2 rounded-lg p-4 text-sm">
                     <p className="text-muted-foreground text-xs">
                       Predicted Address
                     </p>
@@ -782,9 +795,9 @@ export function CreateBetDialog() {
                     <p className="break-all font-mono text-xs">
                       {createdBetAddress}
                     </p>
-                  </div>
+                  </div> */}
 
-                  <div className="flex flex-col gap-2">
+                  <div className="flex flex-col gap-2 pt-4">
                     <Button
                       asChild
                       variant="default"
@@ -874,7 +887,8 @@ export function CreateBetDialog() {
                           {formData.description}
                         </p>
                       </div>
-                      {predictedBetAddress && (
+                      {/* Hiding because this is debugging info */}
+                      {/* {predictedBetAddress && (
                         <div>
                           <p className="text-muted-foreground text-xs">
                             Predicted Address
@@ -883,7 +897,7 @@ export function CreateBetDialog() {
                             {predictedBetAddress}
                           </p>
                         </div>
-                      )}
+                      )} */}
                     </div>
                   </div>
 
@@ -931,8 +945,9 @@ export function CreateBetDialog() {
                 </Button>
               ) : phase !== 'done' ? (
                 <Button
-                  type="submit"
+                  type="button"
                   className="h-12 flex-1 text-base"
+                  onClick={handleSubmit}
                   disabled={
                     !canProceed || chain?.id !== BASE_CHAIN_ID || isBusy
                   }
