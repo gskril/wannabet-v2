@@ -23,12 +23,9 @@ import {
 import { UserAvatar } from '@/components/user-avatar'
 import { BET_ABI, ERC20_ABI, USDC_ADDRESS } from '@/lib/contracts'
 import type { Bet } from '@/lib/types'
+import { shortenAddress } from '@/lib/utils'
 
 const BASE_EXPLORER = 'https://basescan.org'
-
-function shortenAddress(address: string): string {
-  return `${address.slice(0, 6)}...${address.slice(-4)}`
-}
 
 interface BetDetailDialogProps {
   bet: Bet

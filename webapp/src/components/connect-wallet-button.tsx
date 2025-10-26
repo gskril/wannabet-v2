@@ -4,16 +4,17 @@ import { Loader2, Wallet } from 'lucide-react'
 import { useAccount, useConnect, useDisconnect } from 'wagmi'
 
 import { Button } from '@/components/ui/button'
-import { useAuth } from '@/lib/auth-context'
+
+import { useMiniApp } from './sdk-provider'
 
 export function ConnectWalletButton() {
-  const { isAuthenticated } = useAuth()
+  const { isMiniApp } = useMiniApp()
   const { address, isConnected, isConnecting } = useAccount()
   const { connect, connectors, isPending } = useConnect()
   const { disconnect } = useDisconnect()
 
   // Hide button on Farcaster - users are already authenticated via FID
-  if (isAuthenticated) {
+  if (isMiniApp) {
     return null
   }
 

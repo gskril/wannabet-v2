@@ -1,3 +1,5 @@
+import type { Context as MiniAppContext } from '@farcaster/miniapp-core'
+
 // Comes from IBet.sol
 export enum BetStatusEnum {
   PENDING = 'pending',
@@ -10,11 +12,7 @@ export enum BetStatusEnum {
 // TODO: We should probably pick 1 set of statuses and use that everywhere
 export type BetStatus = 'open' | 'active' | 'completed' | 'cancelled'
 
-export interface FarcasterUser {
-  fid: number
-  username: string
-  displayName: string
-  pfpUrl: string
+export interface FarcasterUser extends MiniAppContext.UserContext {
   bio?: string
 }
 
@@ -29,10 +27,10 @@ export interface Bet {
   description: string
   maker: FarcasterUser // bet creator (smart contract terminology)
   makerAddress: string // Ethereum address of maker
-  taker: FarcasterUser | null // specific opponent, null means open to anyone (smart contract terminology)
-  takerAddress: string | null // Ethereum address of taker (null or zero address for open bets)
-  judge: FarcasterUser | null // who decides the outcome
-  judgeAddress: string | null // Ethereum address of judge (null or zero address for open bets)
+  taker: FarcasterUser
+  takerAddress: string
+  judge: FarcasterUser
+  judgeAddress: string
   asset: Asset
   amount: string // in USDC
   status: BetStatus

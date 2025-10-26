@@ -5,7 +5,6 @@ import { HelpCircle } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 import { BetsTable } from '@/components/bets-table'
-import { ConnectWalletButton } from '@/components/connect-wallet-button'
 import { CreateBetDialog } from '@/components/create-bet-dialog'
 import { TestBetContract } from '@/components/test-bet-contract'
 import { WelcomeModal } from '@/components/welcome-modal'
@@ -53,18 +52,13 @@ export default function HomePage() {
     }
   }
 
-  const handleGetStarted = () => {
-    // Open the create bet dialog
-    window.location.hash = 'create'
-  }
-
   return (
     <div className="bg-background min-h-screen pb-20 sm:pb-4">
       <main className="container mx-auto px-4 py-6 md:py-8">
         {/* Hero Section */}
         <div className="mb-8 md:mb-12">
           <div className="mb-6 flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src="/img/bettingmutt.png"
@@ -79,9 +73,6 @@ export default function HomePage() {
             </div>
 
             <div className="flex items-center gap-2">
-              {/* Wallet Connect Button */}
-              <ConnectWalletButton />
-
               {/* Help button */}
               <button
                 onClick={() => setShowWelcome(true)}
@@ -95,9 +86,9 @@ export default function HomePage() {
         </div>
 
         {/* Test Bet Contract Section */}
-        <div className="mb-8">
+        {/* <div className="mb-8">
           <TestBetContract />
-        </div>
+        </div> */}
 
         {/* Bets Section */}
         {loading ? (

@@ -29,7 +29,6 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { UserSearch } from '@/components/user-search'
 import { resolveAddressFromFid } from '@/lib/address-resolver'
-import { useAuth } from '@/lib/auth-context'
 import {
   BETFACTORY_ABI,
   BETFACTORY_ADDRESS,
@@ -38,6 +37,8 @@ import {
 } from '@/lib/contracts'
 import type { FarcasterUser } from '@/lib/types'
 import { wagmiConfig } from '@/lib/wagmi-config'
+
+import { useMiniApp } from './sdk-provider'
 
 /** -----------------------------
  * constants & types
@@ -91,7 +92,7 @@ const log = (...args: unknown[]) => {
 }
 
 export function CreateBetDialog() {
-  const { user: currentUser } = useAuth()
+  const { miniAppUser: currentUser } = useMiniApp()
 
   /** dialog + wizard state */
   const [open, setOpen] = useState(false)
