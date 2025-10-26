@@ -3,7 +3,8 @@
 import { Calendar, Loader2, Plus } from 'lucide-react'
 import Image from 'next/image'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { type Address, decodeEventLog, parseUnits } from 'viem'
+import { type Address, decodeEventLog, parseUnits, zeroAddress } from 'viem'
+import { base } from 'viem/chains'
 import {
   useAccount,
   useConnect,
@@ -43,7 +44,7 @@ import { useMiniApp } from './sdk-provider'
 /** -----------------------------
  * constants & types
  * ------------------------------ */
-const BASE_CHAIN_ID = 8453 as const
+const BASE_CHAIN_ID = base.id
 type DateOption = '1day' | '7days' | '30days' | 'custom'
 type SubmitPhase =
   | 'idle'
@@ -73,7 +74,7 @@ interface UiError {
 }
 
 /** tiny helpers */
-const ZERO_ADDR = '0x0000000000000000000000000000000000000000' as Address
+const ZERO_ADDR = zeroAddress
 const isNonEmpty = (s?: string) => !!s && s.trim().length > 0
 const fmtDate = (iso?: string) =>
   !iso
@@ -517,8 +518,8 @@ export function CreateBetDialog() {
           <span>Create Bet</span>
         </Button>
       </DrawerTrigger>
-      <DrawerContent className="mx-auto max-h-[85dvh] max-w-md overflow-y-auto">
-        <DrawerHeader className="pb-3">
+      <DrawerContent>
+        <DrawerHeader>
           <DrawerTitle>Create a New Bet</DrawerTitle>
         </DrawerHeader>
 
@@ -538,7 +539,7 @@ export function CreateBetDialog() {
           ))}
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-5 px-6 pb-8 sm:pb-6">
+        <form onSubmit={handleSubmit} className="px-6 py-2 pb-4">
           {/* connect */}
           {!isConnected && (
             <div className="space-y-4 text-center">
@@ -565,8 +566,8 @@ export function CreateBetDialog() {
               <UserSearch
                 label="Who are you betting?"
                 placeholder="@username"
-                helperText="Leave empty to allow anyone to accept"
                 value={formData.taker}
+                required
                 onChange={(value, user) =>
                   setFormData((p) => ({ ...p, taker: value, takerUser: user }))
                 }

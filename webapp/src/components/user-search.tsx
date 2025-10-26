@@ -137,7 +137,7 @@ export function UserSearch({
   return (
     <div className="space-y-2">
       <Label htmlFor="user-search" className="text-base">
-        {label} {required && '*'}
+        {label}
       </Label>
 
       {/* Show avatar card if user is selected, otherwise show search input */}
@@ -179,7 +179,7 @@ export function UserSearch({
           />
 
           {/* Dropdown with user suggestions */}
-          {isFocused && (
+          {isFocused && searchQuery.trim().length >= 2 && (
             <div className="bg-background absolute top-full z-50 mt-1 max-h-[280px] w-full overflow-y-auto rounded-lg border shadow-lg">
               {isLoading ? (
                 <div className="text-muted-foreground p-4 text-center text-sm">

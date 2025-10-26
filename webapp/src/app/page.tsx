@@ -111,7 +111,6 @@ export default function HomePage() {
       </main>
 
       <WelcomeModal open={showWelcome} onOpenChange={handleCloseWelcome} />
-      <CreateBetDialog />
     </div>
   )
 }
