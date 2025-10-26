@@ -513,7 +513,7 @@ export function CreateBetDialog() {
           <span>Create Bet</span>
         </Button>
       </DrawerTrigger>
-      <DrawerContent className="mx-auto max-h-[85vh] max-w-md overflow-y-auto">
+      <DrawerContent className="mx-auto max-h-[85dvh] max-w-md overflow-y-auto">
         <DrawerHeader className="pb-3">
           <DrawerTitle>Create a New Bet</DrawerTitle>
         </DrawerHeader>
