@@ -41,7 +41,8 @@ export function UserAvatar({
     </Avatar>
   )
 
-  if (!clickable) {
+  // Don't make clickable if user doesn't have a Farcaster account (fid === 0)
+  if (!clickable || user.fid === 0) {
     return avatar
   }
 

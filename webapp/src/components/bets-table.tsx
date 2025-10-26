@@ -1,7 +1,7 @@
 'use client'
 
 import { formatDistanceStrict } from 'date-fns'
-import { ExternalLink } from 'lucide-react'
+import { CheckCircle2, ExternalLink } from 'lucide-react'
 import Image from 'next/image'
 import { useState } from 'react'
 
@@ -68,13 +68,34 @@ export function BetsTable({ bets }: BetsTableProps) {
 
             <div className="flex flex-col gap-4">
               <div className="mx-auto flex gap-2">
-                <UserAvatar user={bet.maker} size="lg" clickable={false} />
-                {bet.taker && (
+                <div className="relative">
+                  <UserAvatar user={bet.maker} size="lg" clickable={false} />
+                  {bet.winner && bet.winner.fid === bet.maker.fid && (
+                    <div className="absolute -bottom-1 -right-1 rounded-full bg-green-500 p-0.5">
+                      <CheckCircle2 className="h-5 w-5 text-white" />
+                    </div>
+                  )}
+                </div>
+                {(bet.taker || bet.acceptedBy) && (
                   <>
                     <span className="text-muted-foreground self-center text-sm">
                       vs
                     </span>
-                    <UserAvatar user={bet.taker} size="lg" clickable={false} />
+                    <div className="relative">
+                      <UserAvatar
+                        user={bet.taker || bet.acceptedBy}
+                        size="lg"
+                        clickable={false}
+                      />
+                      {bet.winner &&
+                        (bet.taker || bet.acceptedBy) &&
+                        bet.winner.fid ===
+                          (bet.taker?.fid || bet.acceptedBy?.fid) && (
+                          <div className="absolute -bottom-1 -right-1 rounded-full bg-green-500 p-0.5">
+                            <CheckCircle2 className="h-5 w-5 text-white" />
+                          </div>
+                        )}
+                    </div>
                   </>
                 )}
               </div>
@@ -100,21 +121,46 @@ export function BetsTable({ bets }: BetsTableProps) {
               <div className="min-w-0 flex-1">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex flex-wrap items-baseline gap-1.5 text-sm">
-                    <span className="font-semibold">
-                      {bet.maker.displayName}
-                    </span>
-                    <span className="text-muted-foreground">
-                      {bet.status === 'open' ? 'challenges' : 'bets'}
-                    </span>
-                    {bet.taker && (
-                      <span className="font-semibold">
-                        {bet.taker.displayName}
-                      </span>
-                    )}
-                    {!bet.taker && bet.acceptedBy && (
-                      <span className="font-semibold">
-                        {bet.acceptedBy.displayName}
-                      </span>
+                    {bet.winner ? (
+                      <>
+                        <span
+                          className={`font-semibold ${bet.winner.fid === bet.maker.fid ? 'text-green-600' : ''}`}
+                        >
+                          {bet.maker.displayName}
+                        </span>
+                        <span className="text-muted-foreground">
+                          {bet.winner.fid === bet.maker.fid
+                            ? 'won against'
+                            : 'lost to'}
+                        </span>
+                        {(bet.taker || bet.acceptedBy) && (
+                          <span
+                            className={`font-semibold ${bet.winner.fid === (bet.taker?.fid || bet.acceptedBy?.fid) ? 'text-green-600' : ''}`}
+                          >
+                            {bet.taker?.displayName ||
+                              bet.acceptedBy?.displayName}
+                          </span>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <span className="font-semibold">
+                          {bet.maker.displayName}
+                        </span>
+                        <span className="text-muted-foreground">
+                          {bet.status === 'open' ? 'challenges' : 'bets'}
+                        </span>
+                        {bet.taker && (
+                          <span className="font-semibold">
+                            {bet.taker.displayName}
+                          </span>
+                        )}
+                        {!bet.taker && bet.acceptedBy && (
+                          <span className="font-semibold">
+                            {bet.acceptedBy.displayName}
+                          </span>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>
