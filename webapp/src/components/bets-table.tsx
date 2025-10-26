@@ -83,7 +83,7 @@ export function BetsTable({ bets }: BetsTableProps) {
                     </span>
                     <div className="relative">
                       <UserAvatar
-                        user={bet.taker || bet.acceptedBy}
+                        user={(bet.taker || bet.acceptedBy)!}
                         size="lg"
                         clickable={false}
                       />
