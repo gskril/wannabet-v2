@@ -97,6 +97,7 @@ export function CreateBetDialog() {
   const [open, setOpen] = useState(false)
   const [step, setStep] = useState<Step>(1)
   const [uiError, setUiError] = useState<UiError | null>(null)
+  const hasPrefilledDescription = useRef(false)
 
   /** result/derived state */
   const [createdBetAddress, setCreatedBetAddress] = useState<Address | null>(
@@ -160,16 +161,17 @@ export function CreateBetDialog() {
     return () => window.removeEventListener('hashchange', onHash)
   }, [])
 
-  /** prefill description at entry to step 4 */
+  /** prefill description at entry to step 4 (only once per dialog session) */
   useEffect(() => {
-    if (step === 4 && !isNonEmpty(formData.description)) {
+    if (step === 4 && !hasPrefilledDescription.current) {
       const username = currentUser?.username || 'testuser'
       setFormData((prev) => ({
         ...prev,
         description: `${username} bets that `,
       }))
+      hasPrefilledDescription.current = true
     }
-  }, [step, currentUser, formData.description])
+  }, [step, currentUser])
 
   /** simple wizard guards */
   const canProceed = useMemo(() => {
@@ -221,6 +223,7 @@ export function CreateBetDialog() {
     setPredictedBetAddress(null)
     setBetCreationHash(null)
     setPhase('idle')
+    hasPrefilledDescription.current = false
   }, [])
 
   /** step navigation */
