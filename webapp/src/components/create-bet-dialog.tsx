@@ -508,6 +508,7 @@ export function CreateBetDialog() {
         setOpen(isOpen)
         if (!isOpen) handleReset()
       }}
+      repositionInputs={false}
     >
       <DrawerTrigger asChild>
         <Button

@@ -69,9 +69,7 @@ export function BottomNav() {
         </div>
       </nav>
 
-      <div className="fixed bottom-0 right-0 z-50">
-        <CreateBetDialog />
-      </div>
+      <CreateBetDialog />
     </>
   )
 }
