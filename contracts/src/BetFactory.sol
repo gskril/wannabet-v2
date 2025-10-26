@@ -75,17 +75,7 @@ contract BetFactory is Ownable {
         address newBet = Clones.cloneDeterministic(
             betImplementation,
             bytes32(
-                keccak256(
-                    abi.encode(
-                        msg.sender,
-                        taker,
-                        asset,
-                        makerStake,
-                        takerStake,
-                        acceptBy,
-                        resolveBy
-                    )
-                )
+                keccak256(abi.encode(msg.sender, taker, acceptBy, resolveBy))
             )
         );
         IBet(newBet).initialize(
@@ -123,9 +113,6 @@ contract BetFactory is Ownable {
     function predictBetAddress(
         address maker,
         address taker,
-        address asset,
-        uint256 makerStake,
-        uint256 takerStake,
         uint40 acceptBy,
         uint40 resolveBy
     ) external view returns (address) {
@@ -133,17 +120,7 @@ contract BetFactory is Ownable {
             Clones.predictDeterministicAddress(
                 betImplementation,
                 bytes32(
-                    keccak256(
-                        abi.encode(
-                            maker,
-                            taker,
-                            asset,
-                            makerStake,
-                            takerStake,
-                            acceptBy,
-                            resolveBy
-                        )
-                    )
+                    keccak256(abi.encode(maker, taker, acceptBy, resolveBy))
                 )
             );
     }

@@ -4,8 +4,8 @@
 
 | Contract       | Address                                                                                                               |
 | -------------- | --------------------------------------------------------------------------------------------------------------------- |
-| Implementation | [0x51f4E1df3A1F5527Bd076cE2c9b46B0AE76a4332](https://basescan.org/address/0x51f4E1df3A1F5527Bd076cE2c9b46B0AE76a4332) |
-| Factory        | [0xc1285D12f175c32C4A7FCd4B324Aa3BC9C1dceA3](https://basescan.org/address/0xc1285D12f175c32C4A7FCd4B324Aa3BC9C1dceA3) |
+| Implementation | [0xD57D184fe57C9D35033558baC301c90dA5282C4a](https://basescan.org/address/0xD57D184fe57C9D35033558baC301c90dA5282C4a) |
+| Factory        | [0x0F0A585aF686397d94428825D8cCfa2589b159A0](https://basescan.org/address/0x0F0A585aF686397d94428825D8cCfa2589b159A0) |
 
 ## Usage
 
@@ -37,17 +37,15 @@ After setting the variable, you can run the deployment with the Sepolia network:
 
 ### Verify
 
-Idk [this guide](https://hardhat.org/docs/learn-more/smart-contract-verification) isn't working for Etherscan :/
-
-Theoretically:
+[This guide](https://hardhat.org/docs/learn-more/smart-contract-verification) isn't working for Etherscan, but I was able to get it working via the steps described in [this issue](https://github.com/NomicFoundation/hardhat/issues/7623).
 
 ```bash
 pnpm hardhat verify --network sepolia 0x1234567890...
 ```
 
-Works on Blockscout though!
-
 ## Todo
+
+Feature we didn't get to implement during the hackathon, but will be adding afterwards.
 
 - [ ] Add a judging window (90 day hardcoded or user-defined)
 - [ ] Add ability for judge to refund the bet

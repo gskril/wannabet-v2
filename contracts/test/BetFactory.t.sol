@@ -39,9 +39,6 @@ contract BetFactoryTest is Test {
         address betNoPoolAddress = betFactory.predictBetAddress(
             maker,
             taker,
-            address(usdc),
-            1000,
-            1000,
             uint40(block.timestamp + 1000),
             uint40(block.timestamp + 2000)
         );
@@ -74,9 +71,6 @@ contract BetFactoryTest is Test {
         address betWithPoolAddress = betFactory.predictBetAddress(
             maker,
             taker,
-            address(usdc),
-            1000,
-            1000,
             uint40(block.timestamp + 1000),
             uint40(block.timestamp + 2000)
         );
@@ -114,9 +108,6 @@ contract BetFactoryTest is Test {
         address betWithPoolAddress = betFactory.predictBetAddress(
             maker,
             taker,
-            address(usdc),
-            1000,
-            1000,
             uint40(block.timestamp + 1000),
             uint40(block.timestamp + 2000)
         );

@@ -2,7 +2,7 @@ import { Address } from 'viem'
 
 // BetFactory contract on Base
 export const BETFACTORY_ADDRESS: Address =
-  '0xc1285D12f175c32C4A7FCd4B324Aa3BC9C1dceA3'
+  '0x0F0A585aF686397d94428825D8cCfa2589b159A0'
 
 // USDC contract on Base
 export const USDC_ADDRESS: Address =
@@ -326,21 +326,6 @@ export const BETFACTORY_ABI = [
         internalType: 'address',
         name: 'taker',
         type: 'address',
-      },
-      {
-        internalType: 'address',
-        name: 'asset',
-        type: 'address',
-      },
-      {
-        internalType: 'uint256',
-        name: 'makerStake',
-        type: 'uint256',
-      },
-      {
-        internalType: 'uint256',
-        name: 'takerStake',
-        type: 'uint256',
       },
       {
         internalType: 'uint40',

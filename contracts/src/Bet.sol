@@ -13,15 +13,8 @@ contract Bet is IBet, Initializable {
     //////////////////////////////////////////////////////////////*/
 
     IBet.Bet internal _bet;
-    IPool internal aavePool;
+    IPool internal _aavePool;
     address internal _treasury;
-
-    // Temporary allowlist to prevent real people from losing money lol
-    mapping(address => bool) internal _allowed;
-
-    /*//////////////////////////////////////////////////////////////
-                               MODIFIERS
-    //////////////////////////////////////////////////////////////*/
 
     /*//////////////////////////////////////////////////////////////
                               CONSTRUCTOR
@@ -40,18 +33,6 @@ contract Bet is IBet, Initializable {
         address pool,
         address treasury
     ) external initializer {
-        _allowed[0xA7860E99e3ce0752D1ac53b974E309fFf80277C6] = true; // limes.eth
-        _allowed[0xd37aBf24c89BB36DB9363DA3a304a254488e1E02] = true; // limes farcaster
-        _allowed[0x534631Bcf33BDb069fB20A93d2fdb9e4D4dD42CF] = true; // slobo.eth
-        _allowed[0x2aEc130Ec5156132fbB348292A90cb2f3De8A782] = true; // slobo farcaster
-        _allowed[0x179A862703a4adfb29896552DF9e307980D19285] = true; // gregskril.eth
-        _allowed[0x716B52795a72DE3309D86971428e19843D6D9A81] = true; // greg farcaster
-
-        // Only allowlisted addresses can create bets for testing
-        if (!_allowed[initialBet.maker]) {
-            revert Unauthorized();
-        }
-
         // Make sure maker, taker, asset, and judge are not the zero address
         if (
             initialBet.maker == address(0) ||
@@ -75,7 +56,7 @@ contract Bet is IBet, Initializable {
 
         _bet = initialBet;
         _treasury = treasury;
-        aavePool = IPool(pool);
+        _aavePool = IPool(pool);
 
         // Transfer the funds from the sender to the contract
         // Maybe can skip this and send it striaght to Aave ?
@@ -89,7 +70,7 @@ contract Bet is IBet, Initializable {
         if (pool != address(0)) {
             IERC20(initialBet.asset).approve(pool, type(uint256).max);
 
-            aavePool.supply(
+            _aavePool.supply(
                 initialBet.asset,
                 initialBet.makerStake,
                 address(this),
@@ -133,8 +114,8 @@ contract Bet is IBet, Initializable {
         IERC20(b.asset).transferFrom(msg.sender, address(this), b.takerStake);
 
         // If the pool is set, supply the funds to the pool
-        if (address(aavePool) != address(0)) {
-            aavePool.supply(b.asset, b.takerStake, address(this), 0);
+        if (address(_aavePool) != address(0)) {
+            _aavePool.supply(b.asset, b.takerStake, address(this), 0);
         }
 
         _bet.status = IBet.Status.ACTIVE;
@@ -157,12 +138,12 @@ contract Bet is IBet, Initializable {
         emit BetResolved(winner, totalWinnings);
 
         // If the funds are in Aave, withdraw them
-        if (address(aavePool) != address(0)) {
-            uint256 aTokenBalance = IERC20(aavePool.getReserveAToken(b.asset))
+        if (address(_aavePool) != address(0)) {
+            uint256 aTokenBalance = IERC20(_aavePool.getReserveAToken(b.asset))
                 .balanceOf(address(this));
 
             totalWinnings = _min(totalWinnings, aTokenBalance);
-            aavePool.withdraw(b.asset, aTokenBalance, address(this));
+            _aavePool.withdraw(b.asset, aTokenBalance, address(this));
         }
 
         // Transfer the winnings to the winner
@@ -198,10 +179,10 @@ contract Bet is IBet, Initializable {
         uint256 takerRefund = b.takerStake;
 
         // If there is a pool, withdraw the funds from Aave first
-        if (address(aavePool) != address(0)) {
-            uint256 aTokenBalance = IERC20(aavePool.getReserveAToken(b.asset))
+        if (address(_aavePool) != address(0)) {
+            uint256 aTokenBalance = IERC20(_aavePool.getReserveAToken(b.asset))
                 .balanceOf(address(this));
-            aavePool.withdraw(b.asset, aTokenBalance, address(this));
+            _aavePool.withdraw(b.asset, aTokenBalance, address(this));
 
             makerRefund = _min(makerRefund, aTokenBalance);
             takerRefund = _min(takerRefund, aTokenBalance - makerRefund);

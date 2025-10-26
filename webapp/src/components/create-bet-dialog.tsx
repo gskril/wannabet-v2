@@ -351,15 +351,7 @@ export function CreateBetDialog() {
           address: BETFACTORY_ADDRESS,
           abi: BETFACTORY_ABI,
           functionName: 'predictBetAddress',
-          args: [
-            address,
-            takerAddress,
-            USDC_ADDRESS,
-            amountInUnits,
-            amountInUnits,
-            acceptBy,
-            resolveBy,
-          ],
+          args: [address, takerAddress, acceptBy, resolveBy],
           chainId: BASE_CHAIN_ID,
         })) as Address
 
