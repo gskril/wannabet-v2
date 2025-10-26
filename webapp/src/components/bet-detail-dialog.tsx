@@ -231,7 +231,7 @@ export function BetDetailDialog({
         if (!isOpen) handleReset()
       }}
     >
-      <DrawerContent className="fixed bottom-0 left-0 right-0 mx-auto flex h-[100dvh] max-h-[100dvh] max-w-3xl flex-col overflow-hidden pb-[env(safe-area-inset-bottom)] sm:max-h-[85dvh]">
+      <DrawerContent className="fixed bottom-0 left-0 right-0 mx-auto flex max-h-[90dvh] max-w-3xl flex-col pb-[env(safe-area-inset-bottom)]">
         <DrawerHeader className="pb-2">
           {/* Status Badge - Minimal in top right */}
           <div className="absolute right-4 top-4">
@@ -246,7 +246,7 @@ export function BetDetailDialog({
           </div>
         </DrawerHeader>
 
-        <div className="space-y-4 px-4 pb-6">
+        <div className="min-h-0 space-y-4 overflow-y-auto px-4 pb-6">
           {/* Players Section with Floating Amount */}
           <div className="relative">
             {bet.acceptedBy ? (
