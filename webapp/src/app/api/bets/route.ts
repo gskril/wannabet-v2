@@ -28,6 +28,8 @@ interface EnvioResponse {
     }>
     Bet_BetResolved: Array<{
       address: Address
+      amount: string
+      winner: Address
     }>
     Bet_BetCancelled: Array<{
       address: Address
@@ -128,12 +130,19 @@ export async function GET(request: Request) {
 
   const { data }: EnvioResponse = await response.json()
 
-  // Extract unique addresses to resolve to Farcaster users (include judge)
+  // Extract unique addresses to resolve to Farcaster users (include judge and winners)
   const uniqueAddresses = new Set<string>()
   data.Bet_BetCreated.forEach((bet) => {
     uniqueAddresses.add(bet.maker.toLowerCase())
     uniqueAddresses.add(bet.taker.toLowerCase())
     uniqueAddresses.add(bet.judge.toLowerCase())
+  })
+
+  // Add winner addresses
+  data.Bet_BetResolved.forEach((resolved) => {
+    if (resolved.winner) {
+      uniqueAddresses.add(resolved.winner.toLowerCase())
+    }
   })
 
   const baseUrl = request.url.includes('localhost')
@@ -205,32 +214,35 @@ export async function GET(request: Request) {
     const judgeAddress = bet.judge.toLowerCase()
     let judgeUser = userMap[judgeAddress]
 
-    // If users don't have a Farcaster account, return "Unknown" username
+    // If users don't have a Farcaster account, show their shortened address
     if (!makerUser) {
+      const shortAddress = `${bet.maker.slice(0, 6)}...${bet.maker.slice(-4)}`
       makerUser = {
         fid: 0,
-        username: 'Unknown',
-        displayName: 'Unknown',
+        username: shortAddress,
+        displayName: shortAddress,
         pfpUrl: `${baseUrl}/fallback-pfp.png`,
         bio: '',
       }
     }
 
-    if (!takerUser) {
+    if (!takerUser && bet.taker !== ZERO_ADDRESS) {
+      const shortAddress = `${bet.taker.slice(0, 6)}...${bet.taker.slice(-4)}`
       takerUser = {
         fid: 0,
-        username: 'Unknown',
-        displayName: 'Unknown',
+        username: shortAddress,
+        displayName: shortAddress,
         pfpUrl: `${baseUrl}/fallback-pfp.png`,
         bio: '',
       }
     }
 
-    if (!judgeUser) {
+    if (!judgeUser && bet.judge !== ZERO_ADDRESS) {
+      const shortAddress = `${bet.judge.slice(0, 6)}...${bet.judge.slice(-4)}`
       judgeUser = {
         fid: 0,
-        username: 'Unknown',
-        displayName: 'Unknown',
+        username: shortAddress,
+        displayName: shortAddress,
         pfpUrl: `${baseUrl}/fallback-pfp.png`,
         bio: '',
       }
@@ -238,6 +250,25 @@ export async function GET(request: Request) {
 
     // Convert amount from wei to USDC (6 decimals)
     const amountInUsdc = formatUnits(BigInt(bet.makerStake), asset.decimals)
+
+    // Get winner user if bet is resolved
+    let winnerUser: FarcasterUser | null = null
+    if (winner && winner.winner) {
+      const winnerAddress = winner.winner.toLowerCase()
+      winnerUser = userMap[winnerAddress]
+
+      // If winner doesn't have a Farcaster account, create a fallback user with their address
+      if (!winnerUser) {
+        const shortAddress = `${winner.winner.slice(0, 6)}...${winner.winner.slice(-4)}`
+        winnerUser = {
+          fid: 0,
+          username: shortAddress,
+          displayName: shortAddress,
+          pfpUrl: `${baseUrl}/fallback-pfp.png`,
+          bio: '',
+        }
+      }
+    }
 
     return {
       id: bet.address,
@@ -253,7 +284,7 @@ export async function GET(request: Request) {
       status: mapStatus(status),
       createdAt: new Date(bet.createdAt * 1000),
       expiresAt: new Date(Number(bet.resolveBy) * 1000),
-      winner: winner ? winner.address : null,
+      winner: winnerUser,
       acceptedBy: accepted && takerUser ? takerUser : null,
       acceptedAt: accepted ? new Date(bet.createdAt * 1000) : null, // Approximate - we don't have exact acceptance time
     } as Bet
