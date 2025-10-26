@@ -80,6 +80,26 @@ function mapStatus(status: BetStatusEnum): BetStatus {
 }
 
 export async function GET(request: Request) {
+  const bets = await getBets()
+
+  if (bets.error) {
+    return Response.json({ error: bets.error }, { status: 500 })
+  }
+
+  return Response.json(bets.data)
+}
+
+type BetResponse =
+  | {
+      data: Bet[]
+      error?: undefined
+    }
+  | {
+      data?: undefined
+      error: string
+    }
+
+export async function getBets(): Promise<BetResponse> {
   const response = await fetch(INDEXER_URL, {
     method: 'POST',
     body: JSON.stringify({
@@ -122,7 +142,7 @@ export async function GET(request: Request) {
 
   if (!response.ok) {
     console.error('Failed to fetch bets', response.status, response.statusText)
-    return Response.json({ error: 'Failed to fetch bets' }, { status: 500 })
+    return { error: 'Failed to fetch bets' }
   }
 
   const { data }: EnvioResponse = await response.json()
@@ -142,9 +162,7 @@ export async function GET(request: Request) {
     }
   })
 
-  const baseUrl = request.url.includes('localhost')
-    ? 'http://localhost:3000'
-    : request.url.split('/api/')[0]
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
 
   // Fetch user data for all addresses
   let userMap: Record<string, FarcasterUser> = {}
@@ -287,5 +305,8 @@ export async function GET(request: Request) {
     } as Bet
   })
 
-  return Response.json(bets)
+  // Sort by createdAt descending (newest first)
+  bets.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+
+  return { data: bets }
 }

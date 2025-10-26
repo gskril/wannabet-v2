@@ -300,7 +300,7 @@ export function CreateBetDialog() {
       }
       if (chain?.id !== BASE_CHAIN_ID) {
         try {
-          setPhase('precheck')
+          // setPhase('precheck')
           await switchChainAsync({ chainId: BASE_CHAIN_ID })
         } catch {
           setUiError({ title: 'Please switch to Base (8453) in your wallet.' })
@@ -310,7 +310,7 @@ export function CreateBetDialog() {
       }
 
       try {
-        setPhase('precheck')
+        // setPhase('precheck')
 
         // validate amount & balance
         const amountNum = Number(formData.amount)
@@ -346,7 +346,7 @@ export function CreateBetDialog() {
         const resolveBy = expiresAtTs + 90 * 24 * 60 * 60
 
         // predict address (source of truth for allowance + verification)
-        setPhase('predicting')
+        // setPhase('predicting')
         const predicted = (await readContract(wagmiConfig, {
           address: BETFACTORY_ADDRESS,
           abi: BETFACTORY_ABI,
@@ -799,18 +799,16 @@ export function CreateBetDialog() {
 
                   <div className="flex flex-col gap-2 pt-4">
                     <Button
-                      asChild
                       variant="default"
                       className="w-full"
                       size="lg"
+                      type="button"
+                      onClick={() => {
+                        // Reload page to refresh bets
+                        window.location.reload()
+                      }}
                     >
-                      <a
-                        href={`/bet/${createdBetAddress}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        View Bet
-                      </a>
+                      View Bet
                     </Button>
                     {betCreationHash && (
                       <Button
@@ -828,7 +826,7 @@ export function CreateBetDialog() {
                         </a>
                       </Button>
                     )}
-                    <Button
+                    {/* <Button
                       variant="ghost"
                       onClick={() => {
                         handleReset()
@@ -837,7 +835,7 @@ export function CreateBetDialog() {
                       className="w-full"
                     >
                       Create Another
-                    </Button>
+                    </Button> */}
                   </div>
                 </div>
               ) : (

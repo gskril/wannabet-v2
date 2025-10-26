@@ -275,9 +275,9 @@ export function BetDetailDialog({
                     <p className="text-sm font-semibold">
                       {bet.maker.displayName}
                     </p>
-                    <p className="text-muted-foreground font-mono text-xs">
+                    {/* <p className="text-muted-foreground font-mono text-xs">
                       {shortenAddress(bet.makerAddress)}
-                    </p>
+                    </p> */}
                   </div>
                 </div>
 

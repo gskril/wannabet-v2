@@ -19,7 +19,7 @@ export function SdkProvider({ children, config }: MiniAppProviderProps) {
   useEffect(() => {
     const load = async () => {
       await sdk.actions.ready(config)
-      setContext((await sdk.context).user)
+      setContext((await sdk.context)?.user || undefined)
     }
 
     if (sdk && !isFrameSDKLoaded) {
