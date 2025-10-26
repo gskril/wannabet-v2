@@ -23,17 +23,21 @@ export function UserAvatar({
     xl: 'h-24 w-24',
   }
 
+  const getFallbackInitials = () => {
+    const name = user.displayName || user.username || '?'
+    return name
+      .split(' ')
+      .map((n) => n[0])
+      .filter(Boolean)
+      .join('')
+      .toUpperCase()
+      .slice(0, 2)
+  }
+
   const avatar = (
     <Avatar className={sizeClasses[size]}>
-      <AvatarImage src={user.pfpUrl} alt={user.displayName} />
-      <AvatarFallback>
-        {user.displayName
-          .split(' ')
-          .map((n) => n[0])
-          .join('')
-          .toUpperCase()
-          .slice(0, 2)}
-      </AvatarFallback>
+      <AvatarImage src={user.pfpUrl} alt={user.displayName || user.username} />
+      <AvatarFallback>{getFallbackInitials()}</AvatarFallback>
     </Avatar>
   )
 
