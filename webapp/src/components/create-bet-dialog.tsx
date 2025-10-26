@@ -437,8 +437,8 @@ export function CreateBetDialog() {
         const decoded = decodeEventLog({
           abi: BETFACTORY_ABI,
           data: factoryLog.data,
-          // Idk why I have to cast this to any but i think it should work
-          topics: factoryLog.topics as any,
+          // @ts-expect-error Idk why this is showing an error but it seems to work fine
+          topics: factoryLog.topics,
         })
 
         if (decoded.eventName !== 'BetCreated')
