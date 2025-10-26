@@ -4,7 +4,7 @@ WannaBet originally launched in July 2024 as a simple peer-to-peer betting app. 
 
 ## Contributing
 
-This is a pnpm monorepo with the following packages: [`web`](./web/README.md), [`shared`](./shared/README.md), [`contracts`](./contracts/README.md).
+This is a pnpm monorepo with the following packages: [`webapp`](./webapp/README.md) (Next.js), [`indexer`](./indexer/README.md) (Envio), [`contracts`](./contracts/README.md) (Hardhat 3). You can read more about each package in their respective README files.
 
 To get started, run `pnpm install` in the root to install the dependencies for all packages. Then run the relevant `dev` or `build` scripts found in any of the `package.json` files.
 

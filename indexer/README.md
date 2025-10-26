@@ -1,19 +1,5 @@
 ## Envio Indexer
 
-_Please refer to the [documentation website](https://docs.envio.dev) for a thorough guide on all [Envio](https://envio.dev) indexer features_
+Indexer for the WannaBet [smart contracts](../contracts/README.md), deployed via the [Envio hosted service](https://docs.envio.dev/docs/HyperIndex/hosted-service).
 
-### Run
-
-Open Docker Desktop and run the following command to spin up a local development server.
-
-```bash
-pnpm dev
-```
-
-Visit http://localhost:8080 to see the GraphQL Playground, local password is `testing`.
-
-### Generate files from `config.yaml` or `schema.graphql`
-
-```bash
-pnpm codegen
-```
+Used by the [webapp](../webapp/README.md) to fetch bet data in [`src/lib/get-bets.ts`](../webapp/src/lib/get-bets.ts).
