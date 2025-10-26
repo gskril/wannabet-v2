@@ -8,6 +8,7 @@ import { BetsTable } from '@/components/bets-table'
 import { CreateBetDialog } from '@/components/create-bet-dialog'
 import { TestBetContract } from '@/components/test-bet-contract'
 import { WelcomeModal } from '@/components/welcome-modal'
+import { useBets } from '@/hooks/useBets'
 import type { Bet } from '@/lib/types'
 
 export default function HomePage() {
@@ -20,30 +21,7 @@ export default function HomePage() {
   }, [])
 
   // Fetch bets data
-  const {
-    data: bets,
-    isLoading: loading,
-    error,
-  } = useQuery({
-    queryKey: ['bets'],
-    queryFn: async () => {
-      const res = await fetch('/api/bets')
-      if (!res.ok) {
-        throw new Error('Failed to fetch bets')
-      }
-
-      const json: Bet[] = await res.json()
-
-      const betsWithDates = json.map((bet: Bet) => ({
-        ...bet,
-        createdAt: new Date(bet.createdAt),
-        expiresAt: new Date(bet.expiresAt),
-        acceptedAt: bet.acceptedAt ? new Date(bet.acceptedAt) : null,
-      }))
-
-      return betsWithDates
-    },
-  })
+  const { data: bets, isLoading: loading, error } = useBets()
 
   const handleCloseWelcome = (open: boolean) => {
     setShowWelcome(open)

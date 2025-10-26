@@ -2,7 +2,6 @@
 
 import { format } from 'date-fns'
 import { Coins, ExternalLink, Trophy } from 'lucide-react'
-import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { type Address, encodeFunctionData, parseUnits } from 'viem'
 import { base } from 'viem/chains'
@@ -43,7 +42,6 @@ export function BetDetailDialog({
 }: BetDetailDialogProps) {
   const [timelineExpanded, setTimelineExpanded] = useState(false)
   const { address } = useAccount()
-  const router = useRouter()
 
   // Bet contract address (in real usage, this would come from bet.id)
   const betAddress = bet.id as Address
@@ -118,20 +116,16 @@ export function BetDetailDialog({
   // Refresh page after accept transaction succeeds
   useEffect(() => {
     if (isTransactionConfirmed) {
-      setTimeout(() => {
-        router.refresh()
-      }, 1000)
+      window.location.reload()
     }
-  }, [isTransactionConfirmed, router])
+  }, [isTransactionConfirmed])
 
   // Refresh page after resolve transaction succeeds
   useEffect(() => {
     if (isResolveSuccess) {
-      setTimeout(() => {
-        router.refresh()
-      }, 1000)
+      window.location.reload()
     }
-  }, [isResolveSuccess, router])
+  }, [isResolveSuccess])
 
   const handleAcceptBet = async () => {
     if (!address) {
@@ -334,7 +328,11 @@ export function BetDetailDialog({
                     disabled={isResolving || isWaitingForResolve}
                   >
                     <div className="flex items-center gap-2">
-                      <UserAvatar user={bet.maker} size="sm" />
+                      <UserAvatar
+                        user={bet.maker}
+                        size="sm"
+                        clickable={false}
+                      />
                       <span className="text-sm">{bet.maker.displayName}</span>
                     </div>
                   </Button>
@@ -347,7 +345,11 @@ export function BetDetailDialog({
                     disabled={isResolving || isWaitingForResolve}
                   >
                     <div className="flex items-center gap-2">
-                      <UserAvatar user={bet.acceptedBy} size="sm" />
+                      <UserAvatar
+                        user={bet.acceptedBy}
+                        size="sm"
+                        clickable={false}
+                      />
                       <span className="text-sm">
                         {bet.acceptedBy.displayName}
                       </span>
