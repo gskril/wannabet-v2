@@ -7,9 +7,9 @@
   "frame": {
     "version": "1",
     "name": "WannaBet",
-    "iconUrl": "https://wannabet-psi.vercel.app/img/bettingmutt.png",
-    "splashImageUrl": "https://wannabet-psi.vercel.app/img/bettingmutt.png",
+    "iconUrl": "https://wannabet.cc/img/bettingmutt.png",
+    "splashImageUrl": "https://wannabet.cc/img/bettingmutt.png",
     "splashBackgroundColor": "#fefce8",
-    "homeUrl": "https://wannabet-psi.vercel.app"
+    "homeUrl": "https://wannabet.cc"
   }
 }

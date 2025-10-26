@@ -128,9 +128,6 @@ export async function GET(request: Request) {
 
   const { data }: EnvioResponse = await response.json()
 
-  console.log('Got Envio response')
-  console.log(data)
-
   // Extract unique addresses to resolve to Farcaster users (include judge)
   const uniqueAddresses = new Set<string>()
   data.Bet_BetCreated.forEach((bet) => {
