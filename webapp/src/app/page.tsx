@@ -2,11 +2,13 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { HelpCircle } from 'lucide-react'
+import Link from 'next/link'
 import { useEffect, useState } from 'react'
 
 import { BetsTable } from '@/components/bets-table'
 import { CreateBetDialog } from '@/components/create-bet-dialog'
 import { TestBetContract } from '@/components/test-bet-contract'
+import { Button } from '@/components/ui/button'
 import { WelcomeModal } from '@/components/welcome-modal'
 import { useBets } from '@/hooks/useBets'
 import type { Bet } from '@/lib/types'
@@ -61,6 +63,11 @@ export default function HomePage() {
               </button>
             </div>
           </div>
+          <Button asChild>
+            <Link href="/temp">
+              <span>Transfer Warplet</span>
+            </Link>
+          </Button>
         </div>
 
         {/* Test Bet Contract Section */}
