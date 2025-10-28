@@ -7,6 +7,7 @@ import {
   useWriteContract,
 } from 'wagmi'
 
+import { useMiniApp } from '@/components/sdk-provider'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
@@ -14,15 +15,16 @@ export default function TempPage() {
   const tx = useWriteContract()
   const receipt = useWaitForTransactionReceipt({ hash: tx.data })
   const { address } = useAccount()
+  const { miniAppUser } = useMiniApp()
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
 
-    const warpletId = e.currentTarget.warpletId.value
+    const warpletId = miniAppUser?.fid
     const newOwner = e.currentTarget.newOwner.value
 
     if (!address || !newOwner || !warpletId) {
-      alert('Please fill in all fields')
+      alert('Something is not working')
       return
     }
 
@@ -30,7 +32,7 @@ export default function TempPage() {
       address: '0x699727f9e01a822efdcf7333073f0461e5914b4e',
       abi: erc721Abi,
       functionName: 'safeTransferFrom',
-      args: [address, newOwner, warpletId],
+      args: [address, newOwner, BigInt(miniAppUser.fid)],
     })
   }
 
@@ -41,13 +43,7 @@ export default function TempPage() {
       <form className="flex flex-col gap-y-2" onSubmit={handleSubmit}>
         <Input
           type="text"
-          placeholder="Enter your warplet ID"
-          name="warpletId"
-          id="warpletId"
-        />
-        <Input
-          type="text"
-          placeholder="Enter your new owner's address"
+          placeholder="Enter the new owner's address"
           name="newOwner"
           id="newOwner"
         />
