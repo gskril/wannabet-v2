@@ -4,6 +4,8 @@ import { Loader2, Wallet } from 'lucide-react'
 import { useAccount, useConnect, useDisconnect } from 'wagmi'
 
 import { Button } from '@/components/ui/button'
+import { useFarcasterProfile } from '@/hooks/useFarcasterProfile'
+import { shortenAddress } from '@/lib/utils'
 
 import { useMiniApp } from './sdk-provider'
 
@@ -12,6 +14,7 @@ export function ConnectWalletButton() {
   const { address, isConnected, isConnecting } = useAccount()
   const { connect, connectors, isPending } = useConnect()
   const { disconnect } = useDisconnect()
+  const { data: farcasterProfile } = useFarcasterProfile(address)
 
   // Hide button on Farcaster - users are already authenticated via FID
   if (isMiniApp) {
@@ -21,7 +24,7 @@ export function ConnectWalletButton() {
   if (isConnecting || isPending) {
     return (
       <Button variant="outline" disabled>
-        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        <Loader2 className="h-4 w-4 animate-spin" />
         Connecting...
       </Button>
     )
@@ -34,8 +37,10 @@ export function ConnectWalletButton() {
         onClick={() => disconnect()}
         className="font-mono"
       >
-        <Wallet className="mr-2 h-4 w-4" />
-        {address.slice(0, 6)}...{address.slice(-4)}
+        <Wallet className="h-4 w-4" />
+        {farcasterProfile
+          ? `@${farcasterProfile.username}`
+          : shortenAddress(address)}
       </Button>
     )
   }
@@ -50,7 +55,7 @@ export function ConnectWalletButton() {
       }}
       variant="outline"
     >
-      <Wallet className="mr-2 h-4 w-4" />
+      <Wallet className="h-4 w-4" />
       Connect Wallet
     </Button>
   )

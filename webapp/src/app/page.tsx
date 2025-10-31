@@ -1,18 +1,17 @@
 'use client'
 
-import { useQuery } from '@tanstack/react-query'
 import { HelpCircle } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { useAccount } from 'wagmi'
 
 import { BetsTable } from '@/components/bets-table'
-import { CreateBetDialog } from '@/components/create-bet-dialog'
-import { TestBetContract } from '@/components/test-bet-contract'
+import { ConnectWalletButton } from '@/components/connect-wallet-button'
 import { WelcomeModal } from '@/components/welcome-modal'
 import { useBets } from '@/hooks/useBets'
-import type { Bet } from '@/lib/types'
 
 export default function HomePage() {
   const [showWelcome, setShowWelcome] = useState(false)
+  const { isConnected } = useAccount()
 
   // Load initial state from localStorage after client mounts
   useEffect(() => {
@@ -51,6 +50,11 @@ export default function HomePage() {
             </div>
 
             <div className="flex items-center gap-2">
+              {/* Connect Wallet Button */}
+              <div className="hidden md:block">
+                <ConnectWalletButton />
+              </div>
+
               {/* Help button */}
               <button
                 onClick={() => setShowWelcome(true)}

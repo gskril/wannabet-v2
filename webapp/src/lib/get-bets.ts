@@ -1,5 +1,6 @@
 import { Address, formatUnits } from 'viem'
 
+import type { FarcasterUsersByAddressesResult } from '@/lib/neynar'
 import {
   Asset,
   type Bet,
@@ -37,7 +38,7 @@ interface EnvioResponse {
   }
 }
 
-const INDEXER_URL = 'https://indexer.dev.hyperindex.xyz/a6c4f06/v1/graphql'
+const INDEXER_URL = 'https://indexer.dev.hyperindex.xyz/455a070/v1/graphql'
 
 // Note: This should be done in the indexer, but since the frontend only allows USDC this is easier for now
 const ASSETS: Asset[] = [
@@ -155,8 +156,15 @@ export async function getBets(): Promise<BetResponse> {
       )
 
       if (userResponse.ok) {
-        const userData = await userResponse.json()
+        const userData: FarcasterUsersByAddressesResult =
+          await userResponse.json()
         userMap = userData.users || {}
+      } else {
+        console.error(
+          'Failed to fetch users:',
+          userResponse.status,
+          userResponse.statusText
+        )
       }
     } catch (error) {
       console.error('Error fetching users:', error)
