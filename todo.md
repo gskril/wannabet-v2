@@ -23,7 +23,8 @@ title: todo
 
 4. **Add cancel button for bet proposer**
    - Allow bet proposers to cancel their own bets prior to opponent accepting
-   - ![CleanShot 2025-11-04 at 13.41.33@2x](https://hackmd.io/_uploads/HkxZt6PkZl.png)
+   - <img width="1452" height="1112" alt="image" src="https://github.com/user-attachments/assets/e03673ce-045a-42f0-8999-26700cf32d21" />
+
 
 
 5. **Fix dates in UI**
@@ -32,18 +33,21 @@ title: todo
        - Expires (Nov 11)
        - End Date (Nov 5)
    - What should not show is the date when the bet funds become elligible to be returned
-   - ![CleanShot 2025-11-04 at 14.09.54@2x](https://hackmd.io/_uploads/ByJn1CP1-g.png)
+   - <img width="778" height="628" alt="image" src="https://github.com/user-attachments/assets/5f3a02d9-5ab5-4450-a5f9-0d4818be6909" />
+
 
 6. **Label Tabs & Make create bigger**
-   - ![image](https://hackmd.io/_uploads/SyNZspw1We.png)
+   - <img width="1966" height="762" alt="image" src="https://github.com/user-attachments/assets/e30dcb8d-6f64-447a-8039-9d01dab96a35" />
+
 
 7. **Add identification of expired bets**
 - This bet should be expired but isn't (Past 7 days)
-- ![CleanShot 2025-11-04 at 13.53.46@2x](https://hackmd.io/_uploads/Bkd0o6PkWe.png)
+- <img width="814" height="1530" alt="image" src="https://github.com/user-attachments/assets/e17872b9-b52c-4560-ac2e-87b818b59b01" />
+
 
 8. **Add Opengraph image**
-- Dylan to share full image (Too big for hackmd)
-- ![CleanShot 2025-11-04 at 14.07.13@2x](https://hackmd.io/_uploads/Hy-e1RP1-l.png)
+- <img width="1674" height="925" alt="og_final" src="https://github.com/user-attachments/assets/b81bc180-13df-47ef-bfa9-6923ea02f0d1" />
+
 
 9. **Add FC Notifications**
 Maker
@@ -66,7 +70,8 @@ Judge
 
 10. **Prompt user to add app when they open**
 11. **Remove stats**
-- ![CleanShot 2025-11-04 at 14.24.07@2x](https://hackmd.io/_uploads/B1UxX0DJZl.png)
+- <img width="756" height="780" alt="image" src="https://github.com/user-attachments/assets/cd11ba4c-d1eb-42f3-a5e7-0f0b9bbe6507" />
+
 
 ---
 
