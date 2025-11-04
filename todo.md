@@ -9,7 +9,8 @@ title: todo
 
 1. **Condense the size of the bet card**
    - Reduce the size/information shown in the bet preview card
-   - ![CleanShot 2025-11-04 at 13.24.12@2x](https://hackmd.io/_uploads/HJJ1rpv1We.png)
+   - <img width="2054" height="926" alt="image" src="https://github.com/user-attachments/assets/cfb5f7f4-7aba-4f9b-afbf-6a058f7056fa" />
+
 
 
 
