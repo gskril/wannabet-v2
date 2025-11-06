@@ -574,7 +574,6 @@ export function CreateBetDialog() {
             <div className="space-y-4">
               <UserSearch
                 label="Who are you betting?"
-                placeholder="@username"
                 value={formData.taker}
                 required
                 onChange={(value, user) =>
@@ -583,7 +582,6 @@ export function CreateBetDialog() {
               />
               <UserSearch
                 label="Who should judge?"
-                placeholder="@username"
                 helperText="Pick someone both parties trust to decide the outcome"
                 required
                 value={formData.judge}

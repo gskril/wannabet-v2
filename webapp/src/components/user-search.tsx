@@ -23,7 +23,7 @@ const EMPTY_ARRAY: number[] = []
 
 export function UserSearch({
   label,
-  placeholder = '@username',
+  placeholder = 'username',
   helperText,
   required = false,
   value,
@@ -106,7 +106,7 @@ export function UserSearch({
   }, [searchQuery, performSearch])
 
   const handleUserSelect = (user: FarcasterUser) => {
-    const username = `@${user.username}`
+    const username = user.username || ''
     setSearchQuery(username)
     setSelectedUser(user)
     onChange(username, user)
