@@ -198,7 +198,6 @@ contract Bet is IBet, Initializable {
     function bet() external view returns (IBet.Bet memory state) {
         state = _bet;
         state.status = _status(state);
-        return state;
     }
 
     function status() external view returns (IBet.Status) {
