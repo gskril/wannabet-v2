@@ -2,11 +2,11 @@
 pragma solidity ^0.8.28;
 
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {Ownable, Ownable2Step} from "@openzeppelin/contracts/access/Ownable2Step.sol";
 
 import {IBet} from "./interfaces/IBet.sol";
 
-contract BetFactory is Ownable {
+contract BetFactory is Ownable2Step {
     /*//////////////////////////////////////////////////////////////
                             STATE VARIABLES
     //////////////////////////////////////////////////////////////*/
