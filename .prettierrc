@@ -17,7 +17,8 @@
       "files": "contracts/**/*.sol",
       "options": {
         "tabWidth": 4,
-        "singleQuote": false
+        "singleQuote": false,
+        "printWidth": 90
       }
     }
   ]

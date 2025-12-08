@@ -2,11 +2,11 @@
 pragma solidity ^0.8.28;
 
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {Ownable, Ownable2Step} from "@openzeppelin/contracts/access/Ownable2Step.sol";
 
 import {IBet} from "./interfaces/IBet.sol";
 
-contract BetFactory is Ownable {
+contract BetFactory is Ownable2Step {
     /*//////////////////////////////////////////////////////////////
                             STATE VARIABLES
     //////////////////////////////////////////////////////////////*/
@@ -19,7 +19,7 @@ contract BetFactory is Ownable {
     uint256 public betCount;
 
     /// @notice Mapping of token addresses to Aave V3 pool addresses.
-    mapping(address => address) public tokenToPool;
+    mapping(address token => address aavePool) public tokenToPool;
 
     /// @notice The address where protocol earnings are sent.
     address public treasury;
@@ -74,8 +74,8 @@ contract BetFactory is Ownable {
         betCount++;
         address newBet = Clones.cloneDeterministic(
             betImplementation,
-            bytes32(
-                keccak256(abi.encode(msg.sender, taker, acceptBy, resolveBy))
+            keccak256(
+                abi.encode(msg.sender, taker, tokenToPool[asset], acceptBy, resolveBy)
             )
         );
         IBet(newBet).initialize(
@@ -113,15 +113,14 @@ contract BetFactory is Ownable {
     function predictBetAddress(
         address maker,
         address taker,
+        address aavePool,
         uint40 acceptBy,
         uint40 resolveBy
     ) external view returns (address) {
         return
             Clones.predictDeterministicAddress(
                 betImplementation,
-                bytes32(
-                    keccak256(abi.encode(maker, taker, acceptBy, resolveBy))
-                )
+                keccak256(abi.encode(maker, taker, aavePool, acceptBy, resolveBy))
             );
     }
 
@@ -143,9 +142,7 @@ contract BetFactory is Ownable {
 
     /// @notice Update the implementation contract.
     /// @dev Should only be used with minor changes.
-    function updateImplementation(
-        address _betImplementation
-    ) external onlyOwner {
+    function updateImplementation(address _betImplementation) external onlyOwner {
         betImplementation = _betImplementation;
         emit ImplementationUpdated(_betImplementation);
     }

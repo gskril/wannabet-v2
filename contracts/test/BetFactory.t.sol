@@ -19,6 +19,7 @@ contract BetFactoryTest is Test {
     address owner = makeAddr("owner");
     IERC20 usdc = IERC20(0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913);
     IERC20 aUSDC = IERC20(0x4e65fE4DbA92790696d040ac24Aa414708F5c0AB); // holds all the underlying USDC in Aave
+    address aaveUsdcPool = 0xA238Dd80C259a72e81d7e4664a9801593F98d1c5;
     IBet betNoPool;
     IBet betWithPool;
 
@@ -39,6 +40,7 @@ contract BetFactoryTest is Test {
         address betNoPoolAddress = betFactory.predictBetAddress(
             maker,
             taker,
+            address(0),
             uint40(block.timestamp + 1000),
             uint40(block.timestamp + 2000)
         );
@@ -60,7 +62,6 @@ contract BetFactoryTest is Test {
         vm.stopPrank();
 
         // Configure the Aave pool for USDC
-        address aaveUsdcPool = 0xA238Dd80C259a72e81d7e4664a9801593F98d1c5;
         vm.warp(block.timestamp + 1); // Avoid create2 conflicts with the original bet
 
         vm.prank(owner);
@@ -71,6 +72,7 @@ contract BetFactoryTest is Test {
         address betWithPoolAddress = betFactory.predictBetAddress(
             maker,
             taker,
+            aaveUsdcPool,
             uint40(block.timestamp + 1000),
             uint40(block.timestamp + 2000)
         );
@@ -108,6 +110,7 @@ contract BetFactoryTest is Test {
         address betWithPoolAddress = betFactory.predictBetAddress(
             maker,
             taker,
+            aaveUsdcPool,
             uint40(block.timestamp + 1000),
             uint40(block.timestamp + 2000)
         );
