@@ -59,7 +59,6 @@ contract Bet is IBet, Initializable {
         _aavePool = IPool(pool);
 
         // Transfer the funds from the sender to the contract
-        // Maybe can skip this and send it striaght to Aave ?
         IERC20(initialBet.asset).transferFrom(
             initialBet.maker,
             address(this),
