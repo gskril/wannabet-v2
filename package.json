@@ -8,7 +8,7 @@
     "build:shared": "pnpm --filter shared build",
     "prettier": "prettier --ignore-path .gitignore --write ./**/*.{ts,tsx,json,md,css}"
   },
-  "packageManager": "pnpm@10.18.0",
+  "packageManager": "pnpm@10.24.0",
   "engines": {
     "node": ">=22",
     "pnpm": ">=10"
