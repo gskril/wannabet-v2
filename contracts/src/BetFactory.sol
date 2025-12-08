@@ -75,13 +75,7 @@ contract BetFactory is Ownable2Step {
         address newBet = Clones.cloneDeterministic(
             betImplementation,
             keccak256(
-                abi.encode(
-                    msg.sender,
-                    taker,
-                    tokenToPool[asset],
-                    acceptBy,
-                    resolveBy
-                )
+                abi.encode(msg.sender, taker, tokenToPool[asset], acceptBy, resolveBy)
             )
         );
         IBet(newBet).initialize(
@@ -126,9 +120,7 @@ contract BetFactory is Ownable2Step {
         return
             Clones.predictDeterministicAddress(
                 betImplementation,
-                keccak256(
-                    abi.encode(maker, taker, aavePool, acceptBy, resolveBy)
-                )
+                keccak256(abi.encode(maker, taker, aavePool, acceptBy, resolveBy))
             );
     }
 
@@ -150,9 +142,7 @@ contract BetFactory is Ownable2Step {
 
     /// @notice Update the implementation contract.
     /// @dev Should only be used with minor changes.
-    function updateImplementation(
-        address _betImplementation
-    ) external onlyOwner {
+    function updateImplementation(address _betImplementation) external onlyOwner {
         betImplementation = _betImplementation;
         emit ImplementationUpdated(_betImplementation);
     }

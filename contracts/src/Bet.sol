@@ -70,12 +70,7 @@ contract Bet is IBet, Initializable {
         if (pool != address(0)) {
             IERC20(initialBet.asset).approve(pool, type(uint256).max);
 
-            _aavePool.supply(
-                initialBet.asset,
-                initialBet.makerStake,
-                address(this),
-                0
-            );
+            _aavePool.supply(initialBet.asset, initialBet.makerStake, address(this), 0);
         }
 
         emit BetCreated(
@@ -139,8 +134,9 @@ contract Bet is IBet, Initializable {
 
         // If the funds are in Aave, withdraw them
         if (address(_aavePool) != address(0)) {
-            uint256 aTokenBalance = IERC20(_aavePool.getReserveAToken(b.asset))
-                .balanceOf(address(this));
+            uint256 aTokenBalance = IERC20(_aavePool.getReserveAToken(b.asset)).balanceOf(
+                address(this)
+            );
 
             totalWinnings = _min(totalWinnings, aTokenBalance);
             _aavePool.withdraw(b.asset, aTokenBalance, address(this));
@@ -180,8 +176,9 @@ contract Bet is IBet, Initializable {
 
         // If there is a pool, withdraw the funds from Aave first
         if (address(_aavePool) != address(0)) {
-            uint256 aTokenBalance = IERC20(_aavePool.getReserveAToken(b.asset))
-                .balanceOf(address(this));
+            uint256 aTokenBalance = IERC20(_aavePool.getReserveAToken(b.asset)).balanceOf(
+                address(this)
+            );
             _aavePool.withdraw(b.asset, aTokenBalance, address(this));
 
             makerRefund = _min(makerRefund, aTokenBalance);
