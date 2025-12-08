@@ -124,7 +124,7 @@ contract Bet is IBet, Initializable {
         }
 
         // Make sure the bet is active
-        if (_status(b) != IBet.Status.ACTIVE || block.timestamp > b.resolveBy) {
+        if (_status(b) != IBet.Status.ACTIVE) {
             revert InvalidStatus();
         }
 
