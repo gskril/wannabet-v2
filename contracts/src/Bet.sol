@@ -104,8 +104,9 @@ contract Bet is IBet, Initializable {
             revert Unauthorized();
         }
 
+        _bet.status = IBet.Status.ACTIVE;
+
         // Transfer the funds from the sender to the contract
-        // Skip ?
         IERC20(b.asset).transferFrom(msg.sender, address(this), b.takerStake);
 
         // If the pool is set, supply the funds to the pool
@@ -113,7 +114,6 @@ contract Bet is IBet, Initializable {
             _aavePool.supply(b.asset, b.takerStake, address(this), 0);
         }
 
-        _bet.status = IBet.Status.ACTIVE;
         emit BetAccepted();
     }
 
@@ -129,8 +129,11 @@ contract Bet is IBet, Initializable {
             revert InvalidStatus();
         }
 
+        // Update the bet
+        _bet.winner = winner;
+        _bet.status = IBet.Status.RESOLVED;
+
         uint256 totalWinnings = b.makerStake + b.takerStake;
-        emit BetResolved(winner, totalWinnings);
 
         // If the funds are in Aave, withdraw them
         if (address(_aavePool) != address(0)) {
@@ -151,9 +154,7 @@ contract Bet is IBet, Initializable {
             IERC20(b.asset).transfer(_treasury, remainder);
         }
 
-        // Update the bet
-        _bet.winner = winner;
-        _bet.status = IBet.Status.RESOLVED;
+        emit BetResolved(winner, totalWinnings);
     }
 
     /// @dev Anybody can cancel an expired bet and send funds back to each party. The maker can cancel a pending bet.
@@ -171,6 +172,7 @@ contract Bet is IBet, Initializable {
             }
         }
 
+        _bet.status = IBet.Status.CANCELLED;
         uint256 makerRefund = b.makerStake;
         uint256 takerRefund = b.takerStake;
 
@@ -189,9 +191,6 @@ contract Bet is IBet, Initializable {
         // We don't track which party has deposited, so we can try/catch both transfers starting with the maker
         try IERC20(b.asset).transfer(b.maker, makerRefund) {} catch {}
         try IERC20(b.asset).transfer(b.taker, takerRefund) {} catch {}
-
-        // Update the bet struct
-        _bet.status = IBet.Status.CANCELLED;
         emit BetCancelled();
     }
 
