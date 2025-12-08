@@ -19,7 +19,7 @@ contract BetFactory is Ownable {
     uint256 public betCount;
 
     /// @notice Mapping of token addresses to Aave V3 pool addresses.
-    mapping(address => address) public tokenToPool;
+    mapping(address token => address aavePool) public tokenToPool;
 
     /// @notice The address where protocol earnings are sent.
     address public treasury;
