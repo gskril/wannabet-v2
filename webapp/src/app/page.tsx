@@ -31,42 +31,42 @@ export default function HomePage() {
 
   return (
     <div className="bg-background min-h-screen pb-20 sm:pb-4">
-      <main className="container mx-auto px-4 py-6 md:py-8">
-        {/* Hero Section */}
-        <div className="mb-8 md:mb-12">
-          <div className="mb-6 flex items-center justify-between gap-3">
-            <div className="flex items-center">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/img/bettingmutt.png"
-                alt="WannaBet"
-                className="h-16 w-16 md:h-20 md:w-20"
-              />
-              <div>
-                <h1 className="text-balance text-3xl font-bold md:text-4xl">
-                  WannaBet?
-                </h1>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              {/* Connect Wallet Button */}
-              <div className="hidden md:block">
-                <ConnectWalletButton />
-              </div>
-
-              {/* Help button */}
-              <button
-                onClick={() => setShowWelcome(true)}
-                className="text-muted-foreground hover:text-foreground hover:border-primary flex h-10 w-10 items-center justify-center rounded-full border transition-colors"
-                aria-label="How it works"
-              >
-                <HelpCircle className="h-5 w-5" />
-              </button>
+      {/* Top Navbar - full width */}
+      <div className="bg-wb-brown">
+        <div className="container mx-auto flex items-center justify-between gap-3 px-4 py-2">
+          <div className="flex items-center">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/img/bettingmutt.png"
+              alt="WannaBet"
+              className="h-16 w-16 md:h-20 md:w-20"
+            />
+            <div>
+              <h1 className="text-balance text-3xl font-bold text-white md:text-4xl">
+                WannaBet?
+              </h1>
             </div>
           </div>
-        </div>
 
+          <div className="flex items-center gap-2">
+            {/* Connect Wallet Button */}
+            <div className="hidden md:block">
+              <ConnectWalletButton />
+            </div>
+
+            {/* Help button */}
+            <button
+              onClick={() => setShowWelcome(true)}
+              className="flex h-10 w-10 items-center justify-center transition-opacity hover:opacity-70"
+              aria-label="How it works"
+            >
+              <HelpCircle className="h-8 w-8 text-white" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <main className="container mx-auto px-4 py-6 md:py-8">
         {/* Test Bet Contract Section */}
         {/* <div className="mb-8">
           <TestBetContract />
