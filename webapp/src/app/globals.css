@@ -59,7 +59,8 @@
 }
 
 body {
-  @apply bg-background text-foreground font-sans antialiased;
+  @apply bg-background text-foreground antialiased;
+  font-family: 'Comic Sans MS', 'Comic Sans', cursive;
 }
 
 /* Utility classes */
