@@ -60,7 +60,7 @@ contract BetFactory is Ownable2Step {
     //////////////////////////////////////////////////////////////*/
 
     /// @notice Create a new bet.
-    /// @return The address of the new bet.
+    /// @return newBet The address of the new bet.
     function createBet(
         address taker,
         address judge,
@@ -70,11 +70,11 @@ contract BetFactory is Ownable2Step {
         uint40 acceptBy,
         uint40 resolveBy,
         string calldata description
-    ) external returns (address) {
+    ) external returns (address newBet) {
         betCount++;
         address pool = tokenToPool[asset];
 
-        address newBet = Clones.cloneDeterministic(
+        newBet = Clones.cloneDeterministic(
             betImplementation,
             keccak256(abi.encode(msg.sender, taker, pool, acceptBy, resolveBy))
         );
@@ -96,7 +96,6 @@ contract BetFactory is Ownable2Step {
             treasury
         );
         emit BetCreated(newBet);
-        return newBet;
     }
 
     /// @notice Get a bet by address.

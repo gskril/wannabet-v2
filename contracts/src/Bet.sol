@@ -210,17 +210,15 @@ contract Bet is IBet, Initializable {
                            INTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    function _status(IBet.Bet memory b) internal view returns (IBet.Status) {
-        IBet.Status s = b.status;
+    function _status(IBet.Bet memory b) internal view returns (IBet.Status s) {
+        s = b.status;
 
         if (
             (s == IBet.Status.PENDING && block.timestamp > b.acceptBy) ||
             (s == IBet.Status.ACTIVE && block.timestamp > b.resolveBy)
         ) {
-            return IBet.Status.EXPIRED;
+            s = IBet.Status.EXPIRED;
         }
-
-        return s;
     }
 
     function _min(uint256 a, uint256 b) internal pure returns (uint256) {
