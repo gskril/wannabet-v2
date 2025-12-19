@@ -60,6 +60,7 @@ contract BetFactory is Ownable2Step {
     //////////////////////////////////////////////////////////////*/
 
     /// @notice Create a new bet.
+    /// @dev Fee-on-transfer and rebasing tokens are not supported.
     /// @return newBet The address of the new bet.
     function createBet(
         address taker,

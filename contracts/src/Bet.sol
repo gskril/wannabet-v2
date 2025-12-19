@@ -24,7 +24,8 @@ contract Bet is IBet, Initializable {
         _disableInitializers();
     }
 
-    /// @notice Initializes the bet and transfers the maker's stake to the contract
+    /// @notice Initializes the bet and transfers the maker's stake to the contract.
+    /// @dev Fee-on-transfer and rebasing tokens are not supported.
     /// @param initialBet The initial bet struct
     /// @param pool The Aave V3 pool address
     function initialize(
