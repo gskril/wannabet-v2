@@ -44,7 +44,7 @@ contract BetFactory is Ownable2Step {
                                  ERRORS
     //////////////////////////////////////////////////////////////*/
 
-    /// @notice Emitted when a bet is not found.
+    /// @notice Thrown when a bet is not found.
     error BetNotFound();
 
     /*//////////////////////////////////////////////////////////////

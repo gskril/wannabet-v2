@@ -150,10 +150,17 @@ contract Bet is IBet, Initializable {
         // Transfer the winnings to the winner
         IERC20(b.asset).transfer(winner, totalWinnings);
 
-        // Transfer the remainder to the treasury
+        // Handle Aave returns, if any
         uint256 remainder = IERC20(b.asset).balanceOf(address(this));
         if (remainder > 0) {
-            IERC20(b.asset).transfer(_treasury, remainder);
+            address treasury = _treasury;
+            if (treasury == address(0)) {
+                // If the treasury is not set, transfer the remainder to the winner
+                IERC20(b.asset).transfer(winner, remainder);
+            } else {
+                // If the treasury is set, transfer the remainder to the treasury
+                IERC20(b.asset).transfer(treasury, remainder);
+            }
         }
 
         emit BetResolved(winner, totalWinnings);
