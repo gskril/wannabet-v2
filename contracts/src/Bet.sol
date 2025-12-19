@@ -69,7 +69,7 @@ contract Bet is IBet, Initializable {
         if (pool != address(0)) {
             IERC20(initialBet.asset).approve(pool, type(uint256).max);
 
-            _aavePool.supply(initialBet.asset, initialBet.makerStake, address(this), 0);
+            IPool(pool).supply(initialBet.asset, initialBet.makerStake, address(this), 0);
         }
 
         emit BetCreated(
@@ -92,6 +92,7 @@ contract Bet is IBet, Initializable {
     /// @dev The sender must approve the `address(this)` to spend `bet().asset`. Only callable by the taker.
     function accept() external {
         IBet.Bet memory b = _bet;
+        IPool pool = _aavePool;
 
         // Make sure the bet is pending
         if (_status(b) != IBet.Status.PENDING) {
@@ -109,8 +110,8 @@ contract Bet is IBet, Initializable {
         IERC20(b.asset).transferFrom(msg.sender, address(this), b.takerStake);
 
         // If the pool is set, supply the funds to the pool
-        if (address(_aavePool) != address(0)) {
-            _aavePool.supply(b.asset, b.takerStake, address(this), 0);
+        if (address(pool) != address(0)) {
+            pool.supply(b.asset, b.takerStake, address(this), 0);
         }
 
         emit BetAccepted();
@@ -118,6 +119,7 @@ contract Bet is IBet, Initializable {
 
     function resolve(address winner) external {
         IBet.Bet memory b = _bet;
+        IPool pool = _aavePool;
 
         if (msg.sender != b.judge) {
             revert Unauthorized();
@@ -135,8 +137,8 @@ contract Bet is IBet, Initializable {
         uint256 totalWinnings = b.makerStake + b.takerStake;
 
         // If the funds are in Aave, withdraw them
-        if (address(_aavePool) != address(0)) {
-            uint256 aTokenBalance = _aavePool.withdraw(
+        if (address(pool) != address(0)) {
+            uint256 aTokenBalance = pool.withdraw(
                 b.asset,
                 type(uint256).max,
                 address(this)
@@ -159,6 +161,7 @@ contract Bet is IBet, Initializable {
     /// @dev Anybody can cancel an expired bet and send funds back to each party. The maker can cancel a pending bet.
     function cancel() external {
         IBet.Bet memory b = _bet;
+        IPool pool = _aavePool;
 
         // Can't cancel a bet that's already completed
         if (b.status >= IBet.Status.RESOLVED) {
@@ -176,8 +179,8 @@ contract Bet is IBet, Initializable {
         uint256 takerRefund = b.takerStake;
 
         // If there is a pool, withdraw the funds from Aave first
-        if (address(_aavePool) != address(0)) {
-            uint256 aTokenBalance = _aavePool.withdraw(
+        if (address(pool) != address(0)) {
+            uint256 aTokenBalance = pool.withdraw(
                 b.asset,
                 type(uint256).max,
                 address(this)

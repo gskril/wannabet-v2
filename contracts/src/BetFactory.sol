@@ -72,11 +72,11 @@ contract BetFactory is Ownable2Step {
         string calldata description
     ) external returns (address) {
         betCount++;
+        address pool = tokenToPool[asset];
+
         address newBet = Clones.cloneDeterministic(
             betImplementation,
-            keccak256(
-                abi.encode(msg.sender, taker, tokenToPool[asset], acceptBy, resolveBy)
-            )
+            keccak256(abi.encode(msg.sender, taker, pool, acceptBy, resolveBy))
         );
         IBet(newBet).initialize(
             IBet.Bet({
@@ -92,7 +92,7 @@ contract BetFactory is Ownable2Step {
                 takerStake: takerStake
             }),
             description,
-            tokenToPool[asset],
+            pool,
             treasury
         );
         emit BetCreated(newBet);
