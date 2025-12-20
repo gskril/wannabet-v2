@@ -13,6 +13,7 @@ export enum BetStatusEnum {
 export type BetStatus = 'open' | 'active' | 'completed' | 'cancelled'
 
 export interface FarcasterUser extends MiniAppContext.UserContext {
+  fid: number
   bio?: string
 }
 

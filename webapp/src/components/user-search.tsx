@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label'
 import { UserAvatar } from '@/components/user-avatar'
 import { searchUsers } from '@/lib/neynar'
 import type { FarcasterUser } from '@/lib/types'
+import { cn } from '@/lib/utils'
 
 interface UserSearchProps {
   label: string
@@ -17,6 +18,8 @@ interface UserSearchProps {
   value: string
   onChange: (value: string, user?: FarcasterUser) => void
   excludeFids?: number[]
+  labelClassName?: string
+  inputClassName?: string
 }
 
 const EMPTY_ARRAY: number[] = []
@@ -29,6 +32,8 @@ export function UserSearch({
   value,
   onChange,
   excludeFids = EMPTY_ARRAY,
+  labelClassName,
+  inputClassName,
 }: UserSearchProps) {
   const [isFocused, setIsFocused] = useState(false)
   const [searchQuery, setSearchQuery] = useState(value)
@@ -136,7 +141,7 @@ export function UserSearch({
 
   return (
     <div className="space-y-2">
-      <Label htmlFor="user-search" className="text-base">
+      <Label htmlFor="user-search" className={cn('text-base', labelClassName)}>
         {label}
       </Label>
 
@@ -175,7 +180,7 @@ export function UserSearch({
               setTimeout(() => setIsFocused(false), 200)
             }}
             required={required}
-            className="h-[72px] pl-10 text-base"
+            className={cn('h-[72px] pl-10 text-base', inputClassName)}
           />
 
           {/* Dropdown with user suggestions */}
