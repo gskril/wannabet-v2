@@ -511,7 +511,7 @@ export function CreateBetDialog() {
 
               {/* Submit */}
               <Button
-                className="w-full"
+                className="bg-wb-coral hover:bg-wb-coral/90 w-full text-white"
                 size="lg"
                 onClick={handleSubmit}
                 disabled={!isFormValid || isSubmitting}
