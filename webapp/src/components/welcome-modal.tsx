@@ -2,50 +2,22 @@
 
 import { X } from 'lucide-react'
 
+import { STATUS_CONFIG, StatusPennant } from '@/components/status-pennant'
 import {
   Dialog,
   DialogClose,
   DialogContent,
   DialogTitle,
 } from '@/components/ui/dialog'
+import type { BetStatus } from '@/lib/types'
 
 interface WelcomeModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
 }
 
-const PENNANT_CLIP = 'polygon(0 0, 100% 0, 100% 100%, 50% 85%, 0 100%)'
-
-type StatusItem = {
-  bg: string
-  emoji: string
-  label: string
-  desc: string
-  emojiSize?: string
-}
-
-const STATUS_ITEMS: StatusItem[] = [
-  {
-    bg: 'bg-wb-yellow',
-    emoji: '⏳',
-    label: 'Pending',
-    desc: 'Waiting for opponent to accept',
-  },
-  { bg: 'bg-wb-mint', emoji: '🤝', label: 'Live', desc: 'Bet is active' },
-  {
-    bg: 'bg-wb-pink',
-    emoji: '❌',
-    label: 'Not Live',
-    desc: 'Bet was canceled or expired',
-    emojiSize: 'text-xl',
-  },
-  {
-    bg: 'bg-wb-gold',
-    emoji: '🏆',
-    label: 'Resolved',
-    desc: 'Winner was decided',
-  },
-]
+// Order of statuses to display in the welcome modal
+const STATUS_ORDER: BetStatus[] = ['open', 'active', 'cancelled', 'completed']
 
 export function WelcomeModal({ open, onOpenChange }: WelcomeModalProps) {
   return (
@@ -122,20 +94,21 @@ export function WelcomeModal({ open, onOpenChange }: WelcomeModalProps) {
           <section>
             <h3 className="mb-3 text-xl font-bold">Status Indicators</h3>
             <div className="space-y-2">
-              {STATUS_ITEMS.map(({ bg, emoji, label, desc, emojiSize }) => (
-                <div key={label} className="flex items-center gap-3">
-                  <div
-                    className={`${bg} flex h-10 w-8 items-center justify-center pb-2`}
-                    style={{ clipPath: PENNANT_CLIP }}
-                  >
-                    <span className={emojiSize ?? 'text-2xl'}>{emoji}</span>
+              {STATUS_ORDER.map((status) => {
+                const config = STATUS_CONFIG[status]
+                return (
+                  <div key={status} className="flex items-center gap-3">
+                    <StatusPennant status={status} />
+                    <p>
+                      <span className="font-bold">{config.label}</span>
+                      <span className="text-wb-taupe">
+                        {' '}
+                        - {config.description}
+                      </span>
+                    </p>
                   </div>
-                  <p>
-                    <span className="font-bold">{label}</span>
-                    <span className="text-wb-taupe"> - {desc}</span>
-                  </p>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </section>
         </div>
