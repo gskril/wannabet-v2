@@ -336,11 +336,10 @@ export function CreateBetDialog() {
     >
       <DrawerTrigger asChild>
         <Button
-          size="lg"
-          className="hidden sm:fixed sm:bottom-4 sm:right-4 sm:z-50 sm:flex sm:h-auto sm:w-auto sm:items-center sm:gap-2 sm:rounded-md sm:px-6 sm:shadow-lg"
+          size="icon"
+          className="bg-wb-coral hover:bg-wb-coral/90 fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full text-white shadow-lg [&_svg]:size-8"
         >
-          <Plus className="h-5 w-5" />
-          <span>Create Bet</span>
+          <Plus className="h-8 w-8" />
         </Button>
       </DrawerTrigger>
 
