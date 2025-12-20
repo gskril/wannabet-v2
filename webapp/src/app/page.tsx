@@ -1,7 +1,7 @@
 'use client'
 
-import { HelpCircle } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { Bell, Globe, HelpCircle, User } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
 import { useAccount } from 'wagmi'
 
 import { BetsTable } from '@/components/bets-table'
@@ -9,23 +9,67 @@ import { ConnectWalletButton } from '@/components/connect-wallet-button'
 import { WelcomeModal } from '@/components/welcome-modal'
 import { useBets } from '@/hooks/useBets'
 
+type FilterType = 'all' | 'my' | 'notifications'
+
+const WELCOME_DISMISSED_KEY = 'welcomeDismissed'
+
+const getEmptyStateMessage = (
+  filter: FilterType,
+  hasAddress: boolean
+): string => {
+  if (filter === 'my') {
+    return hasAddress
+      ? 'No bets where you are a participant'
+      : 'Connect your wallet to see your bets'
+  }
+  if (filter === 'notifications') return 'No pending actions'
+  return 'No bets found. Create one to get started!'
+}
+
 export default function HomePage() {
   const [showWelcome, setShowWelcome] = useState(false)
-  const { isConnected } = useAccount()
+  const [activeFilter, setActiveFilter] = useState<FilterType>('all')
+  const { address } = useAccount()
+
+  // Dummy: number of pending notifications (bets requiring action)
+  const pendingNotifications = 2
 
   // Load initial state from localStorage after client mounts
   useEffect(() => {
-    const dismissed = localStorage.getItem('welcomeDismissed') === 'true'
+    const dismissed = localStorage.getItem(WELCOME_DISMISSED_KEY) === 'true'
     setShowWelcome(!dismissed)
   }, [])
 
   // Fetch bets data
   const { data: bets, isLoading: loading, error } = useBets()
 
+  // Filter bets based on active filter
+  const filteredBets = useMemo(() => {
+    if (!bets) return []
+
+    switch (activeFilter) {
+      case 'my':
+        // Show bets where user is maker, taker, or judge
+        if (!address) return []
+        return bets.filter(
+          (bet) =>
+            bet.makerAddress?.toLowerCase() === address.toLowerCase() ||
+            bet.takerAddress?.toLowerCase() === address.toLowerCase() ||
+            bet.judgeAddress?.toLowerCase() === address.toLowerCase()
+        )
+      case 'notifications':
+        // Dummy: for now just show first 2 bets as "requiring action"
+        return bets.slice(0, 2)
+      case 'all':
+      default:
+        return bets
+    }
+  }, [bets, activeFilter, address])
+
   const handleCloseWelcome = (open: boolean) => {
     setShowWelcome(open)
     if (!open) {
-      localStorage.setItem('welcomeDismissed', 'true')
+      localStorage.setItem(WELCOME_DISMISSED_KEY, 'true')
     }
   }
 
@@ -65,14 +109,45 @@ export default function HomePage() {
           </div>
         </div>
       </div>
-
+      {/* Filter Navigation Bar */}
+      <div className="bg-background flex items-center justify-center gap-6 border-b px-4 py-4">
+        <button
+          onClick={() => setActiveFilter('notifications')}
+          className={`relative flex items-center justify-center rounded-full p-2 transition-colors ${
+            activeFilter === 'notifications'
+              ? 'bg-wb-coral text-white'
+              : 'hover:bg-wb-coral/10'
+          }`}
+        >
+          <Bell className="h-5 w-5" />
+          {pendingNotifications > 0 && (
+            <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
+              {pendingNotifications}
+            </span>
+          )}
+        </button>
+        <button
+          onClick={() => setActiveFilter('my')}
+          className={`flex items-center justify-center rounded-full p-2 transition-colors ${
+            activeFilter === 'my'
+              ? 'bg-wb-coral text-white'
+              : 'hover:bg-wb-coral/10'
+          }`}
+        >
+          <User className="h-5 w-5" />
+        </button>
+        <button
+          onClick={() => setActiveFilter('all')}
+          className={`flex items-center justify-center rounded-full p-2 transition-colors ${
+            activeFilter === 'all'
+              ? 'bg-wb-coral text-white'
+              : 'hover:bg-wb-coral/10'
+          }`}
+        >
+          <Globe className="h-5 w-5" />
+        </button>
+      </div>
       <main className="container mx-auto px-4 py-6 md:py-8">
-        {/* Test Bet Contract Section */}
-        {/* <div className="mb-8">
-          <TestBetContract />
-        </div> */}
-
-        {/* Bets Section */}
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <div className="text-muted-foreground">Loading bets...</div>
@@ -81,14 +156,14 @@ export default function HomePage() {
           <div className="flex items-center justify-center py-12">
             <div className="text-destructive">Error: {error.message}</div>
           </div>
-        ) : bets && bets.length === 0 ? (
+        ) : filteredBets.length === 0 ? (
           <div className="flex items-center justify-center py-12">
             <div className="text-muted-foreground">
-              No bets found. Create one to get started!
+              {getEmptyStateMessage(activeFilter, !!address)}
             </div>
           </div>
         ) : (
-          bets && bets.length > 0 && <BetsTable bets={bets} />
+          <BetsTable bets={filteredBets} />
         )}
       </main>
 
