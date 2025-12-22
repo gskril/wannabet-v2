@@ -144,24 +144,15 @@ contract Bet is IBet, Initializable {
                 type(uint256).max,
                 address(this)
             );
+            // Cap the winnings to the available balance, in case of negative yield
             totalWinnings = _min(totalWinnings, aTokenBalance);
         }
 
         // Transfer the winnings to the winner
         IERC20(b.asset).transfer(winner, totalWinnings);
 
-        // Handle Aave returns, if any
-        uint256 remainder = IERC20(b.asset).balanceOf(address(this));
-        if (remainder > 0) {
-            address treasury = _treasury;
-            if (treasury == address(0)) {
-                // If the treasury is not set, transfer the remainder to the winner
-                IERC20(b.asset).transfer(winner, remainder);
-            } else {
-                // If the treasury is set, transfer the remainder to the treasury
-                IERC20(b.asset).transfer(treasury, remainder);
-            }
-        }
+        // Send any yield to treasury, or to the winner if no treasury is set
+        _sendRemainder(b.asset, winner);
 
         emit BetResolved(winner, totalWinnings);
     }
@@ -182,9 +173,13 @@ contract Bet is IBet, Initializable {
             }
         }
 
+        // Track whether taker deposited (bet was accepted/active)
+        bool takerDeposited = b.status == IBet.Status.ACTIVE;
+
         _bet.status = IBet.Status.CANCELLED;
         uint256 makerRefund = b.makerStake;
-        uint256 takerRefund = b.takerStake;
+        // Only refund taker if they actually deposited
+        uint256 takerRefund = takerDeposited ? b.takerStake : 0;
 
         // If there is a pool, withdraw the funds from Aave first
         if (address(pool) != address(0)) {
@@ -194,14 +189,20 @@ contract Bet is IBet, Initializable {
                 address(this)
             );
 
+            // Cap refunds to available balance (in case of negative yield)
             makerRefund = _min(makerRefund, aTokenBalance);
             takerRefund = _min(takerRefund, aTokenBalance - makerRefund);
         }
 
         // Transfer the funds back to the maker and taker
-        // We don't track which party has deposited, so we can try/catch both transfers starting with the maker
-        try IERC20(b.asset).transfer(b.maker, makerRefund) {} catch {}
-        try IERC20(b.asset).transfer(b.taker, takerRefund) {} catch {}
+        IERC20(b.asset).transfer(b.maker, makerRefund);
+        if (takerRefund > 0) {
+            IERC20(b.asset).transfer(b.taker, takerRefund);
+        }
+
+        // Send any yield to treasury, or to maker if no treasury is set
+        _sendRemainder(b.asset, b.maker);
+
         emit BetCancelled();
     }
 
@@ -231,5 +232,18 @@ contract Bet is IBet, Initializable {
 
     function _min(uint256 a, uint256 b) internal pure returns (uint256) {
         return a < b ? a : b;
+    }
+
+    /// @dev Sends any remaining balance to the treasury, or to the fallback recipient if no treasury is set.
+    function _sendRemainder(address asset, address fallbackRecipient) internal {
+        uint256 remainder = IERC20(asset).balanceOf(address(this));
+        if (remainder > 0) {
+            address treasury = _treasury;
+            if (treasury == address(0)) {
+                IERC20(asset).transfer(fallbackRecipient, remainder);
+            } else {
+                IERC20(asset).transfer(treasury, remainder);
+            }
+        }
     }
 }
