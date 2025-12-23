@@ -85,7 +85,7 @@ contract BetFactory is Ownable2Step {
         uint256 makerStake,
         uint256 takerStake,
         uint40 acceptBy,
-        uint40 resolveBy,
+        uint40 endsBy,
         string calldata description
     ) external returns (address newBet) {
         betCount++;
@@ -93,13 +93,13 @@ contract BetFactory is Ownable2Step {
 
         newBet = Clones.cloneDeterministic(
             betImplementation,
-            keccak256(abi.encode(msg.sender, taker, acceptBy, resolveBy))
+            keccak256(abi.encode(msg.sender, taker, acceptBy, endsBy))
         );
         IBet(newBet).initialize(
             IBet.Bet({
                 maker: msg.sender,
                 acceptBy: acceptBy,
-                resolveBy: resolveBy,
+                endsBy: endsBy,
                 status: IBet.Status.PENDING,
                 taker: taker,
                 judge: judge,
@@ -130,12 +130,12 @@ contract BetFactory is Ownable2Step {
         address maker,
         address taker,
         uint40 acceptBy,
-        uint40 resolveBy
+        uint40 endsBy
     ) external view returns (address) {
         return
             Clones.predictDeterministicAddress(
                 betImplementation,
-                keccak256(abi.encode(maker, taker, acceptBy, resolveBy))
+                keccak256(abi.encode(maker, taker, acceptBy, endsBy))
             );
     }
 

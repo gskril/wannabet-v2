@@ -40,8 +40,8 @@ contract BetFactoryTest is Test {
         address betNoPoolAddress = betFactory.predictBetAddress(
             maker,
             taker,
-            uint40(block.timestamp + 1000),
-            uint40(block.timestamp + 2000)
+            uint40(block.timestamp + 1000), // acceptBy
+            uint40(block.timestamp + 2000) // endsBy
         );
 
         vm.startPrank(maker);
@@ -53,8 +53,8 @@ contract BetFactoryTest is Test {
                 address(usdc),
                 1000,
                 1000,
-                uint40(block.timestamp + 1000),
-                uint40(block.timestamp + 2000),
+                uint40(block.timestamp + 1000), // acceptBy
+                uint40(block.timestamp + 2000), // endsBy
                 "Test bet"
             )
         );
@@ -71,8 +71,8 @@ contract BetFactoryTest is Test {
         address betWithPoolAddress = betFactory.predictBetAddress(
             maker,
             taker,
-            uint40(block.timestamp + 1000),
-            uint40(block.timestamp + 2000)
+            uint40(block.timestamp + 1000), // acceptBy
+            uint40(block.timestamp + 2000) // endsBy
         );
 
         vm.startPrank(maker);
@@ -89,8 +89,8 @@ contract BetFactoryTest is Test {
                 address(usdc),
                 1000,
                 1000,
-                uint40(block.timestamp + 1000),
-                uint40(block.timestamp + 2000),
+                uint40(block.timestamp + 1000), // acceptBy
+                uint40(block.timestamp + 2000), // endsBy
                 "Test bet"
             )
         );
@@ -108,8 +108,8 @@ contract BetFactoryTest is Test {
         address betWithPoolAddress = betFactory.predictBetAddress(
             maker,
             taker,
-            uint40(block.timestamp + 1000),
-            uint40(block.timestamp + 2000)
+            uint40(block.timestamp + 1000), // acceptBy
+            uint40(block.timestamp + 2000) // endsBy
         );
 
         assertEq(betWithPoolAddress, address(betWithPool));
@@ -198,16 +198,17 @@ contract BetFactoryTest is Test {
         assertGt(usdc.balanceOf(maker), makerBalanceBefore);
     }
 
-    // Judge doesn't resolve the bet in time
+    // Judge doesn't resolve the bet in time (within the 30-day judging window)
     function test_BetWithPoolExpiresAfterNoResolution() public {
         vm.startPrank(taker);
         usdc.approve(address(betWithPool), 1000);
         betWithPool.accept();
         vm.stopPrank();
 
-        vm.warp(block.timestamp + 5000);
+        // Warp past endsBy + JUDGING_WINDOW (30 days)
+        vm.warp(block.timestamp + 2001 + 30 days);
 
-        // At this point, the bet should be expired (passed `resolveBy`)
+        // At this point, the bet should be expired (passed `endsBy + JUDGING_WINDOW`)
         assertEq(uint(betWithPool.bet().status), uint(IBet.Status.EXPIRED));
 
         // Anybody can refund/cancel an expired bet, which sends funds back to each party
@@ -240,7 +241,30 @@ contract BetFactoryTest is Test {
         assertGt(usdc.balanceOf(maker) - makerBalanceBefore, 0);
     }
 
-    // Anyone can cancel a non-expired ACTIVE bet
+    // Judge can still resolve the bet during the 30-day judging window after endsBy
+    function test_JudgeCanResolveWithinJudgingWindow() public {
+        vm.startPrank(taker);
+        usdc.approve(address(betWithPool), 1000);
+        betWithPool.accept();
+        vm.stopPrank();
+
+        // Warp to a time past endsBy but within the 30-day judging window
+        vm.warp(block.timestamp + 2001 + 15 days);
+
+        // The bet should be in JUDGING status (past endsBy but before deadline)
+        assertEq(uint(betWithPool.bet().status), uint(IBet.Status.JUDGING));
+
+        // Judge can still resolve the bet within the judging window
+        uint256 makerBalanceBefore = usdc.balanceOf(maker);
+        vm.prank(judge);
+        betWithPool.resolve(maker);
+
+        // The bet should now be resolved
+        assertEq(uint(betWithPool.bet().status), uint(IBet.Status.RESOLVED));
+        assertGt(usdc.balanceOf(maker) - makerBalanceBefore, 0);
+    }
+
+    // Only judge can cancel an ACTIVE or JUDGING bet
     function test_ActiveBetCanOnlyBeCancelledByJudge() public {
         // 1. Have the taker accept the bet so it becomes ACTIVE
         vm.startPrank(taker);
@@ -251,9 +275,9 @@ contract BetFactoryTest is Test {
         // Sanity check: bet is ACTIVE
         assertEq(uint(betNoPool.bet().status), uint(IBet.Status.ACTIVE));
 
-        // 2. Warp to a time before resolveBy so the bet is still non-expired
+        // 2. Warp to a time before endsBy so the bet is still ACTIVE
         IBet.Bet memory state = betNoPool.bet();
-        vm.warp(uint256(state.resolveBy) - 1);
+        vm.warp(uint256(state.endsBy) - 1);
         assertEq(uint(betNoPool.bet().status), uint(IBet.Status.ACTIVE));
         uint256 makerBalanceBefore = usdc.balanceOf(maker);
         uint256 takerBalanceBefore = usdc.balanceOf(taker);
@@ -267,6 +291,35 @@ contract BetFactoryTest is Test {
         vm.prank(judge);
         vm.expectEmit();
         emit IBet.BetCancelled();
+        betNoPool.cancel();
+        assertEq(uint(betNoPool.bet().status), uint(IBet.Status.CANCELLED));
+        assertGt(usdc.balanceOf(maker), makerBalanceBefore);
+        assertGt(usdc.balanceOf(taker), takerBalanceBefore);
+    }
+
+    // Test judge can cancel during JUDGING period
+    function test_JudgingBetCanBeCancelledByJudge() public {
+        // 1. Have the taker accept the bet so it becomes ACTIVE
+        vm.startPrank(taker);
+        usdc.approve(address(betNoPool), 1000);
+        betNoPool.accept();
+        vm.stopPrank();
+
+        // 2. Warp past endsBy to enter JUDGING period
+        IBet.Bet memory state = betNoPool.bet();
+        vm.warp(uint256(state.endsBy) + 1);
+        assertEq(uint(betNoPool.bet().status), uint(IBet.Status.JUDGING));
+
+        uint256 makerBalanceBefore = usdc.balanceOf(maker);
+        uint256 takerBalanceBefore = usdc.balanceOf(taker);
+
+        // 3. Taker attempts to cancel the bet during JUDGING, reverts
+        vm.prank(taker);
+        vm.expectRevert(IBet.Unauthorized.selector);
+        betNoPool.cancel();
+
+        // 4. Judge cancels the bet during JUDGING period
+        vm.prank(judge);
         betNoPool.cancel();
         assertEq(uint(betNoPool.bet().status), uint(IBet.Status.CANCELLED));
         assertGt(usdc.balanceOf(maker), makerBalanceBefore);

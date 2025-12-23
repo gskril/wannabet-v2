@@ -9,6 +9,7 @@ interface IBet {
     enum Status {
         PENDING,
         ACTIVE,
+        JUDGING,
         RESOLVED,
         CANCELLED,
         EXPIRED
@@ -17,7 +18,7 @@ interface IBet {
     struct Bet {
         address maker;
         uint40 acceptBy;
-        uint40 resolveBy;
+        uint40 endsBy;
         Status status;
         address taker;
         address judge;
@@ -37,7 +38,7 @@ interface IBet {
         address indexed judge,
         address asset,
         uint40 acceptBy,
-        uint40 resolveBy,
+        uint40 endsBy,
         uint256 makerStake,
         uint256 takerStake,
         string description

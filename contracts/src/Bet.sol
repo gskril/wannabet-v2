@@ -11,6 +11,13 @@ contract Bet is IBet, Initializable {
     using SafeERC20 for IERC20;
 
     /*//////////////////////////////////////////////////////////////
+                               CONSTANTS
+    //////////////////////////////////////////////////////////////*/
+
+    /// @notice The judge has 30 days after endsBy to resolve the bet before it expires
+    uint40 public constant JUDGING_WINDOW = 30 days;
+
+    /*//////////////////////////////////////////////////////////////
                             STATE VARIABLES
     //////////////////////////////////////////////////////////////*/
 
@@ -46,9 +53,9 @@ contract Bet is IBet, Initializable {
             revert InvalidAddress();
         }
 
-        // Make sure acceptBy is in the future, and resolveBy is after acceptBy
+        // Make sure acceptBy is in the future, and endsBy is after acceptBy
         uint40 acceptBy = initialBet.acceptBy;
-        if (acceptBy <= block.timestamp || initialBet.resolveBy <= acceptBy) {
+        if (acceptBy <= block.timestamp || initialBet.endsBy <= acceptBy) {
             revert InvalidTimestamp();
         }
 
@@ -80,7 +87,7 @@ contract Bet is IBet, Initializable {
             initialBet.judge,
             initialBet.asset,
             initialBet.acceptBy,
-            initialBet.resolveBy,
+            initialBet.endsBy,
             initialBet.makerStake,
             initialBet.takerStake,
             description
@@ -127,8 +134,9 @@ contract Bet is IBet, Initializable {
             revert Unauthorized();
         }
 
-        // Make sure the bet is active
-        if (_status(b) != IBet.Status.ACTIVE) {
+        // Make sure the bet is active or in judging period
+        IBet.Status s = _status(b);
+        if (s != IBet.Status.ACTIVE && s != IBet.Status.JUDGING) {
             revert InvalidStatus();
         }
 
@@ -173,7 +181,7 @@ contract Bet is IBet, Initializable {
             if (b.maker != msg.sender) {
                 revert Unauthorized();
             }
-        } else if (s == IBet.Status.ACTIVE) {
+        } else if (s == IBet.Status.ACTIVE || s == IBet.Status.JUDGING) {
             if (b.judge != msg.sender) {
                 revert Unauthorized();
             }
@@ -226,6 +234,11 @@ contract Bet is IBet, Initializable {
         return _status(_bet);
     }
 
+    /// @notice Returns the deadline by which the judge must resolve the bet
+    function judgingDeadline() external view returns (uint40) {
+        return _bet.endsBy + JUDGING_WINDOW;
+    }
+
     /*//////////////////////////////////////////////////////////////
                            INTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
@@ -233,11 +246,14 @@ contract Bet is IBet, Initializable {
     function _status(IBet.Bet memory b) internal view returns (IBet.Status s) {
         s = b.status;
 
-        if (
-            (s == IBet.Status.PENDING && block.timestamp > b.acceptBy) ||
-            (s == IBet.Status.ACTIVE && block.timestamp > b.resolveBy)
-        ) {
+        if (s == IBet.Status.PENDING && block.timestamp > b.acceptBy) {
             s = IBet.Status.EXPIRED;
+        } else if (s == IBet.Status.ACTIVE) {
+            if (block.timestamp > b.endsBy + JUDGING_WINDOW) {
+                s = IBet.Status.EXPIRED;
+            } else if (block.timestamp > b.endsBy) {
+                s = IBet.Status.JUDGING;
+            }
         }
     }
 
