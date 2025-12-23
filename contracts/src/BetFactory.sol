@@ -88,7 +88,10 @@ contract BetFactory is Ownable2Step {
         uint40 endsBy,
         string calldata description
     ) external returns (address newBet) {
-        betCount++;
+        // unchecked: betCount is purely informational; overflow is unreachable in practice for uint256.
+        unchecked {
+            ++betCount;
+        }
         address pool = tokenToPool[asset];
 
         newBet = Clones.cloneDeterministic(
