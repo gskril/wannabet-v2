@@ -131,6 +131,11 @@ contract Bet is IBet, Initializable {
             revert InvalidStatus();
         }
 
+        // Make sure the winner is either the maker or the taker
+        if (winner != b.maker && winner != b.taker) {
+            revert InvalidAddress();
+        }
+
         // Update the bet
         _bet.winner = winner;
         _bet.status = IBet.Status.RESOLVED;
