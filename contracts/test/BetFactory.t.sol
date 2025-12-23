@@ -3,7 +3,7 @@ pragma solidity ^0.8.28;
 
 import {Test} from "forge-std/Test.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
-import {IPool} from "@aave-dao/aave-v3-origin/src/contracts/interfaces/IPool.sol";
+import {IPool} from "@aave/v3/interfaces/IPool.sol";
 
 import {Bet} from "../src/Bet.sol";
 import {BetFactory} from "../src/BetFactory.sol";

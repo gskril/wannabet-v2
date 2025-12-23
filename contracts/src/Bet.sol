@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.28;
 
-import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
-import {IPool} from "@aave-dao/aave-v3-origin/src/contracts/interfaces/IPool.sol";
+import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+import {IPool} from "@aave/v3/interfaces/IPool.sol";
 
 import {IBet} from "./interfaces/IBet.sol";
 
