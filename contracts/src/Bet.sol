@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.28;
 
+import {IAToken} from "@aave/v3/interfaces/IAToken.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import {IPool} from "@aave/v3/interfaces/IPool.sol";
+import {IRewardsController} from "@aave/v3/rewards/interfaces/IRewardsController.sol";
 
 import {IBet} from "./interfaces/IBet.sol";
 
@@ -89,6 +91,24 @@ contract Bet is IBet, Initializable {
     /*//////////////////////////////////////////////////////////////
                             PUBLIC FUNCTIONS
     //////////////////////////////////////////////////////////////*/
+
+    /// @notice Claims Aave incentive rewards to the treasury.
+    function aave_claimRewards() external {
+        // Can only be called for an inactive bet
+        IBet.Bet memory b = _bet;
+        if (b.status < IBet.Status.RESOLVED) {
+            revert InvalidStatus();
+        }
+
+        address[] memory assets = new address[](1);
+        assets[0] = b.asset;
+        IAToken aToken = IAToken(IPool(_aavePool).getReserveAToken(b.asset));
+        IRewardsController rewardsController = IRewardsController(
+            aToken.REWARDS_CONTROLLER()
+        );
+        address recipient = _treasury == address(0) ? b.winner : _treasury;
+        rewardsController.claimAllRewards(assets, _treasury);
+    }
 
     /// @dev The sender must approve the `address(this)` to spend `bet().asset`. Only callable by the taker.
     function accept() external {
