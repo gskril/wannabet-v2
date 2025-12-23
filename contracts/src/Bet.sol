@@ -1,13 +1,15 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.28;
 
-import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
+import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import {IPool} from "@aave/v3/interfaces/IPool.sol";
 
 import {IBet} from "./interfaces/IBet.sol";
 
 contract Bet is IBet, Initializable {
+    using SafeERC20 for IERC20;
+
     /*//////////////////////////////////////////////////////////////
                             STATE VARIABLES
     //////////////////////////////////////////////////////////////*/
@@ -60,7 +62,7 @@ contract Bet is IBet, Initializable {
         _aavePool = IPool(pool);
 
         // Transfer the funds from the sender to the contract
-        IERC20(initialBet.asset).transferFrom(
+        IERC20(initialBet.asset).safeTransferFrom(
             initialBet.maker,
             address(this),
             initialBet.makerStake
@@ -68,8 +70,7 @@ contract Bet is IBet, Initializable {
 
         // If the pool is set, approve and supply the funds to the pool
         if (pool != address(0)) {
-            IERC20(initialBet.asset).approve(pool, type(uint256).max);
-
+            IERC20(initialBet.asset).forceApprove(pool, type(uint256).max);
             IPool(pool).supply(initialBet.asset, initialBet.makerStake, address(this), 0);
         }
 
@@ -108,7 +109,7 @@ contract Bet is IBet, Initializable {
         _bet.status = IBet.Status.ACTIVE;
 
         // Transfer the funds from the sender to the contract
-        IERC20(b.asset).transferFrom(msg.sender, address(this), b.takerStake);
+        IERC20(b.asset).safeTransferFrom(msg.sender, address(this), b.takerStake);
 
         // If the pool is set, supply the funds to the pool
         if (address(pool) != address(0)) {
@@ -154,7 +155,7 @@ contract Bet is IBet, Initializable {
         }
 
         // Transfer the winnings to the winner
-        IERC20(b.asset).transfer(winner, totalWinnings);
+        IERC20(b.asset).safeTransfer(winner, totalWinnings);
 
         // Send any yield to treasury, or to the winner if no treasury is set
         _sendRemainder(b.asset, winner);
@@ -200,9 +201,9 @@ contract Bet is IBet, Initializable {
         }
 
         // Transfer the funds back to the maker and taker
-        IERC20(b.asset).transfer(b.maker, makerRefund);
+        IERC20(b.asset).safeTransfer(b.maker, makerRefund);
         if (takerRefund > 0) {
-            IERC20(b.asset).transfer(b.taker, takerRefund);
+            IERC20(b.asset).safeTransfer(b.taker, takerRefund);
         }
 
         // Send any yield to treasury, or to maker if no treasury is set
@@ -245,9 +246,9 @@ contract Bet is IBet, Initializable {
         if (remainder > 0) {
             address treasury = _treasury;
             if (treasury == address(0)) {
-                IERC20(asset).transfer(fallbackRecipient, remainder);
+                IERC20(asset).safeTransfer(fallbackRecipient, remainder);
             } else {
-                IERC20(asset).transfer(treasury, remainder);
+                IERC20(asset).safeTransfer(treasury, remainder);
             }
         }
     }
