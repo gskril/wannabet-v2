@@ -189,10 +189,13 @@ contract BetFactoryTest is Test {
     function test_BetWithPoolExpiresBeforeStarting() public {
         vm.warp(block.timestamp + 1001);
 
-        // Anybody can refund/cancel an expired bet, which sends funds back to each party
+        // At this point, the bet should be expired because it wasn't accepted by `acceptBy`
+        assertEq(uint(betWithPool.bet().status), uint(IBet.Status.EXPIRED));
+
+        // Anybody can refund/cancel an expired bet, which sends funds back to each party (just maker in this case)
         uint256 makerBalanceBefore = usdc.balanceOf(maker);
         betWithPool.cancel();
-        assertGt(usdc.balanceOf(maker) - makerBalanceBefore, 0);
+        assertGt(usdc.balanceOf(maker), makerBalanceBefore);
     }
 
     // Judge doesn't resolve the bet in time
@@ -235,5 +238,38 @@ contract BetFactoryTest is Test {
 
         // The maker should have their funds refunded
         assertGt(usdc.balanceOf(maker) - makerBalanceBefore, 0);
+    }
+
+    // Anyone can cancel a non-expired ACTIVE bet
+    function test_ActiveBetCanOnlyBeCancelledByJudge() public {
+        // 1. Have the taker accept the bet so it becomes ACTIVE
+        vm.startPrank(taker);
+        usdc.approve(address(betNoPool), 1000);
+        betNoPool.accept();
+        vm.stopPrank();
+
+        // Sanity check: bet is ACTIVE
+        assertEq(uint(betNoPool.bet().status), uint(IBet.Status.ACTIVE));
+
+        // 2. Warp to a time before resolveBy so the bet is still non-expired
+        IBet.Bet memory state = betNoPool.bet();
+        vm.warp(uint256(state.resolveBy) - 1);
+        assertEq(uint(betNoPool.bet().status), uint(IBet.Status.ACTIVE));
+        uint256 makerBalanceBefore = usdc.balanceOf(maker);
+        uint256 takerBalanceBefore = usdc.balanceOf(taker);
+
+        // 3. Taker attempts to cancel the bet, reverts
+        vm.prank(taker);
+        vm.expectRevert(IBet.Unauthorized.selector);
+        betNoPool.cancel();
+
+        // 4. Judge cancels the bet, the bet is marked CANCELLED and funds are refunded
+        vm.prank(judge);
+        vm.expectEmit();
+        emit IBet.BetCancelled();
+        betNoPool.cancel();
+        assertEq(uint(betNoPool.bet().status), uint(IBet.Status.CANCELLED));
+        assertGt(usdc.balanceOf(maker), makerBalanceBefore);
+        assertGt(usdc.balanceOf(taker), takerBalanceBefore);
     }
 }

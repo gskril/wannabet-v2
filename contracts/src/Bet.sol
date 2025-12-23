@@ -163,20 +163,25 @@ contract Bet is IBet, Initializable {
         emit BetResolved(winner, totalWinnings);
     }
 
-    /// @dev Anybody can cancel an expired bet and send funds back to each party. The maker can cancel a pending bet.
+    /// @dev Maker can cancel a pending bet. Judge can cancel an active bet (draw). Anybody can cancel an expired bet.
     function cancel() external {
         IBet.Bet memory b = _bet;
+        IBet.Status s = _status(b);
         IPool pool = _aavePool;
 
-        // Can't cancel a bet that's already completed
-        if (b.status >= IBet.Status.RESOLVED) {
-            revert InvalidStatus();
-        } else {
-            // Pending or active bets at this point
-            // The maker can cancel a pending bet, so block them from cancelling an active bet
-            if (b.maker == msg.sender && b.status != IBet.Status.PENDING) {
-                revert InvalidStatus();
+        if (s == IBet.Status.PENDING) {
+            if (b.maker != msg.sender) {
+                revert Unauthorized();
             }
+        } else if (s == IBet.Status.ACTIVE) {
+            if (b.judge != msg.sender) {
+                revert Unauthorized();
+            }
+        } else if (s == IBet.Status.EXPIRED) {
+            // Anybody can cancel an expired bet
+        } else {
+            // Already resolved or cancelled
+            revert InvalidStatus();
         }
 
         // Track whether taker deposited (bet was accepted/active)
