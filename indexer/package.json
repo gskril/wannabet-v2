@@ -1,0 +1,24 @@
+{
+  "name": "indexer",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "ponder dev",
+    "start": "ponder start",
+    "codegen": "ponder codegen"
+  },
+  "dependencies": {
+    "abitype": "^0.10.2",
+    "hono": "^4.5.0",
+    "ponder": "^0.15.17",
+    "shared": "workspace:*",
+    "viem": "^2.21.3"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "typescript": "^5.3.2"
+  },
+  "engines": {
+    "node": ">=18.14"
+  }
+}

@@ -1,11 +1,13 @@
 {
   "scripts": {
-    "dev": "concurrently \"pnpm dev:web\" \"pnpm dev:shared\"",
-    "dev:web": "pnpm --filter web dev",
+    "dev": "concurrently \"pnpm dev:webapp\" \"pnpm dev:shared\"",
+    "dev:web": "pnpm --filter webapp dev",
     "dev:shared": "pnpm --filter shared dev",
+    "dev:indexer": "pnpm --filter indexer dev",
     "build": "pnpm recursive run build",
-    "build:web": "pnpm --filter web build",
+    "build:web": "pnpm --filter webapp build",
     "build:shared": "pnpm --filter shared build",
+    "postinstall": "pnpm run build:shared",
     "prettier": "prettier --ignore-path .gitignore --write ./**/*.{ts,tsx,json,md,css}"
   },
   "packageManager": "pnpm@10.24.0",
