@@ -1,13 +1,22 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.28;
 
+import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
-import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
-import {IPool} from "@aave-dao/aave-v3-origin/src/contracts/interfaces/IPool.sol";
+import {IPool} from "@aave/v3/interfaces/IPool.sol";
 
 import {IBet} from "./interfaces/IBet.sol";
 
 contract Bet is IBet, Initializable {
+    using SafeERC20 for IERC20;
+
+    /*//////////////////////////////////////////////////////////////
+                               CONSTANTS
+    //////////////////////////////////////////////////////////////*/
+
+    /// @notice The judge has 30 days after endsBy to resolve the bet before it expires
+    uint40 public constant JUDGING_WINDOW = 30 days;
+
     /*//////////////////////////////////////////////////////////////
                             STATE VARIABLES
     //////////////////////////////////////////////////////////////*/
@@ -24,7 +33,8 @@ contract Bet is IBet, Initializable {
         _disableInitializers();
     }
 
-    /// @notice Initializes the bet and transfers the maker's stake to the contract
+    /// @notice Initializes the bet and transfers the maker's stake to the contract.
+    /// @dev Fee-on-transfer and rebasing tokens are not supported.
     /// @param initialBet The initial bet struct
     /// @param pool The Aave V3 pool address
     function initialize(
@@ -43,9 +53,9 @@ contract Bet is IBet, Initializable {
             revert InvalidAddress();
         }
 
-        // Make sure acceptBy is in the future, and resolveBy is after acceptBy
+        // Make sure acceptBy is in the future, and endsBy is after acceptBy
         uint40 acceptBy = initialBet.acceptBy;
-        if (acceptBy <= block.timestamp || initialBet.resolveBy <= acceptBy) {
+        if (acceptBy <= block.timestamp || initialBet.endsBy <= acceptBy) {
             revert InvalidTimestamp();
         }
 
@@ -59,8 +69,7 @@ contract Bet is IBet, Initializable {
         _aavePool = IPool(pool);
 
         // Transfer the funds from the sender to the contract
-        // Maybe can skip this and send it striaght to Aave ?
-        IERC20(initialBet.asset).transferFrom(
+        IERC20(initialBet.asset).safeTransferFrom(
             initialBet.maker,
             address(this),
             initialBet.makerStake
@@ -68,14 +77,8 @@ contract Bet is IBet, Initializable {
 
         // If the pool is set, approve and supply the funds to the pool
         if (pool != address(0)) {
-            IERC20(initialBet.asset).approve(pool, type(uint256).max);
-
-            _aavePool.supply(
-                initialBet.asset,
-                initialBet.makerStake,
-                address(this),
-                0
-            );
+            IERC20(initialBet.asset).forceApprove(pool, type(uint256).max);
+            IPool(pool).supply(initialBet.asset, initialBet.makerStake, address(this), 0);
         }
 
         emit BetCreated(
@@ -84,7 +87,7 @@ contract Bet is IBet, Initializable {
             initialBet.judge,
             initialBet.asset,
             initialBet.acceptBy,
-            initialBet.resolveBy,
+            initialBet.endsBy,
             initialBet.makerStake,
             initialBet.takerStake,
             description
@@ -98,6 +101,7 @@ contract Bet is IBet, Initializable {
     /// @dev The sender must approve the `address(this)` to spend `bet().asset`. Only callable by the taker.
     function accept() external {
         IBet.Bet memory b = _bet;
+        IPool pool = _aavePool;
 
         // Make sure the bet is pending
         if (_status(b) != IBet.Status.PENDING) {
@@ -109,123 +113,164 @@ contract Bet is IBet, Initializable {
             revert Unauthorized();
         }
 
+        _bet.status = IBet.Status.ACTIVE;
+
         // Transfer the funds from the sender to the contract
-        // Skip ?
-        IERC20(b.asset).transferFrom(msg.sender, address(this), b.takerStake);
+        IERC20(b.asset).safeTransferFrom(msg.sender, address(this), b.takerStake);
 
         // If the pool is set, supply the funds to the pool
-        if (address(_aavePool) != address(0)) {
-            _aavePool.supply(b.asset, b.takerStake, address(this), 0);
+        if (address(pool) != address(0)) {
+            pool.supply(b.asset, b.takerStake, address(this), 0);
         }
 
-        _bet.status = IBet.Status.ACTIVE;
         emit BetAccepted();
     }
 
     function resolve(address winner) external {
         IBet.Bet memory b = _bet;
+        IPool pool = _aavePool;
 
         if (msg.sender != b.judge) {
             revert Unauthorized();
         }
 
-        // Make sure the bet is active
-        if (_status(b) != IBet.Status.ACTIVE || block.timestamp > b.resolveBy) {
+        // Make sure the bet is active or in judging period
+        IBet.Status s = _status(b);
+        if (s != IBet.Status.ACTIVE && s != IBet.Status.JUDGING) {
             revert InvalidStatus();
         }
 
-        uint256 totalWinnings = b.makerStake + b.takerStake;
-        emit BetResolved(winner, totalWinnings);
-
-        // If the funds are in Aave, withdraw them
-        if (address(_aavePool) != address(0)) {
-            uint256 aTokenBalance = IERC20(_aavePool.getReserveAToken(b.asset))
-                .balanceOf(address(this));
-
-            totalWinnings = _min(totalWinnings, aTokenBalance);
-            _aavePool.withdraw(b.asset, aTokenBalance, address(this));
-        }
-
-        // Transfer the winnings to the winner
-        IERC20(b.asset).transfer(winner, totalWinnings);
-
-        // Transfer the remainder to the treasury
-        uint256 remainder = IERC20(b.asset).balanceOf(address(this));
-        if (remainder > 0) {
-            IERC20(b.asset).transfer(_treasury, remainder);
+        // Make sure the winner is either the maker or the taker
+        if (winner != b.maker && winner != b.taker) {
+            revert InvalidAddress();
         }
 
         // Update the bet
         _bet.winner = winner;
         _bet.status = IBet.Status.RESOLVED;
-    }
 
-    /// @dev Anybody can cancel an expired bet and send funds back to each party. The maker can cancel a pending bet.
-    function cancel() external {
-        IBet.Bet memory b = _bet;
+        uint256 totalWinnings = b.makerStake + b.takerStake;
 
-        // Can't cancel a bet that's already completed
-        if (b.status >= IBet.Status.RESOLVED) {
-            revert InvalidStatus();
-        } else {
-            // Pending or active bets at this point
-            // The maker can cancel a pending bet, so block them from cancelling an active bet
-            if (b.maker == msg.sender && b.status != IBet.Status.PENDING) {
-                revert InvalidStatus();
-            }
+        // If the funds are in Aave, withdraw them
+        if (address(pool) != address(0)) {
+            uint256 aTokenBalance = pool.withdraw(
+                b.asset,
+                type(uint256).max,
+                address(this)
+            );
+            // Cap the winnings to the available balance, in case of negative yield
+            totalWinnings = _min(totalWinnings, aTokenBalance);
         }
 
+        // Transfer the winnings to the winner
+        IERC20(b.asset).safeTransfer(winner, totalWinnings);
+
+        // Send any yield to treasury, or to the winner if no treasury is set
+        _sendRemainder(b.asset, winner);
+
+        emit BetResolved(winner, totalWinnings);
+    }
+
+    /// @dev Maker can cancel a pending bet. Judge can cancel an active bet (draw). Anybody can cancel an expired bet.
+    function cancel() external {
+        IBet.Bet memory b = _bet;
+        IBet.Status s = _status(b);
+        IPool pool = _aavePool;
+
+        if (s == IBet.Status.PENDING) {
+            if (b.maker != msg.sender) {
+                revert Unauthorized();
+            }
+        } else if (s == IBet.Status.ACTIVE || s == IBet.Status.JUDGING) {
+            if (b.judge != msg.sender) {
+                revert Unauthorized();
+            }
+        } else if (s == IBet.Status.EXPIRED) {
+            // Anybody can cancel an expired bet
+        } else {
+            // Already resolved or cancelled
+            revert InvalidStatus();
+        }
+
+        // Track whether taker deposited (bet was accepted/active)
+        bool takerDeposited = b.status == IBet.Status.ACTIVE;
+
+        _bet.status = IBet.Status.CANCELLED;
         uint256 makerRefund = b.makerStake;
-        uint256 takerRefund = b.takerStake;
+        // Only refund taker if they actually deposited
+        uint256 takerRefund = takerDeposited ? b.takerStake : 0;
 
         // If there is a pool, withdraw the funds from Aave first
-        if (address(_aavePool) != address(0)) {
-            uint256 aTokenBalance = IERC20(_aavePool.getReserveAToken(b.asset))
-                .balanceOf(address(this));
-            _aavePool.withdraw(b.asset, aTokenBalance, address(this));
+        if (address(pool) != address(0)) {
+            uint256 aTokenBalance = pool.withdraw(
+                b.asset,
+                type(uint256).max,
+                address(this)
+            );
 
+            // Cap refunds to available balance (in case of negative yield)
             makerRefund = _min(makerRefund, aTokenBalance);
             takerRefund = _min(takerRefund, aTokenBalance - makerRefund);
         }
 
         // Transfer the funds back to the maker and taker
-        // We don't track which party has deposited, so we can try/catch both transfers starting with the maker
-        try IERC20(b.asset).transfer(b.maker, makerRefund) {} catch {}
-        try IERC20(b.asset).transfer(b.taker, takerRefund) {} catch {}
+        IERC20(b.asset).safeTransfer(b.maker, makerRefund);
+        if (takerRefund > 0) {
+            IERC20(b.asset).safeTransfer(b.taker, takerRefund);
+        }
 
-        // Update the bet struct
-        _bet.status = IBet.Status.CANCELLED;
+        // Send any yield to treasury, or to maker if no treasury is set
+        _sendRemainder(b.asset, b.maker);
+
         emit BetCancelled();
     }
 
     function bet() external view returns (IBet.Bet memory state) {
         state = _bet;
         state.status = _status(state);
-        return state;
     }
 
     function status() external view returns (IBet.Status) {
         return _status(_bet);
     }
 
+    /// @notice Returns the deadline by which the judge must resolve the bet
+    function judgingDeadline() external view returns (uint40) {
+        return _bet.endsBy + JUDGING_WINDOW;
+    }
+
     /*//////////////////////////////////////////////////////////////
                            INTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
 
-    function _status(IBet.Bet memory b) internal view returns (IBet.Status) {
-        IBet.Status s = b.status;
+    function _status(IBet.Bet memory b) internal view returns (IBet.Status s) {
+        s = b.status;
 
-        if (
-            (s == IBet.Status.PENDING && block.timestamp > b.acceptBy) ||
-            (s == IBet.Status.ACTIVE && block.timestamp > b.resolveBy)
-        ) {
-            return IBet.Status.EXPIRED;
+        if (s == IBet.Status.PENDING && block.timestamp > b.acceptBy) {
+            s = IBet.Status.EXPIRED;
+        } else if (s == IBet.Status.ACTIVE) {
+            if (block.timestamp > b.endsBy + JUDGING_WINDOW) {
+                s = IBet.Status.EXPIRED;
+            } else if (block.timestamp > b.endsBy) {
+                s = IBet.Status.JUDGING;
+            }
         }
-
-        return s;
     }
 
     function _min(uint256 a, uint256 b) internal pure returns (uint256) {
         return a < b ? a : b;
+    }
+
+    /// @dev Sends any remaining balance to the treasury, or to the fallback recipient if no treasury is set.
+    function _sendRemainder(address asset, address fallbackRecipient) internal {
+        uint256 remainder = IERC20(asset).balanceOf(address(this));
+        if (remainder > 0) {
+            address treasury = _treasury;
+            if (treasury == address(0)) {
+                IERC20(asset).safeTransfer(fallbackRecipient, remainder);
+            } else {
+                IERC20(asset).safeTransfer(treasury, remainder);
+            }
+        }
     }
 }
