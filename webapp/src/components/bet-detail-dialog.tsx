@@ -2,7 +2,7 @@
 
 import { format } from 'date-fns'
 import Image from 'next/image'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { type Address, encodeFunctionData, parseUnits } from 'viem'
 import { base } from 'viem/chains'
 import {
@@ -216,6 +216,7 @@ export function BetDetailDialog({
   onOpenChange,
 }: BetDetailDialogProps) {
   const { address } = useAccount()
+  const [showDetails, setShowDetails] = useState(false)
 
   // Bet contract address (in real usage, this would come from bet.id)
   const betAddress = bet.id as Address
@@ -395,6 +396,7 @@ export function BetDetailDialog({
     resetApproval()
     resetResolve()
     resetCancel()
+    setShowDetails(false)
   }
 
   return (
@@ -439,8 +441,9 @@ export function BetDetailDialog({
                   height={16}
                   className="rounded-full"
                 />
-                <span className="font-bold">{Number(bet.amount) * 2}</span>
+                <span className="font-bold">{bet.amount}</span>
               </div>
+              <span className="text-[10px] opacity-70">each</span>
             </div>
 
             {/* Taker avatar - positioned right */}
@@ -506,9 +509,44 @@ export function BetDetailDialog({
           <button
             type="button"
             className="text-wb-coral mx-auto block text-sm font-medium hover:underline"
+            onClick={() => setShowDetails(!showDetails)}
           >
-            Show More Details
+            {showDetails ? 'Hide Details' : 'Show More Details'}
           </button>
+
+          {/* Collapsible Details Section */}
+          {showDetails && (
+            <div className="bg-wb-sand/30 space-y-2 rounded-lg p-3 text-sm">
+              <div className="flex justify-between">
+                <span className="text-wb-taupe">Contract</span>
+                <span className="text-wb-brown font-mono">
+                  {bet.id.slice(0, 10)}...{bet.id.slice(-8)}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-wb-taupe">Judge</span>
+                <span className="text-wb-brown">@{bet.judge.username}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-wb-taupe">Created</span>
+                <span className="text-wb-brown">
+                  {format(bet.createdAt, 'MMM d, yyyy')}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-wb-taupe">Accept by</span>
+                <span className="text-wb-brown">
+                  {format(bet.acceptBy, 'MMM d, yyyy')}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-wb-taupe">Judge deadline</span>
+                <span className="text-wb-brown">
+                  {format(bet.resolveBy, 'MMM d, yyyy')}
+                </span>
+              </div>
+            </div>
+          )}
         </div>
       </DrawerContent>
     </Drawer>

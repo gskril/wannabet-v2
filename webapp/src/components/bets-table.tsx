@@ -33,15 +33,53 @@ export function BetsTable({ bets }: BetsTableProps) {
             <div className="flex flex-col gap-3">
               {/* Line 1: Avatars and usernames */}
               <div className="flex items-center gap-2">
-                <div className="ring-wb-taupe rounded-full ring-2">
+                <div
+                  className={`relative rounded-full ring-2 ${
+                    bet.status === 'completed' &&
+                    bet.winner?.fid === bet.maker.fid
+                      ? 'ring-wb-gold'
+                      : 'ring-wb-taupe'
+                  } ${
+                    bet.status === 'completed' &&
+                    bet.winner &&
+                    bet.winner.fid !== bet.maker.fid
+                      ? 'grayscale'
+                      : ''
+                  }`}
+                >
                   <UserAvatar user={bet.maker} size="sm" clickable={false} />
+                  {bet.status === 'completed' &&
+                    bet.winner?.fid === bet.maker.fid && (
+                      <span className="absolute -bottom-1 -right-1 text-sm">
+                        🏆
+                      </span>
+                    )}
                 </div>
                 <span className="text-wb-brown text-sm font-semibold">
                   {bet.maker.username}
                 </span>
                 <span className="text-wb-taupe text-sm">vs</span>
-                <div className="ring-wb-taupe rounded-full ring-2">
+                <div
+                  className={`relative rounded-full ring-2 ${
+                    bet.status === 'completed' &&
+                    bet.winner?.fid === bet.taker.fid
+                      ? 'ring-wb-gold'
+                      : 'ring-wb-taupe'
+                  } ${
+                    bet.status === 'completed' &&
+                    bet.winner &&
+                    bet.winner.fid !== bet.taker.fid
+                      ? 'grayscale'
+                      : ''
+                  }`}
+                >
                   <UserAvatar user={bet.taker} size="sm" clickable={false} />
+                  {bet.status === 'completed' &&
+                    bet.winner?.fid === bet.taker.fid && (
+                      <span className="absolute -bottom-1 -right-1 text-sm">
+                        🏆
+                      </span>
+                    )}
                 </div>
                 <span className="text-wb-brown text-sm font-semibold">
                   {bet.taker.username}

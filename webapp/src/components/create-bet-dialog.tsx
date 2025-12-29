@@ -32,6 +32,7 @@ import {
 } from '@/components/ui/drawer'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import { UserSearch } from '@/components/user-search'
 import { resolveAddressFromFid } from '@/lib/address-resolver'
 import {
@@ -69,7 +70,7 @@ interface FormData {
 const INITIAL_FORM_DATA: FormData = {
   taker: '',
   judge: '',
-  amount: '100',
+  amount: '',
   expiresAt: '',
   description: '',
 }
@@ -422,11 +423,11 @@ export function CreateBetDialog() {
               {/* Description */}
               <div className="space-y-2">
                 <Label className="text-wb-brown">I am betting that...</Label>
-                <Input
+                <Textarea
                   placeholder="e.g., the Knicks will win the championship this season"
                   value={formData.description}
                   onChange={(e) => updateField('description', e.target.value)}
-                  className="bg-wb-sand text-wb-brown placeholder:text-wb-taupe"
+                  className="min-h-[72px] resize-none bg-wb-sand text-wb-brown placeholder:text-wb-taupe"
                 />
               </div>
 
@@ -449,7 +450,9 @@ export function CreateBetDialog() {
                   }}
                   onClick={(e) => (e.target as HTMLInputElement).showPicker?.()}
                   min={new Date().toISOString().split('T')[0]}
-                  className="bg-wb-sand text-wb-brown placeholder:text-wb-taupe cursor-pointer [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none"
+                  className={`bg-wb-sand cursor-pointer [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none ${
+                    formData.expiresAt ? 'text-wb-brown' : 'text-wb-taupe'
+                  }`}
                 />
               </div>
 
