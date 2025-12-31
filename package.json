@@ -7,7 +7,8 @@
     "build": "pnpm recursive run build",
     "build:web": "pnpm --filter webapp build",
     "build:shared": "pnpm --filter shared build",
-    "postinstall": "pnpm run build:shared",
+    "build:indexer": "pnpm --filter indexer build",
+    "postinstall": "pnpm run build:shared && pnpm run build:indexer",
     "prettier": "prettier --ignore-path .gitignore --write ./**/*.{ts,tsx,json,md,css}"
   },
   "packageManager": "pnpm@10.24.0",

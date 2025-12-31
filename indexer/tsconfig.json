@@ -14,13 +14,17 @@
     // Language and environment
     "moduleResolution": "bundler",
     "module": "ESNext",
-    "noEmit": true,
+    "noEmit": false,
     "lib": ["ES2022"],
     "target": "ES2022",
 
     // Skip type checking for node modules
-    "skipLibCheck": true
+    "skipLibCheck": true,
+
+    // Build
+    "outDir": "./dist",
+    "declaration": true
   },
   "include": ["./**/*.ts"],
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules", "dist"]
 }
