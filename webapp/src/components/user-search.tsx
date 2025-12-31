@@ -6,7 +6,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { UserAvatar } from '@/components/user-avatar'
-import { searchUsers } from '@/lib/neynar'
+import { searchMockUsers } from '@/lib/mock-data'
 import type { FarcasterUser } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
@@ -41,16 +41,13 @@ export function UserSearch({
   const [isLoading, setIsLoading] = useState(false)
   const [selectedUser, setSelectedUser] = useState<FarcasterUser | undefined>()
 
-  // Use ref to track the last search query to prevent duplicate requests
   const lastSearchRef = useRef<string>('')
-  const abortControllerRef = useRef<AbortController | null>(null)
 
-  // Memoize the search function to prevent re-creation
+  // Search function using mock data
   const performSearch = useCallback(
-    async (query: string) => {
+    (query: string) => {
       const trimmedQuery = query.trim()
 
-      // Don't search if query is too short or same as last search
       if (
         !trimmedQuery ||
         trimmedQuery.length < 2 ||
@@ -59,32 +56,19 @@ export function UserSearch({
         return
       }
 
-      // Cancel any in-flight request
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort()
-      }
-
-      // Create new abort controller for this request
-      abortControllerRef.current = new AbortController()
       lastSearchRef.current = trimmedQuery
-
       setIsLoading(true)
-      try {
-        const results = await searchUsers(trimmedQuery)
+
+      // Simulate a small delay for realism
+      setTimeout(() => {
+        // TODO: Replace with real Farcaster user search
+        const results = searchMockUsers(trimmedQuery)
         const filtered = results.filter(
           (user) => !excludeFids.includes(user.fid)
         )
         setUsers(filtered.slice(0, 10))
-      } catch (error) {
-        // Only log if not an abort error
-        if (error instanceof Error && error.name !== 'AbortError') {
-          console.error('Search error:', error)
-        }
-        setUsers([])
-      } finally {
         setIsLoading(false)
-        abortControllerRef.current = null
-      }
+      }, 200)
     },
     [excludeFids]
   )
@@ -99,14 +83,10 @@ export function UserSearch({
 
     const timeoutId = setTimeout(() => {
       performSearch(searchQuery)
-    }, 500) // 500ms debounce (increased from 300ms)
+    }, 300)
 
     return () => {
       clearTimeout(timeoutId)
-      // Cancel any in-flight request when effect cleans up
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort()
-      }
     }
   }, [searchQuery, performSearch])
 
@@ -116,7 +96,6 @@ export function UserSearch({
     setSelectedUser(user)
     onChange(username, user)
     setIsFocused(false)
-    // Clear search results after selection
     setUsers([])
     lastSearchRef.current = username
   }
