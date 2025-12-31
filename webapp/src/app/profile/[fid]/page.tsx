@@ -1,47 +1,46 @@
 'use client'
 
-import { Activity, ArrowLeft, Coins, TrendingUp, Trophy } from 'lucide-react'
+import { Activity, ArrowLeft, Coins, Loader2, TrendingUp, Trophy } from 'lucide-react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
+import { useMemo } from 'react'
 
 import { BetsTable } from '@/components/bets-table'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { UserAvatar } from '@/components/user-avatar'
-import { MOCK_BETS, MOCK_USERS } from '@/lib/mock-data'
+import { useBets } from '@/hooks/useBets'
 import type { Bet, FarcasterUser, UserStats } from '@/lib/types'
 
-function getUserByFid(fid: number): FarcasterUser | null {
-  // TODO: Replace with real user lookup
-  return Object.values(MOCK_USERS).find((u) => u.fid === fid) || null
-}
-
-function getUserBets(fid: number): Bet[] {
-  // TODO: Replace with real bet filtering
-  return MOCK_BETS.filter(
-    (bet) =>
-      bet.maker.fid === fid ||
-      bet.taker?.fid === fid ||
-      bet.judge?.fid === fid
-  )
-}
-
-function getUserStats(fid: number, userBets: Bet[]): UserStats {
+function getUserStats(address: string, userBets: Bet[]): UserStats {
+  const lowerAddress = address.toLowerCase()
   const totalBets = userBets.length
   const activeBets = userBets.filter((b) => b.status === 'active').length
-  const wonBets = userBets.filter((b) => b.winner?.fid === fid).length
+
+  const wonBets = userBets.filter(
+    (b) =>
+      b.status === 'completed' &&
+      b.winner &&
+      // Check if winner address matches (since winner is a FarcasterUser with address in username for now)
+      (b.makerAddress.toLowerCase() === lowerAddress
+        ? b.winner.username === b.maker.username
+        : b.winner.username === b.taker.username)
+  ).length
+
   const lostBets = userBets.filter(
-    (b) => b.status === 'completed' && b.winner && b.winner.fid !== fid
+    (b) =>
+      b.status === 'completed' &&
+      b.winner &&
+      (b.makerAddress.toLowerCase() === lowerAddress
+        ? b.winner.username !== b.maker.username
+        : b.winner.username !== b.taker.username)
   ).length
 
   const totalWagered = userBets
     .reduce((sum, bet) => sum + parseFloat(bet.amount), 0)
     .toFixed(2)
 
-  const totalWon = userBets
-    .filter((b) => b.winner?.fid === fid)
-    .reduce((sum, bet) => sum + parseFloat(bet.amount) * 2, 0)
-    .toFixed(2)
+  const totalWon = (wonBets * 2 * parseFloat(userBets[0]?.amount || '0')).toFixed(2)
 
   const winRate =
     wonBets + lostBets > 0
@@ -49,7 +48,7 @@ function getUserStats(fid: number, userBets: Bet[]): UserStats {
       : 0
 
   return {
-    fid,
+    fid: 0,
     totalBets,
     activeBets,
     wonBets,
@@ -62,13 +61,58 @@ function getUserStats(fid: number, userBets: Bet[]): UserStats {
 
 export default function ProfilePage() {
   const params = useParams()
-  const fid = parseInt(params.fid as string)
+  const addressOrFid = params.fid as string
 
-  const user = getUserByFid(fid)
-  const userBets = getUserBets(fid)
-  const stats = getUserStats(fid, userBets)
+  const betsQuery = useBets()
 
-  if (!user) {
+  // Filter bets where the address is maker, taker, or judge
+  const userBets = useMemo(() => {
+    if (!betsQuery.data) return []
+    const lower = addressOrFid.toLowerCase()
+    return betsQuery.data.filter(
+      (bet) =>
+        bet.makerAddress.toLowerCase() === lower ||
+        bet.takerAddress.toLowerCase() === lower ||
+        bet.judgeAddress.toLowerCase() === lower
+    )
+  }, [betsQuery.data, addressOrFid])
+
+  // Create a user object from the address
+  const user: FarcasterUser | null = useMemo(() => {
+    if (userBets.length === 0) return null
+    const lower = addressOrFid.toLowerCase()
+    // Try to find the user in the bets
+    const bet = userBets[0]
+    if (bet.makerAddress.toLowerCase() === lower) return bet.maker
+    if (bet.takerAddress.toLowerCase() === lower) return bet.taker
+    if (bet.judgeAddress.toLowerCase() === lower) return bet.judge
+    return null
+  }, [userBets, addressOrFid])
+
+  const stats = useMemo(() => {
+    if (!user) return null
+    return getUserStats(addressOrFid, userBets)
+  }, [addressOrFid, userBets, user])
+
+  if (betsQuery.isLoading) {
+    return (
+      <div className="bg-background min-h-screen pb-20 sm:pb-4">
+        <main className="container mx-auto px-4 py-6 md:py-8">
+          <Link href="/">
+            <Button variant="ghost" size="sm" className="mb-4">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Feed
+            </Button>
+          </Link>
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-wb-coral" />
+          </div>
+        </main>
+      </div>
+    )
+  }
+
+  if (betsQuery.error || !user || !stats) {
     return (
       <div className="bg-background min-h-screen pb-20 sm:pb-4">
         <main className="container mx-auto px-4 py-6 md:py-8">
@@ -81,7 +125,9 @@ export default function ProfilePage() {
           <div className="text-center py-12">
             <h1 className="text-2xl font-bold text-wb-brown">User Not Found</h1>
             <p className="text-wb-taupe mt-2">
-              This user doesn&apos;t exist or hasn&apos;t been indexed yet.
+              {betsQuery.error
+                ? 'Error loading profile. Please try again.'
+                : 'This user has no betting history yet.'}
             </p>
           </div>
         </main>

@@ -1,14 +1,13 @@
 import { useQuery } from '@tanstack/react-query'
 
-import { MOCK_BETS } from '@/lib/mock-data'
+import { fetchBets } from '@/lib/indexer'
 import type { Bet } from '@/lib/types'
 
 export function useBets() {
-  return useQuery({
+  return useQuery<Bet[]>({
     queryKey: ['bets'],
-    queryFn: (): Bet[] => {
-      // TODO: Replace with real data fetching
-      return MOCK_BETS
-    },
+    queryFn: fetchBets,
+    staleTime: 30000, // 30 seconds
+    refetchOnWindowFocus: false,
   })
 }

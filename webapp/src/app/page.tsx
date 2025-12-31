@@ -41,17 +41,17 @@ export default function HomePage() {
   }, [])
 
   // Fetch bets data
-  const { data: bets, isLoading: loading, error } = useBets()
+  const betsQuery = useBets()
 
   // Filter bets based on active filter
   const filteredBets = useMemo(() => {
-    if (!bets) return []
+    if (!betsQuery.data) return []
 
     switch (activeFilter) {
       case 'my':
         // Show bets where user is maker, taker, or judge
         if (!address) return []
-        return bets.filter(
+        return betsQuery.data.filter(
           (bet) =>
             bet.makerAddress?.toLowerCase() === address.toLowerCase() ||
             bet.takerAddress?.toLowerCase() === address.toLowerCase() ||
@@ -59,12 +59,12 @@ export default function HomePage() {
         )
       case 'notifications':
         // Dummy: for now just show first 2 bets as "requiring action"
-        return bets.slice(0, 2)
+        return betsQuery.data.slice(0, 2)
       case 'all':
       default:
-        return bets
+        return betsQuery.data
     }
-  }, [bets, activeFilter, address])
+  }, [betsQuery.data, activeFilter, address])
 
   const handleCloseWelcome = (open: boolean) => {
     setShowWelcome(open)
@@ -148,13 +148,13 @@ export default function HomePage() {
         </button>
       </div>
       <main className="container mx-auto px-4 py-6 md:py-8">
-        {loading ? (
+        {betsQuery.isLoading ? (
           <div className="flex items-center justify-center py-12">
             <div className="text-muted-foreground">Loading bets...</div>
           </div>
-        ) : error ? (
+        ) : betsQuery.error ? (
           <div className="flex items-center justify-center py-12">
-            <div className="text-destructive">Error: {error.message}</div>
+            <div className="text-destructive">Error: {betsQuery.error.message}</div>
           </div>
         ) : filteredBets.length === 0 ? (
           <div className="flex items-center justify-center py-12">

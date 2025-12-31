@@ -6,7 +6,6 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { UserAvatar } from '@/components/user-avatar'
-import { searchMockUsers } from '@/lib/mock-data'
 import type { FarcasterUser } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
@@ -23,6 +22,14 @@ interface UserSearchProps {
 }
 
 const EMPTY_ARRAY: number[] = []
+
+// TODO: Replace with real Farcaster user search via Neynar API
+async function searchUsers(query: string): Promise<FarcasterUser[]> {
+  // Placeholder - returns empty array
+  // In production, this would call the Neynar search API
+  console.log('TODO: Implement user search for query:', query)
+  return []
+}
 
 export function UserSearch({
   label,
@@ -43,9 +50,9 @@ export function UserSearch({
 
   const lastSearchRef = useRef<string>('')
 
-  // Search function using mock data
+  // Search function
   const performSearch = useCallback(
-    (query: string) => {
+    async (query: string) => {
       const trimmedQuery = query.trim()
 
       if (
@@ -59,16 +66,18 @@ export function UserSearch({
       lastSearchRef.current = trimmedQuery
       setIsLoading(true)
 
-      // Simulate a small delay for realism
-      setTimeout(() => {
-        // TODO: Replace with real Farcaster user search
-        const results = searchMockUsers(trimmedQuery)
+      try {
+        const results = await searchUsers(trimmedQuery)
         const filtered = results.filter(
           (user) => !excludeFids.includes(user.fid)
         )
         setUsers(filtered.slice(0, 10))
+      } catch (error) {
+        console.error('Search error:', error)
+        setUsers([])
+      } finally {
         setIsLoading(false)
-      }, 200)
+      }
     },
     [excludeFids]
   )
@@ -188,15 +197,11 @@ export function UserSearch({
                     </div>
                   </button>
                 ))
-              ) : searchQuery.trim().length >= 2 ? (
+              ) : (
                 <div className="text-muted-foreground p-4 text-center text-sm">
-                  No users found
+                  No users found (search not implemented yet)
                 </div>
-              ) : searchQuery.trim().length > 0 ? (
-                <div className="text-muted-foreground p-4 text-center text-sm">
-                  Type at least 2 characters to search
-                </div>
-              ) : null}
+              )}
             </div>
           )}
         </div>
