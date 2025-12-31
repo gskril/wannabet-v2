@@ -1,26 +1,8 @@
 'use client'
 
-import { sendCallsSync } from '@wagmi/core'
 import { Loader2, Plus } from 'lucide-react'
 import Image from 'next/image'
-import {
-  type ChangeEvent,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react'
-import {
-  type Address,
-  decodeEventLog,
-  encodeFunctionData,
-  parseUnits,
-  zeroAddress,
-} from 'viem'
-import { base } from 'viem/chains'
-import { useAccount, useConnect, useReadContract, useSwitchChain } from 'wagmi'
-import { getCallsStatus, getConnections, readContract } from 'wagmi/actions'
+import { type ChangeEvent, useCallback, useEffect, useMemo, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -34,28 +16,9 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { UserSearch } from '@/components/user-search'
-import { resolveAddressFromFid } from '@/lib/address-resolver'
-import {
-  BETFACTORY_ABI,
-  BETFACTORY_ADDRESS,
-  ERC20_ABI,
-  USDC_ADDRESS,
-} from '@/lib/contracts'
 import type { FarcasterUser } from '@/lib/types'
-import { wagmiConfig } from '@/lib/wagmi-config'
 
-/* --------------------------------
- * Constants
- * -------------------------------- */
-const BASE_CHAIN_ID = base.id
-
-type SubmitPhase =
-  | 'idle'
-  | 'approving'
-  | 'creating'
-  | 'confirming'
-  | 'verifying'
-  | 'done'
+type SubmitPhase = 'idle' | 'submitting' | 'done'
 
 interface FormData {
   taker: string
@@ -75,50 +38,10 @@ const INITIAL_FORM_DATA: FormData = {
   description: '',
 }
 
-/* --------------------------------
- * Component
- * -------------------------------- */
 export function CreateBetDialog() {
   const [open, setOpen] = useState(false)
   const [formData, setFormData] = useState<FormData>(INITIAL_FORM_DATA)
   const [phase, setPhase] = useState<SubmitPhase>('idle')
-  const [error, setError] = useState<string | null>(null)
-  const [createdBetAddress, setCreatedBetAddress] = useState<Address | null>(
-    null
-  )
-  const [betCreationHash, setBetCreationHash] = useState<`0x${string}` | null>(
-    null
-  )
-
-  const mounted = useRef(true)
-
-  // Web3 hooks
-  const { address, isConnected, chain } = useAccount()
-  const { connect, connectors } = useConnect()
-  const { switchChainAsync, isPending: isSwitchingChain } = useSwitchChain()
-
-  const { data: usdcBalance } = useReadContract({
-    address: USDC_ADDRESS,
-    abi: ERC20_ABI,
-    functionName: 'balanceOf',
-    args: [address!],
-    chainId: BASE_CHAIN_ID,
-    query: { enabled: isConnected && !!address },
-  })
-
-  // Format USDC balance for display
-  const formattedBalance = useMemo(() => {
-    if (!usdcBalance) return null
-    return (Number(usdcBalance) / 1e6).toLocaleString()
-  }, [usdcBalance])
-
-  // Cleanup on unmount
-  useEffect(() => {
-    mounted.current = true
-    return () => {
-      mounted.current = false
-    }
-  }, [])
 
   // Open dialog via #create hash
   useEffect(() => {
@@ -154,15 +77,12 @@ export function CreateBetDialog() {
     )
   }, [formData])
 
-  const isSubmitting = phase !== 'idle' && phase !== 'done'
+  const isSubmitting = phase === 'submitting'
 
   // Reset form
   const handleReset = useCallback(() => {
     setFormData(INITIAL_FORM_DATA)
     setPhase('idle')
-    setError(null)
-    setCreatedBetAddress(null)
-    setBetCreationHash(null)
   }, [])
 
   // Update form field
@@ -173,159 +93,17 @@ export function CreateBetDialog() {
     []
   )
 
-  // Submit bet
+  // Mock submit - just shows success after a delay
   const handleSubmit = useCallback(async () => {
-    setError(null)
+    setPhase('submitting')
 
-    if (!isConnected || !address) {
-      setError('Connect your wallet to continue.')
-      return
-    }
+    // TODO: Implement real bet creation
+    // Simulate network delay
+    await new Promise((resolve) => setTimeout(resolve, 1500))
 
-    // Switch to Base if needed
-    if (chain?.id !== BASE_CHAIN_ID) {
-      try {
-        await switchChainAsync({ chainId: BASE_CHAIN_ID })
-      } catch {
-        setError('Please switch to Base network.')
-        return
-      }
-    }
+    setPhase('done')
+  }, [])
 
-    try {
-      // Parse amount
-      const amountNum = Number(formData.amount)
-      if (!isFinite(amountNum) || amountNum <= 0) {
-        throw new Error('Enter a valid USDC amount.')
-      }
-      const amountInUnits = parseUnits(formData.amount, 6)
-
-      // Resolve addresses
-      const takerAddress: Address = formData.takerUser?.fid
-        ? ((await resolveAddressFromFid(formData.takerUser.fid)) as Address) ||
-          zeroAddress
-        : zeroAddress
-
-      const judgeAddress: Address = formData.judgeUser?.fid
-        ? ((await resolveAddressFromFid(formData.judgeUser.fid)) as Address) ||
-          zeroAddress
-        : zeroAddress
-
-      if (formData.judgeUser?.fid && judgeAddress === zeroAddress) {
-        throw new Error(
-          'Could not resolve judge address. Ensure judge has a verified ETH address.'
-        )
-      }
-
-      // Calculate timing windows
-      const acceptBy = Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60 // 7 days to accept
-      const expiresAtTs = Math.floor(
-        new Date(formData.expiresAt).getTime() / 1000
-      )
-      const resolveBy = expiresAtTs + 90 * 24 * 60 * 60 // 90 days after expiry to resolve
-
-      // Predict bet address for approval
-      const predicted = (await readContract(wagmiConfig, {
-        address: BETFACTORY_ADDRESS,
-        abi: BETFACTORY_ABI,
-        functionName: 'predictBetAddress',
-        args: [address, takerAddress, acceptBy, resolveBy],
-        chainId: BASE_CHAIN_ID,
-      })) as Address
-
-      if (!mounted.current) return
-
-      // Build transaction data
-      const approveData = encodeFunctionData({
-        abi: ERC20_ABI,
-        functionName: 'approve',
-        args: [predicted, amountInUnits],
-      })
-
-      const createBetData = encodeFunctionData({
-        abi: BETFACTORY_ABI,
-        functionName: 'createBet',
-        args: [
-          takerAddress,
-          judgeAddress,
-          USDC_ADDRESS,
-          amountInUnits,
-          amountInUnits,
-          acceptBy,
-          resolveBy,
-          formData.description,
-        ],
-      })
-
-      // Send batch transaction
-      setPhase('creating')
-      const batchResult = await sendCallsSync(wagmiConfig, {
-        calls: [
-          { to: USDC_ADDRESS, data: approveData },
-          { to: BETFACTORY_ADDRESS, data: createBetData },
-        ],
-        chainId: BASE_CHAIN_ID,
-      })
-
-      // Wait for confirmation
-      setPhase('confirming')
-      const connections = getConnections(wagmiConfig)
-      const { receipts } = await getCallsStatus(wagmiConfig, {
-        id: batchResult.id,
-        connector: connections[0]?.connector,
-      })
-
-      setBetCreationHash(receipts?.[0]?.transactionHash || null)
-      if (!receipts) throw new Error('No receipts found.')
-
-      // Extract bet address from logs
-      setPhase('verifying')
-      const factoryLog = receipts
-        .flatMap((r) => r.logs)
-        .find(
-          (log) =>
-            log.address.toLowerCase() === BETFACTORY_ADDRESS.toLowerCase()
-        )
-
-      if (!factoryLog) throw new Error('No BetFactory log found.')
-
-      const decoded = decodeEventLog({
-        abi: BETFACTORY_ABI,
-        data: factoryLog.data,
-        // @ts-expect-error - topics type mismatch but works correctly
-        topics: factoryLog.topics,
-      })
-
-      if (decoded.eventName !== 'BetCreated') {
-        throw new Error('Unexpected event emitted.')
-      }
-
-      setCreatedBetAddress(decoded.args.bet)
-      setPhase('done')
-    } catch (err: unknown) {
-      if (!mounted.current) return
-      setPhase('idle')
-      const message =
-        (err as { shortMessage?: string })?.shortMessage ||
-        (err as { message?: string })?.message ||
-        'Unknown error'
-      setError(message)
-    }
-  }, [isConnected, address, chain?.id, switchChainAsync, formData])
-
-  // Button text based on state
-  const buttonText = useMemo(() => {
-    if (isSwitchingChain) return 'Switching Network...'
-    if (phase === 'approving') return 'Approving USDC...'
-    if (phase === 'creating') return 'Creating Bet...'
-    if (phase === 'confirming') return 'Confirming...'
-    if (phase === 'verifying') return 'Verifying...'
-    return 'Create Bet'
-  }, [phase, isSwitchingChain])
-
-  /* --------------------------------
-   * Render
-   * -------------------------------- */
   return (
     <Drawer
       open={open}
@@ -350,62 +128,33 @@ export function CreateBetDialog() {
         </DrawerHeader>
 
         <div className="px-6 pb-6">
-          {/* Connect Wallet */}
-          {!isConnected && (
-            <div className="space-y-4 text-center">
-              <p className="text-wb-taupe text-sm">
-                Connect your wallet to create a bet.
-              </p>
-              <Button
-                type="button"
-                onClick={() => {
-                  const injected = connectors.find((c) => c.type === 'injected')
-                  if (injected) connect({ connector: injected })
-                }}
-                className="w-full"
-              >
-                Connect Wallet
-              </Button>
-            </div>
-          )}
-
           {/* Success State */}
-          {isConnected && phase === 'done' && createdBetAddress && (
+          {phase === 'done' && (
             <div className="space-y-4 text-center">
               <div className="text-4xl">🎉</div>
               <p className="text-wb-brown text-lg font-semibold">
                 Bet Created Successfully!
               </p>
+              <p className="text-wb-taupe text-sm">
+                (This is a mock - real creation not implemented yet)
+              </p>
               <div className="flex flex-col gap-2 pt-4">
                 <Button
                   className="w-full"
                   size="lg"
-                  onClick={() => window.location.reload()}
+                  onClick={() => {
+                    setOpen(false)
+                    handleReset()
+                  }}
                 >
-                  View Bet
+                  Done
                 </Button>
-                {betCreationHash && (
-                  <Button
-                    asChild
-                    variant="outline"
-                    size="sm"
-                    className="w-full"
-                  >
-                    <a
-                      href={`https://basescan.org/tx/${betCreationHash}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      View on BaseScan
-                    </a>
-                  </Button>
-                )}
               </div>
             </div>
           )}
 
           {/* Form */}
-          {isConnected && phase !== 'done' && (
+          {phase !== 'done' && (
             <div className="space-y-5">
               {/* Opponent */}
               <UserSearch
@@ -467,7 +216,6 @@ export function CreateBetDialog() {
                     placeholder="100"
                     value={formData.amount}
                     onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                      // Only allow valid decimal input
                       const val = e.target.value
                       if (val === '' || /^\d*\.?\d*$/.test(val)) {
                         updateField('amount', val)
@@ -485,11 +233,6 @@ export function CreateBetDialog() {
                     />
                   </div>
                 </div>
-                {formattedBalance && (
-                  <p className="text-wb-coral text-xs">
-                    Your Balance: {formattedBalance}
-                  </p>
-                )}
               </div>
 
               {/* Judge */}
@@ -505,13 +248,6 @@ export function CreateBetDialog() {
                 inputClassName="bg-wb-sand text-wb-brown placeholder:text-wb-taupe"
               />
 
-              {/* Error */}
-              {error && (
-                <div className="rounded-md border border-red-200 bg-red-50 p-3">
-                  <p className="text-sm text-red-700">{error}</p>
-                </div>
-              )}
-
               {/* Submit */}
               <Button
                 className="bg-wb-coral hover:bg-wb-coral/90 w-full text-white"
@@ -522,7 +258,7 @@ export function CreateBetDialog() {
                 {isSubmitting && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}
-                {buttonText}
+                {isSubmitting ? 'Creating...' : 'Create Bet'}
               </Button>
 
               <p className="text-wb-taupe text-center text-xs">
