@@ -23,7 +23,7 @@ export default createConfig({
         address: BET_FACTORY.address,
         event: parseAbiItem('event BetCreated(address indexed bet)'),
         parameter: 'bet',
-      }),
+      }) as any,
     },
   },
 })

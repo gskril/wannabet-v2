@@ -6,7 +6,6 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { UserAvatar } from '@/components/user-avatar'
-import { searchUsers } from '@/lib/neynar'
 import type { FarcasterUser } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
@@ -23,6 +22,14 @@ interface UserSearchProps {
 }
 
 const EMPTY_ARRAY: number[] = []
+
+// TODO: Replace with real Farcaster user search via Neynar API
+async function searchUsers(query: string): Promise<FarcasterUser[]> {
+  // Placeholder - returns empty array
+  // In production, this would call the Neynar search API
+  console.log('TODO: Implement user search for query:', query)
+  return []
+}
 
 export function UserSearch({
   label,
@@ -41,16 +48,13 @@ export function UserSearch({
   const [isLoading, setIsLoading] = useState(false)
   const [selectedUser, setSelectedUser] = useState<FarcasterUser | undefined>()
 
-  // Use ref to track the last search query to prevent duplicate requests
   const lastSearchRef = useRef<string>('')
-  const abortControllerRef = useRef<AbortController | null>(null)
 
-  // Memoize the search function to prevent re-creation
+  // Search function
   const performSearch = useCallback(
     async (query: string) => {
       const trimmedQuery = query.trim()
 
-      // Don't search if query is too short or same as last search
       if (
         !trimmedQuery ||
         trimmedQuery.length < 2 ||
@@ -59,16 +63,9 @@ export function UserSearch({
         return
       }
 
-      // Cancel any in-flight request
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort()
-      }
-
-      // Create new abort controller for this request
-      abortControllerRef.current = new AbortController()
       lastSearchRef.current = trimmedQuery
-
       setIsLoading(true)
+
       try {
         const results = await searchUsers(trimmedQuery)
         const filtered = results.filter(
@@ -76,14 +73,10 @@ export function UserSearch({
         )
         setUsers(filtered.slice(0, 10))
       } catch (error) {
-        // Only log if not an abort error
-        if (error instanceof Error && error.name !== 'AbortError') {
-          console.error('Search error:', error)
-        }
+        console.error('Search error:', error)
         setUsers([])
       } finally {
         setIsLoading(false)
-        abortControllerRef.current = null
       }
     },
     [excludeFids]
@@ -99,14 +92,10 @@ export function UserSearch({
 
     const timeoutId = setTimeout(() => {
       performSearch(searchQuery)
-    }, 500) // 500ms debounce (increased from 300ms)
+    }, 300)
 
     return () => {
       clearTimeout(timeoutId)
-      // Cancel any in-flight request when effect cleans up
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort()
-      }
     }
   }, [searchQuery, performSearch])
 
@@ -116,7 +105,6 @@ export function UserSearch({
     setSelectedUser(user)
     onChange(username, user)
     setIsFocused(false)
-    // Clear search results after selection
     setUsers([])
     lastSearchRef.current = username
   }
@@ -209,15 +197,11 @@ export function UserSearch({
                     </div>
                   </button>
                 ))
-              ) : searchQuery.trim().length >= 2 ? (
+              ) : (
                 <div className="text-muted-foreground p-4 text-center text-sm">
-                  No users found
+                  No users found (search not implemented yet)
                 </div>
-              ) : searchQuery.trim().length > 0 ? (
-                <div className="text-muted-foreground p-4 text-center text-sm">
-                  Type at least 2 characters to search
-                </div>
-              ) : null}
+              )}
             </div>
           )}
         </div>

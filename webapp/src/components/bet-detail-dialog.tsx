@@ -2,30 +2,13 @@
 
 import { format } from 'date-fns'
 import Image from 'next/image'
-import { useEffect, useState } from 'react'
-import { type Address, encodeFunctionData, parseUnits } from 'viem'
-import { base } from 'viem/chains'
-import {
-  useAccount,
-  useReadContract,
-  useSendCalls,
-  useWaitForCallsStatus,
-  useWaitForTransactionReceipt,
-  useWriteContract,
-} from 'wagmi'
+import { useState } from 'react'
 
-import { STATUS_CONFIG, StatusPennant } from '@/components/status-pennant'
+import { StatusPennant } from '@/components/status-pennant'
 import { Button } from '@/components/ui/button'
 import { Drawer, DrawerContent, DrawerHeader } from '@/components/ui/drawer'
 import { UserAvatar } from '@/components/user-avatar'
-import { BET_ABI, ERC20_ABI, USDC_ADDRESS } from '@/lib/contracts'
 import type { Bet, BetStatus } from '@/lib/types'
-
-// =================================================================
-// DEV MODE - Toggle these to test different UI states
-// Set to 'none' to disable, or 'taker' | 'maker' | 'judge' to simulate
-const DEV_SIMULATE_ROLE: 'none' | 'taker' | 'maker' | 'judge' = 'none'
-// =================================================================
 
 // Helper to get ring color based on bet status
 const getStatusRingColor = (status: BetStatus) => {
@@ -51,44 +34,17 @@ const getStatusBgColor = (status: BetStatus) => {
 
 interface ActionCardProps {
   bet: Bet
-  address: Address | undefined
-  isApproving: boolean
-  isResolving: boolean
-  isWaitingForResolve: boolean
-  isCanceling: boolean
-  isWaitingForCancel: boolean
-  usdcBalance: bigint | undefined
   onAcceptBet: () => void
-  onResolveBet: (winnerAddress: string) => void
+  onResolveBet: (winner: 'maker' | 'taker') => void
   onCancelBet: () => void
 }
 
 function ActionCard({
   bet,
-  address,
-  isApproving,
-  isResolving,
-  isWaitingForResolve,
-  isCanceling,
-  isWaitingForCancel,
-  usdcBalance,
   onAcceptBet,
   onResolveBet,
   onCancelBet,
 }: ActionCardProps) {
-  // Real role checks
-  const realIsUserTaker =
-    address && bet.takerAddress?.toLowerCase() === address.toLowerCase()
-  const realIsUserMaker =
-    address && bet.makerAddress.toLowerCase() === address.toLowerCase()
-  const realIsUserJudge =
-    address && bet.judgeAddress?.toLowerCase() === address.toLowerCase()
-
-  // Apply dev mode overrides
-  const isUserTaker = DEV_SIMULATE_ROLE === 'taker' ? true : realIsUserTaker
-  const isUserMaker = DEV_SIMULATE_ROLE === 'maker' ? true : realIsUserMaker
-  const isUserJudge = DEV_SIMULATE_ROLE === 'judge' ? true : realIsUserJudge
-
   // State 3: Resolved - Winner display
   if (bet.status === 'completed' && bet.winner) {
     return (
@@ -118,89 +74,68 @@ function ActionCard({
   }
 
   // State 2: Judge Selection (active + user is judge)
-  if (bet.status === 'active' && isUserJudge && bet.acceptedBy) {
+  if (bet.status === 'active' && bet.acceptedBy) {
     return (
       <div className="bg-wb-sand/50 space-y-3 rounded-xl border px-4 py-3">
+        <p className="text-wb-taupe text-center text-xs">
+          Pick a winner (mock - any user can click)
+        </p>
         <div className="flex gap-2">
           <Button
-            onClick={() => onResolveBet(bet.makerAddress)}
+            onClick={() => onResolveBet('maker')}
             className="bg-wb-coral hover:bg-wb-coral/80 flex-1 text-white"
-            disabled={isResolving || isWaitingForResolve}
           >
             @{bet.maker.username}
           </Button>
           <Button
-            onClick={() => onResolveBet(bet.takerAddress || '')}
+            onClick={() => onResolveBet('taker')}
             className="bg-wb-coral hover:bg-wb-coral/80 flex-1 text-white"
-            disabled={isResolving || isWaitingForResolve}
           >
             @{bet.acceptedBy.username}
           </Button>
           <Button
             onClick={onCancelBet}
             className="bg-wb-coral hover:bg-wb-coral/80 flex-1 text-white"
-            disabled={isCanceling || isWaitingForCancel}
           >
             Cancel
           </Button>
         </div>
         <p className="text-wb-taupe text-center text-xs">
-          {isResolving || isWaitingForResolve
-            ? 'Submitting resolution...'
-            : isCanceling || isWaitingForCancel
-              ? 'Canceling bet...'
-              : `Picking a winner will send them ${Number(bet.amount) * 2} USDC. Cancel will split the funds evenly`}
+          Picking a winner will send them {Number(bet.amount) * 2} USDC. Cancel
+          will split the funds evenly
         </p>
       </div>
     )
   }
 
-  // State 1: Taker Accept (open + user is taker)
-  if (bet.status === 'open' && isUserTaker) {
-    const hasInsufficientBalance =
-      usdcBalance !== undefined &&
-      parseUnits(bet.amount.toString(), 6) > usdcBalance
-
+  // State 1: Taker Accept (open)
+  if (bet.status === 'open') {
     return (
       <div className="bg-wb-sand/50 space-y-3 rounded-xl border px-4 py-3">
         <Button
           onClick={onAcceptBet}
           className="bg-wb-coral hover:bg-wb-coral/80 w-full text-white"
           size="lg"
-          disabled={isApproving || hasInsufficientBalance}
         >
-          {isApproving ? 'Accepting Bet...' : 'Accept Bet'}
+          Accept Bet
         </Button>
         <p className="text-wb-taupe text-center text-xs">
-          {hasInsufficientBalance
-            ? `Insufficient USDC balance. You need ${bet.amount} USDC`
-            : `Accepting will send ${bet.amount} USDC to the bet contract. Offer ends ${format(bet.expiresAt, 'MMM d, yyyy')}.`}
+          Accepting will send {bet.amount} USDC to the bet contract. Offer ends{' '}
+          {format(bet.acceptBy, 'MMM d, yyyy')}.
         </p>
-      </div>
-    )
-  }
-
-  // State 5: Maker Cancel (open + user is maker)
-  if (bet.status === 'open' && isUserMaker) {
-    return (
-      <div className="bg-wb-sand/50 space-y-3 rounded-xl border px-4 py-3">
         <Button
           onClick={onCancelBet}
-          className="bg-wb-coral hover:bg-wb-coral/80 w-full text-white"
-          size="lg"
-          disabled={isCanceling || isWaitingForCancel}
+          variant="outline"
+          className="w-full"
+          size="sm"
         >
-          {isCanceling || isWaitingForCancel ? 'Canceling...' : 'Cancel Bet'}
+          Cancel Bet
         </Button>
-        <p className="text-wb-taupe text-center text-xs">
-          Canceling this bet will retrieve {bet.amount} USDC from the bet
-          contract.
-        </p>
       </div>
     )
   }
 
-  // No action available for current user
+  // No action available
   return null
 }
 
@@ -215,187 +150,28 @@ export function BetDetailDialog({
   open,
   onOpenChange,
 }: BetDetailDialogProps) {
-  const { address } = useAccount()
   const [showDetails, setShowDetails] = useState(false)
 
-  // Bet contract address (in real usage, this would come from bet.id)
-  const betAddress = bet.id as Address
-
-  // Batch call hook
-  const {
-    data: batchResult,
-    sendCalls: sendTransaction,
-    isPending: isApproving,
-    reset: resetApproval,
-  } = useSendCalls()
-
-  const { isSuccess: isTransactionConfirmed } = useWaitForCallsStatus({
-    id: batchResult?.id,
-    query: {
-      enabled: !!batchResult?.id,
-    },
-  })
-
-  // Resolve bet hooks
-  const {
-    data: resolveHash,
-    writeContractAsync: resolveBet,
-    isPending: isResolving,
-    reset: resetResolve,
-  } = useWriteContract()
-
-  const { isLoading: isWaitingForResolve, isSuccess: isResolveSuccess } =
-    useWaitForTransactionReceipt({
-      hash: resolveHash,
-      query: {
-        enabled: !!resolveHash,
-      },
-    })
-
-  // Cancel bet hooks
-  const {
-    data: cancelHash,
-    writeContractAsync: cancelBet,
-    isPending: isCanceling,
-    reset: resetCancel,
-  } = useWriteContract()
-
-  const { isLoading: isWaitingForCancel, isSuccess: isCancelSuccess } =
-    useWaitForTransactionReceipt({
-      hash: cancelHash,
-      query: {
-        enabled: !!cancelHash,
-      },
-    })
-
-  // Check USDC allowance
-  const { data: allowance, refetch: refetchAllowance } = useReadContract({
-    address: USDC_ADDRESS,
-    abi: ERC20_ABI,
-    functionName: 'allowance',
-    args: address ? [address, betAddress] : undefined,
-    query: {
-      enabled: !!address,
-    },
-  })
-
-  // Check USDC balance
-  const { data: usdcBalance } = useReadContract({
-    address: USDC_ADDRESS,
-    abi: ERC20_ABI,
-    functionName: 'balanceOf',
-    args: address ? [address] : undefined,
-    query: {
-      enabled: !!address,
-    },
-  })
-
-  // Refresh page after accept transaction succeeds
-  useEffect(() => {
-    if (isTransactionConfirmed) {
-      window.location.reload()
-    }
-  }, [isTransactionConfirmed])
-
-  // Refresh page after resolve transaction succeeds
-  useEffect(() => {
-    if (isResolveSuccess) {
-      window.location.reload()
-    }
-  }, [isResolveSuccess])
-
-  // Refresh page after cancel transaction succeeds
-  useEffect(() => {
-    if (isCancelSuccess) {
-      window.location.reload()
-    }
-  }, [isCancelSuccess])
-
-  const handleAcceptBet = async () => {
-    if (!address) {
-      alert('Please connect your wallet')
-      return
-    }
-
-    try {
-      const amountInUnits = parseUnits(bet.amount.toString(), 6)
-      const currentAllowance = allowance || BigInt(0)
-      const calls = []
-
-      // Check if we need to approve USDC
-      if (currentAllowance < amountInUnits) {
-        const approveCall = encodeFunctionData({
-          abi: ERC20_ABI,
-          functionName: 'approve',
-          args: [betAddress, amountInUnits],
-        })
-        calls.push({
-          to: USDC_ADDRESS,
-          data: approveCall,
-        })
-      }
-
-      const acceptCall = encodeFunctionData({
-        abi: BET_ABI,
-        functionName: 'accept',
-        args: [],
-      })
-      calls.push({
-        to: betAddress,
-        data: acceptCall,
-      })
-
-      sendTransaction({
-        calls,
-        chainId: base.id,
-      })
-    } catch (error) {
-      console.error('Error accepting bet:', error)
-    }
+  // Mock handlers - just log and close for now
+  const handleAcceptBet = () => {
+    // TODO: Implement real accept logic
+    console.log('Mock: Accept bet', bet.id)
+    alert('Mock: Bet accepted! (not really)')
   }
 
-  const handleResolveBet = async (winnerAddress: string) => {
-    if (!address) {
-      alert('Please connect your wallet')
-      return
-    }
-
-    try {
-      await resolveBet({
-        address: betAddress,
-        abi: BET_ABI,
-        functionName: 'resolve',
-        args: [winnerAddress as Address],
-        chainId: 8453, // Force Base network
-      })
-    } catch (error) {
-      console.error('Error resolving bet:', error)
-    }
+  const handleResolveBet = (winner: 'maker' | 'taker') => {
+    // TODO: Implement real resolve logic
+    console.log('Mock: Resolve bet', bet.id, 'winner:', winner)
+    alert(`Mock: ${winner === 'maker' ? bet.maker.username : bet.taker.username} wins! (not really)`)
   }
 
-  const handleCancelBet = async () => {
-    if (!address) {
-      alert('Please connect your wallet')
-      return
-    }
-
-    try {
-      await cancelBet({
-        address: betAddress,
-        abi: BET_ABI,
-        functionName: 'cancel',
-        args: [],
-        chainId: 8453,
-      })
-    } catch (error) {
-      console.error('Error canceling bet:', error)
-    }
+  const handleCancelBet = () => {
+    // TODO: Implement real cancel logic
+    console.log('Mock: Cancel bet', bet.id)
+    alert('Mock: Bet cancelled! (not really)')
   }
 
   const handleReset = () => {
-    resetApproval()
-    resetResolve()
-    resetCancel()
     setShowDetails(false)
   }
 
@@ -493,13 +269,6 @@ export function BetDetailDialog({
           {/* Action Card - Context Dependent */}
           <ActionCard
             bet={bet}
-            address={address}
-            isApproving={isApproving}
-            isResolving={isResolving}
-            isWaitingForResolve={isWaitingForResolve}
-            isCanceling={isCanceling}
-            isWaitingForCancel={isWaitingForCancel}
-            usdcBalance={usdcBalance}
             onAcceptBet={handleAcceptBet}
             onResolveBet={handleResolveBet}
             onCancelBet={handleCancelBet}
