@@ -13,6 +13,7 @@ export enum BetStatusEnum {
 export type BetStatus = 'open' | 'active' | 'completed' | 'cancelled'
 
 export interface FarcasterUser extends MiniAppContext.UserContext {
+  fid: number
   bio?: string
 }
 
@@ -35,7 +36,9 @@ export interface Bet {
   amount: string // in USDC
   status: BetStatus
   createdAt: Date
-  expiresAt: Date
+  expiresAt: Date // actual bet end date
+  acceptBy: Date // deadline for taker to accept
+  resolveBy: Date // deadline for judge to resolve
   winner: FarcasterUser | null
   acceptedBy: FarcasterUser | null
   acceptedAt: Date | null

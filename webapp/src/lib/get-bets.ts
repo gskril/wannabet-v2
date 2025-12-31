@@ -273,6 +273,12 @@ export async function getBets(): Promise<BetResponse> {
       }
     }
 
+    // Calculate actual bet end date (resolveBy - 90 days grace period for judge)
+    const resolveByTimestamp = Number(bet.resolveBy)
+    const actualExpiresAt = new Date(
+      (resolveByTimestamp - 90 * 24 * 60 * 60) * 1000
+    )
+
     return {
       id: bet.address,
       description: bet.description,
@@ -286,7 +292,9 @@ export async function getBets(): Promise<BetResponse> {
       amount: amountInUsdc,
       status: mapStatus(status),
       createdAt: new Date(bet.createdAt * 1000),
-      expiresAt: new Date(Number(bet.resolveBy) * 1000),
+      expiresAt: actualExpiresAt,
+      acceptBy: new Date(Number(bet.acceptBy) * 1000),
+      resolveBy: new Date(resolveByTimestamp * 1000),
       winner: winnerUser,
       acceptedBy: accepted && takerUser ? takerUser : null,
       acceptedAt: accepted ? new Date(bet.createdAt * 1000) : null, // Approximate - we don't have exact acceptance time

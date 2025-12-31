@@ -7,7 +7,7 @@ import type { FarcasterUser } from '@/lib/types'
 
 interface UserAvatarProps {
   user: FarcasterUser
-  size?: 'sm' | 'md' | 'lg' | 'xl'
+  size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl'
   clickable?: boolean
 }
 
@@ -21,6 +21,7 @@ export function UserAvatar({
     md: 'h-10 w-10',
     lg: 'h-16 w-16',
     xl: 'h-24 w-24',
+    '2xl': 'h-40 w-40',
   }
 
   const getFallbackInitials = () => {
