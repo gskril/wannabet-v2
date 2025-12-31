@@ -10,6 +10,8 @@ export const bet = onchainTable('bet', (t) => ({
   makerStake: t.bigint().notNull(),
   takerStake: t.bigint().notNull(),
   acceptBy: t.integer().notNull(),
+  acceptedAt: t.integer(),
+  cancelledAt: t.integer(),
   resolveBy: t.integer().notNull(),
   description: t.text().notNull(),
   createdAt: t.integer().notNull(),
