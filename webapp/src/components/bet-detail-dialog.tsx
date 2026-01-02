@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/drawer'
 import { UserAvatar } from '@/components/user-avatar'
 import { BetStatus, type Bet } from 'indexer/types'
+import { getUsername } from '@/lib/utils'
 
 // Helper to get ring color based on bet status
 const getStatusRingColor = (status: BetStatus) => {
@@ -59,7 +60,7 @@ function ActionCard({
         <div className="flex items-center justify-center gap-3">
           <span className="text-2xl">🏆</span>
           <span className="text-wb-brown text-sm">
-            @{bet.winner.username} won the bet!
+            @{getUsername(bet.winner)} won the bet!
           </span>
         </div>
       </div>
@@ -73,7 +74,7 @@ function ActionCard({
         <div className="flex items-center justify-center gap-3">
           <span className="text-2xl">❌</span>
           <span className="text-wb-brown text-center text-sm">
-            @{bet.maker.username} canceled the bet and funds were returned
+            @{getUsername(bet.maker)} canceled the bet and funds were returned
           </span>
         </div>
       </div>
@@ -95,13 +96,13 @@ function ActionCard({
             onClick={() => onResolveBet('maker')}
             className="bg-wb-coral hover:bg-wb-coral/80 flex-1 text-white"
           >
-            @{bet.maker.username}
+            @{getUsername(bet.maker)}
           </Button>
           <Button
             onClick={() => onResolveBet('taker')}
             className="bg-wb-coral hover:bg-wb-coral/80 flex-1 text-white"
           >
-            @{bet.acceptedBy.username}
+            @{getUsername(bet.acceptedBy)}
           </Button>
           <Button
             onClick={onCancelBet}
@@ -173,7 +174,7 @@ export function BetDetailDialog({
     // TODO: Implement real resolve logic
     console.log('Mock: Resolve bet', bet.address, 'winner:', winner)
     alert(
-      `Mock: ${winner === 'maker' ? bet.maker.username : bet.taker.username} wins! (not really)`
+      `Mock: ${winner === 'maker' ? getUsername(bet.maker) : getUsername(bet.taker)} wins! (not really)`
     )
   }
 
@@ -256,10 +257,10 @@ export function BetDetailDialog({
           {/* Usernames below avatars */}
           <div className="mt-2 flex justify-center gap-24">
             <span className="text-wb-brown text-sm font-medium">
-              @{bet.maker.username}
+              @{getUsername(bet.maker)}
             </span>
             <span className="text-wb-brown text-sm font-medium">
-              @{(bet.acceptedBy || bet.taker)?.username}
+              @{getUsername(bet.acceptedBy || bet.taker)}
             </span>
           </div>
         </DrawerHeader>
@@ -268,14 +269,14 @@ export function BetDetailDialog({
           {/* Bet Description */}
           <div className="text-center">
             <p className="text-wb-taupe text-sm">
-              @{bet.maker.username} bet that...
+              @{getUsername(bet.maker)} bet that...
             </p>
             <h2 className="text-wb-brown mt-1 text-2xl font-bold leading-tight">
               {bet.description}
             </h2>
             <p className="text-wb-taupe mt-2 text-sm">
               Ends: {format(bet.expiresAt, 'MMM d, yyyy')} | Judge: @
-              {bet.judge?.username || 'TBA'}
+              {getUsername(bet.judge)}
             </p>
           </div>
 
@@ -307,7 +308,7 @@ export function BetDetailDialog({
               </div>
               <div className="flex justify-between">
                 <span className="text-wb-taupe">Judge</span>
-                <span className="text-wb-brown">@{bet.judge.username}</span>
+                <span className="text-wb-brown">@{getUsername(bet.judge)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-wb-taupe">Created</span>

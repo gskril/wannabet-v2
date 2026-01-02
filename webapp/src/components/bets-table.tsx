@@ -8,6 +8,7 @@ import { StatusPennant } from '@/components/status-pennant'
 import { Card } from '@/components/ui/card'
 import { UserAvatar } from '@/components/user-avatar'
 import { BetStatus, type Bet } from 'indexer/types'
+import { getUsername } from '@/lib/utils'
 
 interface BetsTableProps {
   bets: Bet[]
@@ -56,7 +57,7 @@ export function BetsTable({ bets }: BetsTableProps) {
                     )}
                 </div>
                 <span className="text-wb-brown text-sm font-semibold">
-                  {bet.maker.username}
+                  {getUsername(bet.maker)}
                 </span>
                 <span className="text-wb-taupe text-sm">vs</span>
                 <div
@@ -82,7 +83,7 @@ export function BetsTable({ bets }: BetsTableProps) {
                     )}
                 </div>
                 <span className="text-wb-brown text-sm font-semibold">
-                  {bet.taker.username}
+                  {getUsername(bet.taker)}
                 </span>
               </div>
 

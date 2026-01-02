@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { UserAvatar } from '@/components/user-avatar'
 import { useBets } from '@/hooks/useBets'
 import { BetStatus, type Bet, type FarcasterUser } from 'indexer/types'
+import { getUsername } from '@/lib/utils'
 
 interface UserStats {
   fid: number
@@ -161,7 +162,7 @@ export default function ProfilePage() {
             <UserAvatar user={user} size="lg" clickable={false} />
             <div className="flex-1">
               <h1 className="text-2xl font-bold">{user.displayName}</h1>
-              <p className="text-muted-foreground">@{user.username}</p>
+              <p className="text-muted-foreground">@{getUsername(user)}</p>
             </div>
           </div>
         </div>
