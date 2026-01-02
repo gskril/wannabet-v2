@@ -38,7 +38,7 @@ export interface Bet {
   createdAt: Date
   expiresAt: Date // actual bet end date
   acceptBy: Date // deadline for taker to accept
-  resolveBy: Date // deadline for judge to resolve
+  judgeDeadline: Date // deadline for judge to settle onchain
   winner: FarcasterUser | null
   acceptedBy: FarcasterUser | null
   acceptedAt: Date | null

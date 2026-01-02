@@ -40,8 +40,9 @@ function transformBet(indexerBet: IndexerBet): Bet {
   // Calculate amount in USDC (6 decimals)
   const amount = (Number(indexerBet.makerStake) / 1e6).toString()
 
-  // Calculate expiresAt from resolveBy (resolveBy = expiresAt + 90 days)
-  const resolveByMs = indexerBet.judgeDeadline * 1000
+  // expiresAt = endsBy (when the bet outcome must be known)
+  // judgeDeadline = endsBy + 30 days (when the judge must settle onchain)
+  const judgeDeadlineMs = indexerBet.judgeDeadline * 1000
   const expiresAtMs = indexerBet.endsBy * 1000
 
   return {
@@ -63,7 +64,7 @@ function transformBet(indexerBet: IndexerBet): Bet {
     createdAt: new Date(indexerBet.createdAt * 1000),
     expiresAt: new Date(expiresAtMs),
     acceptBy: new Date(indexerBet.acceptBy * 1000),
-    resolveBy: new Date(resolveByMs),
+    judgeDeadline: new Date(judgeDeadlineMs),
     winner: indexerBet.winner ? createUserFromAddress(indexerBet.winner) : null,
     acceptedBy: indexerBet.acceptedAt ? takerUser : null,
     acceptedAt: indexerBet.acceptedAt

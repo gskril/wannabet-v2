@@ -311,7 +311,7 @@ export function BetDetailDialog({
               <div className="flex justify-between">
                 <span className="text-wb-taupe">Judge deadline</span>
                 <span className="text-wb-brown">
-                  {format(bet.resolveBy, 'MMM d, yyyy')}
+                  {format(bet.judgeDeadline, 'MMM d, yyyy')}
                 </span>
               </div>
             </div>
