@@ -4,6 +4,15 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+catalogs:
+  default:
+    '@types/node':
+      specifier: 22.18.10
+      version: 22.18.10
+    typescript:
+      specifier: 5.8.3
+      version: 5.8.3
+
 importers:
 
   .:
@@ -145,6 +154,9 @@ importers:
       react-dom:
         specifier: 19.1.0
         version: 19.1.0(react@19.2.1)
+      shared:
+        specifier: workspace:*
+        version: link:../shared
       tailwind-merge:
         specifier: ^2.5.5
         version: 2.5.5

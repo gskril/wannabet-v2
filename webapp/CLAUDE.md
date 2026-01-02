@@ -87,7 +87,7 @@ USDC_ADDRESS = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'
 ```
 
 **Key functions:**
-- `createBet(taker, judge, asset, makerStake, takerStake, acceptBy, resolveBy, description)`
+- `createBet(taker, judge, asset, makerStake, takerStake, acceptBy, endsBy, description)`
 - `accept()` - Taker accepts bet
 - `resolve(winner)` - Judge declares winner
 - `cancel()` - Cancel before acceptance
@@ -96,10 +96,10 @@ USDC_ADDRESS = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'
 
 When creating a bet:
 - `acceptBy` = now + 7 days (taker must accept)
-- `expiresAt` = user-selected bet end date
-- `resolveBy` = expiresAt + 90 days (judge grace period)
+- `endsBy` = user-selected bet end date (when outcome must be known)
+- `judgeDeadline` = `endsBy + 30 days` (computed by contract, when judge must settle onchain)
 
-**Important:** `resolveBy` is what's stored on-chain. To display actual bet end date: `expiresAt = resolveBy - 90 days`
+**Note:** `endsBy` is stored on-chain. The `judgeDeadline()` function returns `endsBy + 30 days`.
 
 ## Core Types (lib/types.ts)
 
@@ -116,9 +116,9 @@ interface Bet {
   amount: string          // USDC per side
   status: BetStatus       // 'open' | 'active' | 'completed' | 'cancelled'
   createdAt: Date
-  expiresAt: Date         // Actual bet end
+  expiresAt: Date         // When outcome must be known (= endsBy)
   acceptBy: Date          // Taker deadline
-  resolveBy: Date         // Judge deadline
+  judgeDeadline: Date     // Judge deadline to settle onchain (= endsBy + 30 days)
   winner: FarcasterUser | null
 }
 
