@@ -41,8 +41,8 @@ function transformBet(indexerBet: IndexerBet): Bet {
   const amount = (Number(indexerBet.makerStake) / 1e6).toString()
 
   // Calculate expiresAt from resolveBy (resolveBy = expiresAt + 90 days)
-  const resolveByMs = indexerBet.resolveBy * 1000
-  const expiresAtMs = resolveByMs - 90 * 24 * 60 * 60 * 1000
+  const resolveByMs = indexerBet.judgeDeadline * 1000
+  const expiresAtMs = indexerBet.endsBy * 1000
 
   return {
     id: indexerBet.address,

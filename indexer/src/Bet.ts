@@ -6,6 +6,8 @@ ponder.on('Bet:BetCreated', async ({ event, context }) => {
     ...event.args,
     address: event.log.address,
     createdAt: Number(event.block.timestamp),
+    endsBy: Number(event.args.resolveBy),
+    judgeDeadline: Number(event.args.resolveBy),
   })
 })
 
@@ -18,6 +20,7 @@ ponder.on('Bet:BetAccepted', async ({ event, context }) => {
 ponder.on('Bet:BetResolved', async ({ event, context }) => {
   await context.db.update(bet, { address: event.log.address }).set({
     winner: event.args.winner,
+    resolvedAt: Number(event.block.timestamp),
   })
 })
 
