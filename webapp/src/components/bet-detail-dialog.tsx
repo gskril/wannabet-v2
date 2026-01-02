@@ -6,7 +6,12 @@ import { useState } from 'react'
 
 import { StatusPennant } from '@/components/status-pennant'
 import { Button } from '@/components/ui/button'
-import { Drawer, DrawerContent, DrawerHeader } from '@/components/ui/drawer'
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+} from '@/components/ui/drawer'
 import { UserAvatar } from '@/components/user-avatar'
 import type { Bet, BetStatus } from '@/lib/types'
 
@@ -162,7 +167,9 @@ export function BetDetailDialog({
   const handleResolveBet = (winner: 'maker' | 'taker') => {
     // TODO: Implement real resolve logic
     console.log('Mock: Resolve bet', bet.id, 'winner:', winner)
-    alert(`Mock: ${winner === 'maker' ? bet.maker.username : bet.taker.username} wins! (not really)`)
+    alert(
+      `Mock: ${winner === 'maker' ? bet.maker.username : bet.taker.username} wins! (not really)`
+    )
   }
 
   const handleCancelBet = () => {
@@ -185,6 +192,7 @@ export function BetDetailDialog({
     >
       <DrawerContent className="fixed bottom-0 left-0 right-0 mx-auto flex max-h-[90dvh] max-w-3xl flex-col pb-[env(safe-area-inset-bottom)]">
         <DrawerHeader className="relative pb-2">
+          <DrawerTitle className="sr-only">Bet Details</DrawerTitle>
           {/* Status Pennant - Top right */}
           <div className="absolute right-4 top-0">
             <StatusPennant status={bet.status} />
