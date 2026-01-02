@@ -2,8 +2,7 @@ import type { Bet as IndexerBet } from 'indexer/types'
 
 import type { Bet, BetStatus, FarcasterUser } from './types'
 
-// TODO: Update this URL when deployed to production
-const INDEXER_URL = 'https://start-bets-endpoint-wannabet-v2.marble.live'
+const INDEXER_URL = 'https://wannabet-v2.marble.live'
 
 // Create a placeholder user from an address
 // TODO: Replace with real Farcaster user lookup
