@@ -1,6 +1,6 @@
 import { parseAbiItem } from 'abitype'
 import { createConfig, factory } from 'ponder'
-import { BET_ABI, BET_FACTORY } from 'shared'
+import { BET_FACTORY_V1, BET_V1_ABI } from 'shared'
 import { base } from 'viem/chains'
 
 export default createConfig({
@@ -13,14 +13,14 @@ export default createConfig({
   contracts: {
     BetFactory: {
       chain: 'base',
-      ...BET_FACTORY,
+      ...BET_FACTORY_V1,
     },
     Bet: {
       chain: 'base',
-      abi: BET_ABI,
-      startBlock: BET_FACTORY.startBlock,
+      abi: BET_V1_ABI,
+      startBlock: BET_FACTORY_V1.startBlock,
       address: factory({
-        address: BET_FACTORY.address,
+        address: BET_FACTORY_V1.address,
         event: parseAbiItem('event BetCreated(address indexed bet)'),
         parameter: 'bet',
       }) as any,

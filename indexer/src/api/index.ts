@@ -1,7 +1,9 @@
 import { Hono } from 'hono'
-import { client, desc, graphql, replaceBigInts } from 'ponder'
+import { client, graphql, replaceBigInts } from 'ponder'
 import { db } from 'ponder:api'
 import schema from 'ponder:schema'
+
+import { getBets } from './handlers/bets'
 
 const app = new Hono()
 
@@ -11,11 +13,7 @@ app.use('/', graphql({ db, schema }))
 app.use('/graphql', graphql({ db, schema }))
 
 app.get('/bets', async (c) => {
-  const bets = await db
-    .select()
-    .from(schema.bet)
-    .orderBy(desc(schema.bet.createdAt))
-
+  const bets = await getBets()
   return c.json(replaceBigInts(bets, (b) => b.toString()))
 })
 

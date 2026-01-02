@@ -12,7 +12,9 @@ export const bet = onchainTable('bet', (t) => ({
   acceptBy: t.integer().notNull(),
   acceptedAt: t.integer(),
   cancelledAt: t.integer(),
-  resolveBy: t.integer().notNull(),
+  endsBy: t.integer().notNull(),
+  judgeDeadline: t.integer().notNull(),
+  resolvedAt: t.integer(),
   description: t.text().notNull(),
   createdAt: t.integer().notNull(),
 }))
