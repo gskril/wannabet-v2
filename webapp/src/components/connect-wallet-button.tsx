@@ -5,7 +5,7 @@ import { useAccount, useConnect, useDisconnect } from 'wagmi'
 
 import { Button } from '@/components/ui/button'
 import { useFarcasterProfile } from '@/hooks/useFarcasterProfile'
-import { shortenAddress } from '@/lib/utils'
+import { getUsername, shortenAddress } from '@/lib/utils'
 
 import { useMiniApp } from './sdk-provider'
 
@@ -39,7 +39,7 @@ export function ConnectWalletButton() {
       >
         <Wallet className="h-4 w-4" />
         {farcasterProfile
-          ? `@${farcasterProfile.username}`
+          ? `@${getUsername(farcasterProfile)}`
           : shortenAddress(address)}
       </Button>
     )
