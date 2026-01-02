@@ -9,7 +9,7 @@ import {
   DialogContent,
   DialogTitle,
 } from '@/components/ui/dialog'
-import type { BetStatus } from '@/lib/types'
+import { BetStatus } from 'indexer/types'
 
 interface WelcomeModalProps {
   open: boolean
@@ -17,7 +17,13 @@ interface WelcomeModalProps {
 }
 
 // Order of statuses to display in the welcome modal
-const STATUS_ORDER: BetStatus[] = ['open', 'active', 'cancelled', 'completed']
+const STATUS_ORDER: BetStatus[] = [
+  BetStatus.PENDING,
+  BetStatus.ACTIVE,
+  BetStatus.JUDGING,
+  BetStatus.CANCELLED,
+  BetStatus.RESOLVED,
+]
 
 export function WelcomeModal({ open, onOpenChange }: WelcomeModalProps) {
   return (

@@ -3,7 +3,7 @@
 import Link from 'next/link'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import type { FarcasterUser } from '@/lib/types'
+import type { FarcasterUser } from 'indexer/types'
 
 interface UserAvatarProps {
   user: FarcasterUser
@@ -37,13 +37,13 @@ export function UserAvatar({
 
   const avatar = (
     <Avatar className={sizeClasses[size]}>
-      <AvatarImage src={user.pfpUrl} alt={user.displayName || user.username} />
+      <AvatarImage src={user.pfpUrl ?? undefined} alt={user.displayName || user.username || undefined} />
       <AvatarFallback>{getFallbackInitials()}</AvatarFallback>
     </Avatar>
   )
 
-  // Don't make clickable if user doesn't have a Farcaster account (fid === 0)
-  if (!clickable || user.fid === 0) {
+  // Don't make clickable if user doesn't have a Farcaster account
+  if (!clickable || !user.fid) {
     return avatar
   }
 

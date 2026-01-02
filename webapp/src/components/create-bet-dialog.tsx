@@ -16,7 +16,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { UserSearch } from '@/components/user-search'
-import type { FarcasterUser } from '@/lib/types'
+import type { FarcasterUser } from 'indexer/types'
 
 type SubmitPhase = 'idle' | 'submitting' | 'done'
 

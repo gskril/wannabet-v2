@@ -53,9 +53,9 @@ export default function HomePage() {
         if (!address) return []
         return betsQuery.data.filter(
           (bet) =>
-            bet.makerAddress?.toLowerCase() === address.toLowerCase() ||
-            bet.takerAddress?.toLowerCase() === address.toLowerCase() ||
-            bet.judgeAddress?.toLowerCase() === address.toLowerCase()
+            bet.maker.address?.toLowerCase() === address.toLowerCase() ||
+            bet.taker.address?.toLowerCase() === address.toLowerCase() ||
+            bet.judge.address?.toLowerCase() === address.toLowerCase()
         )
       case 'notifications':
         // Dummy: for now just show first 2 bets as "requiring action"

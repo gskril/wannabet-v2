@@ -1,5 +1,9 @@
-import { getBets } from './api/handlers/bets'
+import { getEnrichedBets } from './api/handlers/bets'
 
+// Re-export base types
+export { BetStatus, SUPPORTED_ASSETS, type Asset, type FarcasterUser } from './lib/constants'
+
+// Helper type to convert bigints to strings (matches JSON serialization)
 type ReplaceBigInts<T> = T extends bigint
   ? string
   : T extends Array<infer U>
@@ -8,5 +12,5 @@ type ReplaceBigInts<T> = T extends bigint
       ? { [K in keyof T]: ReplaceBigInts<T[K]> }
       : T
 
-// The response from the /bets endpoint
-export type Bet = ReplaceBigInts<Awaited<ReturnType<typeof getBets>>[number]>
+// Bet type - inferred from the enriched API response with bigints converted to strings
+export type Bet = ReplaceBigInts<Awaited<ReturnType<typeof getEnrichedBets>>[number]>

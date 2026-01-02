@@ -13,26 +13,28 @@ import {
   DrawerTitle,
 } from '@/components/ui/drawer'
 import { UserAvatar } from '@/components/user-avatar'
-import type { Bet, BetStatus } from '@/lib/types'
+import { BetStatus, type Bet } from 'indexer/types'
 
 // Helper to get ring color based on bet status
 const getStatusRingColor = (status: BetStatus) => {
-  const colors = {
-    open: 'ring-wb-yellow',
-    active: 'ring-wb-mint',
-    completed: 'ring-wb-gold',
-    cancelled: 'ring-wb-pink',
+  const colors: Record<BetStatus, string> = {
+    [BetStatus.PENDING]: 'ring-wb-yellow',
+    [BetStatus.ACTIVE]: 'ring-wb-mint',
+    [BetStatus.JUDGING]: 'ring-wb-mint',
+    [BetStatus.RESOLVED]: 'ring-wb-gold',
+    [BetStatus.CANCELLED]: 'ring-wb-pink',
   }
   return colors[status]
 }
 
 // Helper to get center badge background color based on bet status
 const getStatusBgColor = (status: BetStatus) => {
-  const colors = {
-    open: 'bg-wb-yellow',
-    active: 'bg-wb-mint',
-    completed: 'bg-wb-gold',
-    cancelled: 'bg-wb-pink',
+  const colors: Record<BetStatus, string> = {
+    [BetStatus.PENDING]: 'bg-wb-yellow',
+    [BetStatus.ACTIVE]: 'bg-wb-mint',
+    [BetStatus.JUDGING]: 'bg-wb-mint',
+    [BetStatus.RESOLVED]: 'bg-wb-gold',
+    [BetStatus.CANCELLED]: 'bg-wb-pink',
   }
   return colors[status]
 }
@@ -51,7 +53,7 @@ function ActionCard({
   onCancelBet,
 }: ActionCardProps) {
   // State 3: Resolved - Winner display
-  if (bet.status === 'completed' && bet.winner) {
+  if (bet.status === BetStatus.RESOLVED && bet.winner) {
     return (
       <div className="bg-wb-sand/50 rounded-xl border px-4 py-3">
         <div className="flex items-center justify-center gap-3">
@@ -65,7 +67,7 @@ function ActionCard({
   }
 
   // State 4: Cancelled
-  if (bet.status === 'cancelled') {
+  if (bet.status === BetStatus.CANCELLED) {
     return (
       <div className="bg-wb-sand/50 rounded-xl border px-4 py-3">
         <div className="flex items-center justify-center gap-3">
@@ -78,8 +80,11 @@ function ActionCard({
     )
   }
 
-  // State 2: Judge Selection (active + user is judge)
-  if (bet.status === 'active' && bet.acceptedBy) {
+  // State 2: Judge Selection (active or judging + user is judge)
+  if (
+    (bet.status === BetStatus.ACTIVE || bet.status === BetStatus.JUDGING) &&
+    bet.acceptedBy
+  ) {
     return (
       <div className="bg-wb-sand/50 space-y-3 rounded-xl border px-4 py-3">
         <p className="text-wb-taupe text-center text-xs">
@@ -113,8 +118,8 @@ function ActionCard({
     )
   }
 
-  // State 1: Taker Accept (open)
-  if (bet.status === 'open') {
+  // State 1: Taker Accept (pending)
+  if (bet.status === BetStatus.PENDING) {
     return (
       <div className="bg-wb-sand/50 space-y-3 rounded-xl border px-4 py-3">
         <Button
@@ -160,13 +165,13 @@ export function BetDetailDialog({
   // Mock handlers - just log and close for now
   const handleAcceptBet = () => {
     // TODO: Implement real accept logic
-    console.log('Mock: Accept bet', bet.id)
+    console.log('Mock: Accept bet', bet.address)
     alert('Mock: Bet accepted! (not really)')
   }
 
   const handleResolveBet = (winner: 'maker' | 'taker') => {
     // TODO: Implement real resolve logic
-    console.log('Mock: Resolve bet', bet.id, 'winner:', winner)
+    console.log('Mock: Resolve bet', bet.address, 'winner:', winner)
     alert(
       `Mock: ${winner === 'maker' ? bet.maker.username : bet.taker.username} wins! (not really)`
     )
@@ -174,7 +179,7 @@ export function BetDetailDialog({
 
   const handleCancelBet = () => {
     // TODO: Implement real cancel logic
-    console.log('Mock: Cancel bet', bet.id)
+    console.log('Mock: Cancel bet', bet.address)
     alert('Mock: Bet cancelled! (not really)')
   }
 
@@ -203,7 +208,7 @@ export function BetDetailDialog({
             {/* Maker avatar - positioned left */}
             <div
               className={`rounded-full ring-4 ${getStatusRingColor(bet.status)} z-10 ${
-                bet.status === 'completed' &&
+                bet.status === BetStatus.RESOLVED &&
                 bet.winner &&
                 bet.winner.fid !== bet.maker.fid
                   ? 'grayscale'
@@ -233,7 +238,7 @@ export function BetDetailDialog({
             {/* Taker avatar - positioned right */}
             <div
               className={`rounded-full ring-4 ${getStatusRingColor(bet.status)} ${
-                bet.status === 'completed' &&
+                bet.status === BetStatus.RESOLVED &&
                 bet.winner &&
                 bet.winner.fid !== (bet.acceptedBy || bet.taker)?.fid
                   ? 'grayscale'
@@ -297,7 +302,7 @@ export function BetDetailDialog({
               <div className="flex justify-between">
                 <span className="text-wb-taupe">Contract</span>
                 <span className="text-wb-brown font-mono">
-                  {bet.id.slice(0, 10)}...{bet.id.slice(-8)}
+                  {bet.address.slice(0, 10)}...{bet.address.slice(-8)}
                 </span>
               </div>
               <div className="flex justify-between">

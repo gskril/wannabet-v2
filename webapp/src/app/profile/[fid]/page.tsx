@@ -10,30 +10,41 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { UserAvatar } from '@/components/user-avatar'
 import { useBets } from '@/hooks/useBets'
-import type { Bet, FarcasterUser, UserStats } from '@/lib/types'
+import { BetStatus, type Bet, type FarcasterUser } from 'indexer/types'
+
+interface UserStats {
+  fid: number
+  totalBets: number
+  activeBets: number
+  wonBets: number
+  lostBets: number
+  totalWagered: string
+  totalWon: string
+  winRate: number
+}
 
 function getUserStats(address: string, userBets: Bet[]): UserStats {
   const lowerAddress = address.toLowerCase()
   const totalBets = userBets.length
-  const activeBets = userBets.filter((b) => b.status === 'active').length
+  const activeBets = userBets.filter((b) => b.status === BetStatus.ACTIVE).length
 
   const wonBets = userBets.filter(
     (b) =>
-      b.status === 'completed' &&
+      b.status === BetStatus.RESOLVED &&
       b.winner &&
-      // Check if winner address matches (since winner is a FarcasterUser with address in username for now)
-      (b.makerAddress.toLowerCase() === lowerAddress
-        ? b.winner.username === b.maker.username
-        : b.winner.username === b.taker.username)
+      // Check if winner address matches
+      (b.maker.address.toLowerCase() === lowerAddress
+        ? b.winner.address === b.maker.address
+        : b.winner.address === b.taker.address)
   ).length
 
   const lostBets = userBets.filter(
     (b) =>
-      b.status === 'completed' &&
+      b.status === BetStatus.RESOLVED &&
       b.winner &&
-      (b.makerAddress.toLowerCase() === lowerAddress
-        ? b.winner.username !== b.maker.username
-        : b.winner.username !== b.taker.username)
+      (b.maker.address.toLowerCase() === lowerAddress
+        ? b.winner.address !== b.maker.address
+        : b.winner.address !== b.taker.address)
   ).length
 
   const totalWagered = userBets
@@ -71,9 +82,9 @@ export default function ProfilePage() {
     const lower = addressOrFid.toLowerCase()
     return betsQuery.data.filter(
       (bet) =>
-        bet.makerAddress.toLowerCase() === lower ||
-        bet.takerAddress.toLowerCase() === lower ||
-        bet.judgeAddress.toLowerCase() === lower
+        bet.maker.address.toLowerCase() === lower ||
+        bet.taker.address.toLowerCase() === lower ||
+        bet.judge.address.toLowerCase() === lower
     )
   }, [betsQuery.data, addressOrFid])
 
@@ -83,9 +94,9 @@ export default function ProfilePage() {
     const lower = addressOrFid.toLowerCase()
     // Try to find the user in the bets
     const bet = userBets[0]
-    if (bet.makerAddress.toLowerCase() === lower) return bet.maker
-    if (bet.takerAddress.toLowerCase() === lower) return bet.taker
-    if (bet.judgeAddress.toLowerCase() === lower) return bet.judge
+    if (bet.maker.address.toLowerCase() === lower) return bet.maker
+    if (bet.taker.address.toLowerCase() === lower) return bet.taker
+    if (bet.judge.address.toLowerCase() === lower) return bet.judge
     return null
   }, [userBets, addressOrFid])
 
@@ -151,9 +162,6 @@ export default function ProfilePage() {
             <div className="flex-1">
               <h1 className="text-2xl font-bold">{user.displayName}</h1>
               <p className="text-muted-foreground">@{user.username}</p>
-              {user.bio && (
-                <p className="text-muted-foreground mt-2 text-sm">{user.bio}</p>
-              )}
             </div>
           </div>
         </div>

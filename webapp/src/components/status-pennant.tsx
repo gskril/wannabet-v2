@@ -1,4 +1,4 @@
-import type { BetStatus } from '@/lib/types'
+import { BetStatus } from 'indexer/types'
 
 const PENNANT_CLIP = 'polygon(0 0, 100% 0, 100% 100%, 50% 85%, 0 100%)'
 
@@ -12,25 +12,31 @@ export const STATUS_CONFIG: Record<
     emojiSize?: string
   }
 > = {
-  open: {
+  [BetStatus.PENDING]: {
     bg: 'bg-wb-yellow',
     emoji: '⏳',
     label: 'Pending',
     description: 'Waiting for opponent to accept',
   },
-  active: {
+  [BetStatus.ACTIVE]: {
     bg: 'bg-wb-mint',
     emoji: '🤝',
     label: 'Live',
     description: 'Bet is active',
   },
-  completed: {
+  [BetStatus.JUDGING]: {
+    bg: 'bg-wb-mint',
+    emoji: '⚖️',
+    label: 'Judging',
+    description: 'Waiting for judge to decide',
+  },
+  [BetStatus.RESOLVED]: {
     bg: 'bg-wb-gold',
     emoji: '🏆',
     label: 'Resolved',
     description: 'Winner was decided',
   },
-  cancelled: {
+  [BetStatus.CANCELLED]: {
     bg: 'bg-wb-pink',
     emoji: '❌',
     label: 'Not Live',

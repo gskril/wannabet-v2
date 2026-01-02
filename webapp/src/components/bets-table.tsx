@@ -7,7 +7,7 @@ import { BetDetailDialog } from '@/components/bet-detail-dialog'
 import { StatusPennant } from '@/components/status-pennant'
 import { Card } from '@/components/ui/card'
 import { UserAvatar } from '@/components/user-avatar'
-import type { Bet } from '@/lib/types'
+import { BetStatus, type Bet } from 'indexer/types'
 
 interface BetsTableProps {
   bets: Bet[]
@@ -21,7 +21,7 @@ export function BetsTable({ bets }: BetsTableProps) {
       <div className="space-y-3">
         {bets.map((bet) => (
           <Card
-            key={bet.id}
+            key={bet.address}
             className="bg-wb-sand relative cursor-pointer border-0 p-4 transition-all hover:shadow-md"
             onClick={() => setSelectedBet(bet)}
           >
@@ -35,12 +35,12 @@ export function BetsTable({ bets }: BetsTableProps) {
               <div className="flex items-center gap-2">
                 <div
                   className={`relative rounded-full ring-2 ${
-                    bet.status === 'completed' &&
+                    bet.status === BetStatus.RESOLVED &&
                     bet.winner?.fid === bet.maker.fid
                       ? 'ring-wb-gold'
                       : 'ring-wb-taupe'
                   } ${
-                    bet.status === 'completed' &&
+                    bet.status === BetStatus.RESOLVED &&
                     bet.winner &&
                     bet.winner.fid !== bet.maker.fid
                       ? 'grayscale'
@@ -48,7 +48,7 @@ export function BetsTable({ bets }: BetsTableProps) {
                   }`}
                 >
                   <UserAvatar user={bet.maker} size="sm" clickable={false} />
-                  {bet.status === 'completed' &&
+                  {bet.status === BetStatus.RESOLVED &&
                     bet.winner?.fid === bet.maker.fid && (
                       <span className="absolute -bottom-1 -right-1 text-sm">
                         🏆
@@ -61,12 +61,12 @@ export function BetsTable({ bets }: BetsTableProps) {
                 <span className="text-wb-taupe text-sm">vs</span>
                 <div
                   className={`relative rounded-full ring-2 ${
-                    bet.status === 'completed' &&
+                    bet.status === BetStatus.RESOLVED &&
                     bet.winner?.fid === bet.taker.fid
                       ? 'ring-wb-gold'
                       : 'ring-wb-taupe'
                   } ${
-                    bet.status === 'completed' &&
+                    bet.status === BetStatus.RESOLVED &&
                     bet.winner &&
                     bet.winner.fid !== bet.taker.fid
                       ? 'grayscale'
@@ -74,7 +74,7 @@ export function BetsTable({ bets }: BetsTableProps) {
                   }`}
                 >
                   <UserAvatar user={bet.taker} size="sm" clickable={false} />
-                  {bet.status === 'completed' &&
+                  {bet.status === BetStatus.RESOLVED &&
                     bet.winner?.fid === bet.taker.fid && (
                       <span className="absolute -bottom-1 -right-1 text-sm">
                         🏆

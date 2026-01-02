@@ -6,7 +6,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { UserAvatar } from '@/components/user-avatar'
-import type { FarcasterUser } from '@/lib/types'
+import type { FarcasterUser } from 'indexer/types'
 import { cn } from '@/lib/utils'
 
 interface UserSearchProps {
@@ -69,7 +69,7 @@ export function UserSearch({
       try {
         const results = await searchUsers(trimmedQuery)
         const filtered = results.filter(
-          (user) => !excludeFids.includes(user.fid)
+          (user) => user.fid !== null && !excludeFids.includes(user.fid)
         )
         setUsers(filtered.slice(0, 10))
       } catch (error) {
@@ -181,7 +181,7 @@ export function UserSearch({
               ) : users.length > 0 ? (
                 users.map((user) => (
                   <button
-                    key={user.fid}
+                    key={user.fid ?? user.address}
                     type="button"
                     onClick={() => handleUserSelect(user)}
                     className="hover:bg-farcaster-brand/20 flex w-full items-center gap-3 border-b p-3 text-left transition-colors last:border-b-0"
