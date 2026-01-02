@@ -3,6 +3,7 @@ import { db } from 'ponder:api'
 import schema from 'ponder:schema'
 
 import { BetStatus, FarcasterUser, SUPPORTED_ASSETS } from '../../lib/constants'
+import { fetchUsersByAddresses } from '../../neynar'
 
 // Raw bets from the database
 export async function getBets() {
@@ -15,8 +16,7 @@ export async function getBets() {
 }
 
 // Create a placeholder user from an address
-// TODO: Replace with real Farcaster user lookup via Neynar
-function createUserFromAddress(address: string): FarcasterUser {
+function createPlaceholderUser(address: string): FarcasterUser {
   return {
     address,
     fid: null,
@@ -67,21 +67,39 @@ function toMs(seconds: number): number {
   return seconds * 1000
 }
 
-// Enriched bets with derived status, user placeholders, and asset metadata
+// Enriched bets with derived status, Farcaster user data, and asset metadata
 export async function getEnrichedBets() {
   const bets = await getBets()
+
+  // Collect all unique addresses to fetch
+  const allAddresses = new Set<string>()
+  for (const bet of bets) {
+    allAddresses.add(bet.maker)
+    allAddresses.add(bet.taker)
+    allAddresses.add(bet.judge)
+    if (bet.winner) {
+      allAddresses.add(bet.winner)
+    }
+  }
+
+  // Fetch all users in a single batch
+  const usersMap = await fetchUsersByAddresses([...allAddresses])
+
+  // Helper to get user from map or create placeholder
+  const getUser = (address: string): FarcasterUser =>
+    usersMap.get(address.toLowerCase()) ?? createPlaceholderUser(address)
 
   return bets.map((bet) => {
     const asset = getAsset(bet.asset)
     const amount = (Number(bet.makerStake) / 10 ** asset.decimals).toString()
-    const taker = createUserFromAddress(bet.taker)
+    const taker = getUser(bet.taker)
 
     return {
       address: bet.address,
       description: bet.description,
-      maker: createUserFromAddress(bet.maker),
+      maker: getUser(bet.maker),
       taker,
-      judge: createUserFromAddress(bet.judge),
+      judge: getUser(bet.judge),
       asset,
       amount,
       status: deriveBetStatus(bet),
@@ -89,7 +107,7 @@ export async function getEnrichedBets() {
       expiresAt: toMs(bet.endsBy),
       acceptBy: toMs(bet.acceptBy),
       judgeDeadline: toMs(bet.judgeDeadline),
-      winner: bet.winner ? createUserFromAddress(bet.winner) : null,
+      winner: bet.winner ? getUser(bet.winner) : null,
       acceptedAt: bet.acceptedAt ? toMs(bet.acceptedAt) : null,
       acceptedBy: bet.acceptedAt ? taker : null,
     }
