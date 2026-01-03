@@ -1,21 +1,30 @@
 {
   "compilerOptions": {
-    "target": "es2020", //required for use with BigInt types
-    "lib": [
-      "es2020"
-    ],
-    "allowJs": true,
-    "checkJs": false,
-    "outDir": "build",
+    // Type checking
     "strict": true,
-    "noImplicitAny": true,
+    "noUncheckedIndexedAccess": true,
+
+    // Interop constraints
+    "verbatimModuleSyntax": false,
     "esModuleInterop": true,
+    "isolatedModules": true,
+    "allowSyntheticDefaultImports": true,
     "resolveJsonModule": true,
+
+    // Language and environment
+    "moduleResolution": "bundler",
+    "module": "ESNext",
+    "noEmit": false,
+    "lib": ["ES2022"],
+    "target": "ES2022",
+
+    // Skip type checking for node modules
     "skipLibCheck": true,
-    "module": "CommonJS"
+
+    // Build
+    "outDir": "./dist",
+    "declaration": true
   },
-  "include": [
-    "src",
-    "test"
-  ]
+  "include": ["./**/*.ts"],
+  "exclude": ["node_modules", "dist"]
 }

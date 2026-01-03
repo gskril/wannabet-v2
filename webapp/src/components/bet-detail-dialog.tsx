@@ -1,20 +1,10 @@
 'use client'
 
 import { format } from 'date-fns'
-import { Coins, ExternalLink, Trophy } from 'lucide-react'
-import { useEffect, useState } from 'react'
-import { type Address, encodeFunctionData, parseUnits } from 'viem'
-import { base } from 'viem/chains'
-import {
-  useAccount,
-  useReadContract,
-  useSendCalls,
-  useWaitForCallsStatus,
-  useWaitForTransactionReceipt,
-  useWriteContract,
-} from 'wagmi'
+import Image from 'next/image'
+import { useState } from 'react'
 
-import { BetStatusBadge } from '@/components/bet-status-badge'
+import { StatusPennant } from '@/components/status-pennant'
 import { Button } from '@/components/ui/button'
 import {
   Drawer,
@@ -23,11 +13,142 @@ import {
   DrawerTitle,
 } from '@/components/ui/drawer'
 import { UserAvatar } from '@/components/user-avatar'
-import { BET_ABI, ERC20_ABI, USDC_ADDRESS } from '@/lib/contracts'
-import type { Bet } from '@/lib/types'
-import { shortenAddress } from '@/lib/utils'
+import { BetStatus, type Bet } from 'indexer/types'
+import { getUsername } from '@/lib/utils'
 
-const BASE_EXPLORER = 'https://basescan.org'
+// Helper to get ring color based on bet status
+const getStatusRingColor = (status: BetStatus) => {
+  const colors: Record<BetStatus, string> = {
+    [BetStatus.PENDING]: 'ring-wb-yellow',
+    [BetStatus.ACTIVE]: 'ring-wb-mint',
+    [BetStatus.JUDGING]: 'ring-wb-mint',
+    [BetStatus.RESOLVED]: 'ring-wb-gold',
+    [BetStatus.CANCELLED]: 'ring-wb-pink',
+  }
+  return colors[status]
+}
+
+// Helper to get center badge background color based on bet status
+const getStatusBgColor = (status: BetStatus) => {
+  const colors: Record<BetStatus, string> = {
+    [BetStatus.PENDING]: 'bg-wb-yellow',
+    [BetStatus.ACTIVE]: 'bg-wb-mint',
+    [BetStatus.JUDGING]: 'bg-wb-mint',
+    [BetStatus.RESOLVED]: 'bg-wb-gold',
+    [BetStatus.CANCELLED]: 'bg-wb-pink',
+  }
+  return colors[status]
+}
+
+interface ActionCardProps {
+  bet: Bet
+  onAcceptBet: () => void
+  onResolveBet: (winner: 'maker' | 'taker') => void
+  onCancelBet: () => void
+}
+
+function ActionCard({
+  bet,
+  onAcceptBet,
+  onResolveBet,
+  onCancelBet,
+}: ActionCardProps) {
+  // State 3: Resolved - Winner display
+  if (bet.status === BetStatus.RESOLVED && bet.winner) {
+    return (
+      <div className="bg-wb-sand/50 rounded-xl border px-4 py-3">
+        <div className="flex items-center justify-center gap-3">
+          <span className="text-2xl">🏆</span>
+          <span className="text-wb-brown text-sm">
+            @{getUsername(bet.winner)} won the bet!
+          </span>
+        </div>
+      </div>
+    )
+  }
+
+  // State 4: Cancelled
+  if (bet.status === BetStatus.CANCELLED) {
+    return (
+      <div className="bg-wb-sand/50 rounded-xl border px-4 py-3">
+        <div className="flex items-center justify-center gap-3">
+          <span className="text-2xl">❌</span>
+          <span className="text-wb-brown text-center text-sm">
+            @{getUsername(bet.maker)} canceled the bet and funds were returned
+          </span>
+        </div>
+      </div>
+    )
+  }
+
+  // State 2: Judge Selection (active or judging + user is judge)
+  if (
+    (bet.status === BetStatus.ACTIVE || bet.status === BetStatus.JUDGING) &&
+    bet.acceptedBy
+  ) {
+    return (
+      <div className="bg-wb-sand/50 space-y-3 rounded-xl border px-4 py-3">
+        <p className="text-wb-taupe text-center text-xs">
+          Pick a winner (mock - any user can click)
+        </p>
+        <div className="flex gap-2">
+          <Button
+            onClick={() => onResolveBet('maker')}
+            className="bg-wb-coral hover:bg-wb-coral/80 flex-1 text-white"
+          >
+            @{getUsername(bet.maker)}
+          </Button>
+          <Button
+            onClick={() => onResolveBet('taker')}
+            className="bg-wb-coral hover:bg-wb-coral/80 flex-1 text-white"
+          >
+            @{getUsername(bet.acceptedBy)}
+          </Button>
+          <Button
+            onClick={onCancelBet}
+            className="bg-wb-coral hover:bg-wb-coral/80 flex-1 text-white"
+          >
+            Cancel
+          </Button>
+        </div>
+        <p className="text-wb-taupe text-center text-xs">
+          Picking a winner will send them {Number(bet.amount) * 2} USDC. Cancel
+          will split the funds evenly
+        </p>
+      </div>
+    )
+  }
+
+  // State 1: Taker Accept (pending)
+  if (bet.status === BetStatus.PENDING) {
+    return (
+      <div className="bg-wb-sand/50 space-y-3 rounded-xl border px-4 py-3">
+        <Button
+          onClick={onAcceptBet}
+          className="bg-wb-coral hover:bg-wb-coral/80 w-full text-white"
+          size="lg"
+        >
+          Accept Bet
+        </Button>
+        <p className="text-wb-taupe text-center text-xs">
+          Accepting will send {bet.amount} USDC to the bet contract. Offer ends{' '}
+          {format(bet.acceptBy, 'MMM d, yyyy')}.
+        </p>
+        <Button
+          onClick={onCancelBet}
+          variant="outline"
+          className="w-full"
+          size="sm"
+        >
+          Cancel Bet
+        </Button>
+      </div>
+    )
+  }
+
+  // No action available
+  return null
+}
 
 interface BetDetailDialogProps {
   bet: Bet
@@ -40,159 +161,31 @@ export function BetDetailDialog({
   open,
   onOpenChange,
 }: BetDetailDialogProps) {
-  const [timelineExpanded, setTimelineExpanded] = useState(false)
-  const { address } = useAccount()
+  const [showDetails, setShowDetails] = useState(false)
 
-  // Bet contract address (in real usage, this would come from bet.id)
-  const betAddress = bet.id as Address
-
-  // Batch call hook
-  const {
-    data: batchResult,
-    sendCalls: sendTransaction,
-    isPending: isApproving,
-    reset: resetApproval,
-  } = useSendCalls()
-
-  const { isSuccess: isTransactionConfirmed } = useWaitForCallsStatus({
-    id: batchResult?.id,
-    query: {
-      enabled: !!batchResult?.id,
-    },
-  })
-
-  // Resolve bet hooks
-  const {
-    data: resolveHash,
-    writeContractAsync: resolveBet,
-    isPending: isResolving,
-    reset: resetResolve,
-  } = useWriteContract()
-
-  const { isLoading: isWaitingForResolve, isSuccess: isResolveSuccess } =
-    useWaitForTransactionReceipt({
-      hash: resolveHash,
-      query: {
-        enabled: !!resolveHash,
-      },
-    })
-
-  // Cancel bet hooks
-  const {
-    data: cancelHash,
-    isPending: isCanceling,
-    reset: resetCancel,
-  } = useWriteContract()
-
-  const { isLoading: isWaitingForCancel } = useWaitForTransactionReceipt({
-    hash: cancelHash,
-    query: {
-      enabled: !!cancelHash,
-    },
-  })
-
-  // Check USDC allowance
-  const { data: allowance, refetch: refetchAllowance } = useReadContract({
-    address: USDC_ADDRESS,
-    abi: ERC20_ABI,
-    functionName: 'allowance',
-    args: address ? [address, betAddress] : undefined,
-    query: {
-      enabled: !!address,
-    },
-  })
-
-  // Check USDC balance
-  const { data: usdcBalance } = useReadContract({
-    address: USDC_ADDRESS,
-    abi: ERC20_ABI,
-    functionName: 'balanceOf',
-    args: address ? [address] : undefined,
-    query: {
-      enabled: !!address,
-    },
-  })
-
-  // Refresh page after accept transaction succeeds
-  useEffect(() => {
-    if (isTransactionConfirmed) {
-      window.location.reload()
-    }
-  }, [isTransactionConfirmed])
-
-  // Refresh page after resolve transaction succeeds
-  useEffect(() => {
-    if (isResolveSuccess) {
-      window.location.reload()
-    }
-  }, [isResolveSuccess])
-
-  const handleAcceptBet = async () => {
-    if (!address) {
-      alert('Please connect your wallet')
-      return
-    }
-
-    try {
-      const amountInUnits = parseUnits(bet.amount.toString(), 6)
-      const currentAllowance = allowance || BigInt(0)
-      const calls = []
-
-      // Check if we need to approve USDC
-      if (currentAllowance < amountInUnits) {
-        const approveCall = encodeFunctionData({
-          abi: ERC20_ABI,
-          functionName: 'approve',
-          args: [betAddress, amountInUnits],
-        })
-        calls.push({
-          to: USDC_ADDRESS,
-          data: approveCall,
-        })
-      }
-
-      const acceptCall = encodeFunctionData({
-        abi: BET_ABI,
-        functionName: 'accept',
-        args: [],
-      })
-      calls.push({
-        to: betAddress,
-        data: acceptCall,
-      })
-
-      sendTransaction({
-        calls,
-        chainId: base.id,
-      })
-    } catch (error) {
-      console.error('Error accepting bet:', error)
-    }
+  // Mock handlers - just log and close for now
+  const handleAcceptBet = () => {
+    // TODO: Implement real accept logic
+    console.log('Mock: Accept bet', bet.address)
+    alert('Mock: Bet accepted! (not really)')
   }
 
-  const handleResolveBet = async (winnerAddress: string) => {
-    if (!address) {
-      alert('Please connect your wallet')
-      return
-    }
+  const handleResolveBet = (winner: 'maker' | 'taker') => {
+    // TODO: Implement real resolve logic
+    console.log('Mock: Resolve bet', bet.address, 'winner:', winner)
+    alert(
+      `Mock: ${winner === 'maker' ? getUsername(bet.maker) : getUsername(bet.taker)} wins! (not really)`
+    )
+  }
 
-    try {
-      await resolveBet({
-        address: betAddress,
-        abi: BET_ABI,
-        functionName: 'resolve',
-        args: [winnerAddress as Address],
-        chainId: 8453, // Force Base network
-      })
-    } catch (error) {
-      console.error('Error resolving bet:', error)
-    }
+  const handleCancelBet = () => {
+    // TODO: Implement real cancel logic
+    console.log('Mock: Cancel bet', bet.address)
+    alert('Mock: Bet cancelled! (not really)')
   }
 
   const handleReset = () => {
-    resetApproval()
-    resetResolve()
-    resetCancel()
+    setShowDetails(false)
   }
 
   return (
@@ -204,274 +197,139 @@ export function BetDetailDialog({
       }}
     >
       <DrawerContent className="fixed bottom-0 left-0 right-0 mx-auto flex max-h-[90dvh] max-w-3xl flex-col pb-[env(safe-area-inset-bottom)]">
-        <DrawerHeader className="pb-2">
-          {/* Status Badge - Minimal in top right */}
-          <div className="absolute right-4 top-4">
-            <BetStatusBadge status={bet.status} />
+        <DrawerHeader className="relative pb-2">
+          <DrawerTitle className="sr-only">Bet Details</DrawerTitle>
+          {/* Status Pennant - Top right */}
+          <div className="absolute right-4 top-0">
+            <StatusPennant status={bet.status} />
           </div>
 
-          {/* Hero Bet Description */}
-          <div className="pr-20 text-center">
-            <DrawerTitle className="text-xl font-bold leading-tight tracking-tight md:text-2xl">
-              {bet.description}
-            </DrawerTitle>
+          {/* Large Overlapping Avatars */}
+          <div className="flex items-center justify-center gap-2 pt-4">
+            {/* Maker avatar - positioned left */}
+            <div
+              className={`rounded-full ring-4 ${getStatusRingColor(bet.status)} z-10 ${
+                bet.status === BetStatus.RESOLVED &&
+                bet.winner &&
+                bet.winner.fid !== bet.maker.fid
+                  ? 'grayscale'
+                  : ''
+              }`}
+            >
+              <UserAvatar user={bet.maker} size="2xl" clickable={false} />
+            </div>
+
+            {/* Center badge - overlapping both */}
+            <div
+              className={`absolute z-20 flex h-16 w-16 flex-col items-center justify-center rounded-full ${getStatusBgColor(bet.status)} shadow-md`}
+            >
+              <div className="flex items-center gap-0.5">
+                <Image
+                  src="/img/usdc.png"
+                  alt="USDC"
+                  width={16}
+                  height={16}
+                  className="rounded-full"
+                />
+                <span className="font-bold">{bet.amount}</span>
+              </div>
+              <span className="text-[10px] opacity-70">each</span>
+            </div>
+
+            {/* Taker avatar - positioned right */}
+            <div
+              className={`rounded-full ring-4 ${getStatusRingColor(bet.status)} ${
+                bet.status === BetStatus.RESOLVED &&
+                bet.winner &&
+                bet.winner.fid !== (bet.acceptedBy || bet.taker)?.fid
+                  ? 'grayscale'
+                  : ''
+              }`}
+            >
+              <UserAvatar
+                user={bet.acceptedBy || bet.taker}
+                size="2xl"
+                clickable={false}
+              />
+            </div>
+          </div>
+
+          {/* Usernames below avatars */}
+          <div className="mt-2 flex justify-center gap-24">
+            <span className="text-wb-brown text-sm font-medium">
+              @{getUsername(bet.maker)}
+            </span>
+            <span className="text-wb-brown text-sm font-medium">
+              @{getUsername(bet.acceptedBy || bet.taker)}
+            </span>
           </div>
         </DrawerHeader>
 
         <div className="min-h-0 space-y-4 overflow-y-auto px-4 pb-6">
-          {/* Players Section with Floating Amount */}
-          <div className="relative">
-            {bet.acceptedBy ? (
-              <div className="flex items-center justify-center gap-4">
-                {/* Player 1 */}
-                <div className="flex flex-col items-center gap-1">
-                  <UserAvatar user={bet.maker} size="md" clickable={false} />
-                  <div className="text-center">
-                    <p className="text-sm font-semibold">
-                      {bet.maker.displayName}
-                    </p>
-                    <p className="text-muted-foreground font-mono text-xs">
-                      {shortenAddress(bet.makerAddress)}
-                    </p>
-                  </div>
-                </div>
-
-                {/* VS + Amount Badge */}
-                <div className="flex flex-col items-center gap-1">
-                  <span className="text-muted-foreground/40 text-sm font-light">
-                    vs
-                  </span>
-                  {/* Floating Amount Badge */}
-                  <div className="bg-muted/30 flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 shadow-sm">
-                    <Coins className="text-muted-foreground h-3 w-3" />
-                    <span className="text-xs font-medium">
-                      {bet.amount} USDC
-                    </span>
-                  </div>
-                </div>
-
-                {/* Player 2 */}
-                <div className="flex flex-col items-center gap-1">
-                  <UserAvatar
-                    user={bet.acceptedBy}
-                    size="md"
-                    clickable={false}
-                  />
-                  <div className="text-center">
-                    <p className="text-sm font-semibold">
-                      {bet.acceptedBy.displayName}
-                    </p>
-                    <p className="text-muted-foreground font-mono text-xs">
-                      {shortenAddress(bet.takerAddress || '')}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="flex flex-col items-center gap-2">
-                <div className="flex flex-col items-center gap-1">
-                  <UserAvatar user={bet.maker} size="md" clickable={false} />
-                  <div className="text-center">
-                    <p className="text-sm font-semibold">
-                      {bet.maker.displayName}
-                    </p>
-                    {/* <p className="text-muted-foreground font-mono text-xs">
-                      {shortenAddress(bet.makerAddress)}
-                    </p> */}
-                  </div>
-                </div>
-
-                {/* Amount Badge for Open Bet */}
-                <div className="bg-muted/30 flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 shadow-sm">
-                  <Coins className="text-muted-foreground h-3 w-3" />
-                  <span className="text-xs font-medium">{bet.amount} USDC</span>
-                </div>
-
-                {/* Challenge Status - Minimal */}
-                <p className="text-muted-foreground text-xs">
-                  {bet.taker
-                    ? `Waiting for @${bet.taker.username} to accept`
-                    : 'Open challenge'}
-                </p>
-              </div>
-            )}
+          {/* Bet Description */}
+          <div className="text-center">
+            <p className="text-wb-taupe text-sm">
+              @{getUsername(bet.maker)} bet that...
+            </p>
+            <h2 className="text-wb-brown mt-1 text-2xl font-bold leading-tight">
+              {bet.description}
+            </h2>
+            <p className="text-wb-taupe mt-2 text-sm">
+              Ends: {format(bet.expiresAt, 'MMM d, yyyy')} | Judge: @
+              {getUsername(bet.judge)}
+            </p>
           </div>
 
-          {/* Winner Section - Compact */}
-          {bet.winner && (
-            <div className="flex items-center justify-center gap-2 rounded-lg border bg-green-500/5 px-3 py-2">
-              <Trophy className="h-3.5 w-3.5 text-yellow-500" />
-              <UserAvatar user={bet.winner} size="sm" />
-              <div>
-                <p className="text-sm font-medium">{bet.winner.displayName}</p>
-                <p className="text-muted-foreground text-xs">Winner</p>
+          {/* Action Card - Context Dependent */}
+          <ActionCard
+            bet={bet}
+            onAcceptBet={handleAcceptBet}
+            onResolveBet={handleResolveBet}
+            onCancelBet={handleCancelBet}
+          />
+
+          {/* Show More Details Link */}
+          <button
+            type="button"
+            className="text-wb-coral mx-auto block text-sm font-medium hover:underline"
+            onClick={() => setShowDetails(!showDetails)}
+          >
+            {showDetails ? 'Hide Details' : 'Show More Details'}
+          </button>
+
+          {/* Collapsible Details Section */}
+          {showDetails && (
+            <div className="bg-wb-sand/30 space-y-2 rounded-lg p-3 text-sm">
+              <div className="flex justify-between">
+                <span className="text-wb-taupe">Contract</span>
+                <span className="text-wb-brown font-mono">
+                  {bet.address.slice(0, 10)}...{bet.address.slice(-8)}
+                </span>
               </div>
-            </div>
-          )}
-
-          {/* Judge Resolution - Active bets only */}
-          {bet.status === 'active' &&
-            bet.judgeAddress &&
-            address &&
-            bet.judgeAddress.toLowerCase() === address.toLowerCase() &&
-            bet.acceptedBy && (
-              <div className="space-y-3 rounded-lg border bg-blue-500/5 px-4 py-3">
-                <p className="text-center text-sm font-medium">
-                  Select the winner
-                </p>
-                <div className="flex gap-2">
-                  {/* Maker button */}
-                  <Button
-                    onClick={() => handleResolveBet(bet.makerAddress)}
-                    className="flex-1"
-                    variant="outline"
-                    disabled={isResolving || isWaitingForResolve}
-                  >
-                    <div className="flex items-center gap-2">
-                      <UserAvatar
-                        user={bet.maker}
-                        size="sm"
-                        clickable={false}
-                      />
-                      <span className="text-sm">{bet.maker.displayName}</span>
-                    </div>
-                  </Button>
-
-                  {/* Taker button */}
-                  <Button
-                    onClick={() => handleResolveBet(bet.takerAddress || '')}
-                    className="flex-1"
-                    variant="outline"
-                    disabled={isResolving || isWaitingForResolve}
-                  >
-                    <div className="flex items-center gap-2">
-                      <UserAvatar
-                        user={bet.acceptedBy}
-                        size="sm"
-                        clickable={false}
-                      />
-                      <span className="text-sm">
-                        {bet.acceptedBy.displayName}
-                      </span>
-                    </div>
-                  </Button>
-                </div>
-
-                {(isResolving || isWaitingForResolve) && (
-                  <p className="text-muted-foreground text-center text-xs">
-                    {isResolving
-                      ? 'Submitting resolution...'
-                      : 'Waiting for confirmation...'}
-                  </p>
-                )}
+              <div className="flex justify-between">
+                <span className="text-wb-taupe">Judge</span>
+                <span className="text-wb-brown">@{getUsername(bet.judge)}</span>
               </div>
-            )}
-
-          {/* Judge Section - Minimal */}
-          <div className="flex items-center justify-center gap-2">
-            {bet.judge ? (
-              <>
-                <UserAvatar user={bet.judge} size="sm" />
-                <p className="text-muted-foreground text-xs">
-                  Judge:{' '}
-                  <span className="text-foreground font-medium">
-                    {bet.judge.displayName}
-                  </span>
-                </p>
-              </>
-            ) : (
-              <p className="text-muted-foreground text-xs italic">
-                Judge: To be announced
-              </p>
-            )}
-          </div>
-
-          {/* Contract Details */}
-          <div className="border-t pt-3">
-            <div className="space-y-2 text-xs">
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Contract</span>
-                <a
-                  href={`${BASE_EXPLORER}/address/${bet.id}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-foreground hover:text-primary flex items-center gap-1 font-mono transition-colors"
-                >
-                  {shortenAddress(bet.id)}
-                  <ExternalLink className="h-3 w-3" />
-                </a>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Created</span>
-                <span className="font-medium">
+              <div className="flex justify-between">
+                <span className="text-wb-taupe">Created</span>
+                <span className="text-wb-brown">
                   {format(bet.createdAt, 'MMM d, yyyy')}
                 </span>
               </div>
-              {bet.acceptedAt && (
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Accepted</span>
-                  <span className="font-medium">
-                    {format(bet.acceptedAt, 'MMM d, yyyy')}
-                  </span>
-                </div>
-              )}
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Expires</span>
-                <span className="font-medium">
-                  {format(bet.expiresAt, 'MMM d, yyyy')}
+              <div className="flex justify-between">
+                <span className="text-wb-taupe">Accept by</span>
+                <span className="text-wb-brown">
+                  {format(bet.acceptBy, 'MMM d, yyyy')}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-wb-taupe">Judge deadline</span>
+                <span className="text-wb-brown">
+                  {format(bet.judgeDeadline, 'MMM d, yyyy')}
                 </span>
               </div>
             </div>
-          </div>
-
-          {/* Actions */}
-          {bet.status === 'open' &&
-            bet.takerAddress &&
-            address &&
-            bet.takerAddress.toLowerCase() === address.toLowerCase() && (
-              <div className="space-y-2 pt-2">
-                {/* Balance warning */}
-                {usdcBalance !== undefined && (
-                  <div className="text-center text-xs">
-                    {parseUnits(bet.amount.toString(), 6) > usdcBalance ? (
-                      <p className="text-destructive">
-                        Insufficient USDC balance. You have{' '}
-                        {(Number(usdcBalance) / 1_000_000).toFixed(2)} USDC but
-                        need {bet.amount} USDC
-                      </p>
-                    ) : (
-                      <p className="text-muted-foreground">
-                        Your balance:{' '}
-                        {(Number(usdcBalance) / 1_000_000).toFixed(2)} USDC
-                      </p>
-                    )}
-                  </div>
-                )}
-
-                {/* Accept button */}
-                <Button
-                  onClick={handleAcceptBet}
-                  className="w-full"
-                  size="lg"
-                  disabled={
-                    isApproving ||
-                    (usdcBalance !== undefined &&
-                      parseUnits(bet.amount.toString(), 6) > usdcBalance)
-                  }
-                >
-                  {isApproving
-                    ? 'Accepting Bet...'
-                    : `Accept Bet (${bet.amount} USDC)`}
-                </Button>
-
-                {/* Confirmation message */}
-                {bet.taker && (
-                  <p className="text-muted-foreground text-center text-xs">
-                    You are accepting this bet as @{bet.taker.username}
-                  </p>
-                )}
-              </div>
-            )}
+          )}
         </div>
       </DrawerContent>
     </Drawer>

@@ -1,80 +1,124 @@
 'use client'
 
-import Image from 'next/image'
+import { X } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
+import { STATUS_CONFIG, StatusPennant } from '@/components/status-pennant'
 import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-} from '@/components/ui/drawer'
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { BetStatus } from 'indexer/types'
 
 interface WelcomeModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
 }
 
+// Order of statuses to display in the welcome modal
+const STATUS_ORDER: BetStatus[] = [
+  BetStatus.PENDING,
+  BetStatus.ACTIVE,
+  BetStatus.JUDGING,
+  BetStatus.CANCELLED,
+  BetStatus.RESOLVED,
+]
+
 export function WelcomeModal({ open, onOpenChange }: WelcomeModalProps) {
   return (
-    <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="mx-auto max-w-lg">
-        <DrawerHeader>
-          <div className="flex flex-col items-center gap-4">
-            <Image
-              src="/img/bettingmutt.png"
-              alt="Betting Mutt"
-              width={120}
-              height={120}
-              className="rounded-full"
-            />
-            <DrawerTitle className="text-center text-2xl">
-              Welcome to WannaBet!
-            </DrawerTitle>
-          </div>
-        </DrawerHeader>
-
-        <div className="space-y-4 px-4 pb-6">
-          <h3 className="text-lg font-semibold">How it works</h3>
-
-          <div className="space-y-3">
-            <div className="flex items-start gap-3 rounded-lg bg-gradient-to-br from-purple-500/10 to-blue-500/10 p-4">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-purple-500/20 font-semibold text-purple-600 dark:text-purple-400">
-                1
-              </div>
-              <div>
-                <h4 className="font-semibold">Create a peer-to-peer bet</h4>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3 rounded-lg bg-gradient-to-br from-blue-500/10 to-cyan-500/10 p-4">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-500/20 font-semibold text-blue-600 dark:text-blue-400">
-                2
-              </div>
-              <div>
-                <h4 className="font-semibold">Opponent Accepts</h4>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3 rounded-lg bg-gradient-to-br from-cyan-500/10 to-green-500/10 p-4">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-green-500/20 font-semibold text-green-600 dark:text-green-400">
-                3
-              </div>
-              <div>
-                <h4 className="font-semibold">Judge Settles</h4>
-              </div>
-            </div>
-          </div>
-
-          <Button
-            onClick={() => onOpenChange(false)}
-            className="h-12 w-full text-base font-semibold"
-            size="lg"
-          >
-            Let&apos;s Go! 🎲
-          </Button>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="bg-wb-sand max-w-md gap-0 overflow-hidden rounded-xl border-0 p-0 [&>button:last-child]:hidden">
+        {/* Coral Header */}
+        <div className="bg-wb-coral flex items-center justify-between px-6 py-4">
+          <DialogTitle className="text-wb-brown text-2xl font-bold">
+            How WannaBet Works
+          </DialogTitle>
+          <DialogClose className="rounded-sm text-white opacity-80 transition-opacity hover:opacity-100">
+            <X className="h-7 w-7" />
+            <span className="sr-only">Close</span>
+          </DialogClose>
         </div>
-      </DrawerContent>
-    </Drawer>
+
+        {/* Sand Body */}
+        <div className="bg-wb-sand text-wb-brown space-y-5 px-6 py-5">
+          {/* What is WannaBet */}
+          <section>
+            <h3 className="mb-1 text-xl font-bold">What is WannaBet?</h3>
+            <p className="text-wb-taupe">
+              A peer-to-peer social betting app. Make trustless wagers with
+              friends using smart contract escrow.
+            </p>
+          </section>
+
+          {/* The Process */}
+          <section>
+            <h3 className="mb-3 text-xl font-bold">The Process</h3>
+            <div className="space-y-3">
+              <div className="flex items-start gap-3">
+                <div className="bg-wb-coral text-wb-cream flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm font-bold">
+                  1
+                </div>
+                <p>
+                  <span className="font-bold">Create a Bet</span>
+                  <span className="text-wb-taupe">
+                    {' '}
+                    - Set opponent, stakes, judge, and end date.
+                  </span>
+                </p>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <div className="bg-wb-coral text-wb-cream flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm font-bold">
+                  2
+                </div>
+                <p>
+                  <span className="font-bold">Opponent Accepts</span>
+                  <span className="text-wb-taupe">
+                    {' '}
+                    - Stakes are locked in the contract.
+                  </span>
+                </p>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <div className="bg-wb-coral text-wb-cream flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm font-bold">
+                  3
+                </div>
+                <p>
+                  <span className="font-bold">Judge Settles</span>
+                  <span className="text-wb-taupe">
+                    {' '}
+                    - Determines winner who gets paid.
+                  </span>
+                </p>
+              </div>
+            </div>
+          </section>
+
+          {/* Status Indicators */}
+          <section>
+            <h3 className="mb-3 text-xl font-bold">Status Indicators</h3>
+            <div className="space-y-2">
+              {STATUS_ORDER.map((status) => {
+                const config = STATUS_CONFIG[status]
+                return (
+                  <div key={status} className="flex items-center gap-3">
+                    <StatusPennant status={status} />
+                    <p>
+                      <span className="font-bold">{config.label}</span>
+                      <span className="text-wb-taupe">
+                        {' '}
+                        - {config.description}
+                      </span>
+                    </p>
+                  </div>
+                )
+              })}
+            </div>
+          </section>
+        </div>
+      </DialogContent>
+    </Dialog>
   )
 }
