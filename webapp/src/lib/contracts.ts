@@ -1,16 +1,8 @@
 import type { Address } from 'viem'
 
-// Re-export ABIs from shared package (source of truth)
-export {
-  BET_FACTORY_V1,
-  BET_FACTORY_V2,
-  BET_V1_ABI,
-  BET_V2_ABI,
-} from 'shared'
-
 // Contract addresses on Base
 export const BETFACTORY_ADDRESS: Address =
-  '0x0F0A585aF686397d94428825D8cCfa2589b159A0'
+  '0x252B30995510703D09cB4f3597b098D4a96b4E62'
 
 export const USDC_ADDRESS: Address =
   '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'
