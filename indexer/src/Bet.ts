@@ -12,6 +12,7 @@ ponder.on('Bet:BetCreated', async ({ event, context }) => {
     createdAt: Number(event.block.timestamp),
     endsBy: judgeDeadline, // V1 didn't have separate endsBy
     judgeDeadline,
+    version: 1,
   })
 })
 
