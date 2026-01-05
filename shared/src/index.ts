@@ -775,6 +775,7 @@ export const BET_V1_ABI = [
 
 export const BET_FACTORY_V2 = {
   address: '0x252B30995510703D09cB4f3597b098D4a96b4E62',
+  startBlock: 40402624,
   abi: [
     {
       inputs: [

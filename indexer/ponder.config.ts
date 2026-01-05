@@ -1,6 +1,6 @@
 import { parseAbiItem } from 'abitype'
 import { createConfig, factory } from 'ponder'
-import { BET_FACTORY_V1, BET_V1_ABI } from 'shared'
+import { BET_FACTORY_V1, BET_V1_ABI, BET_FACTORY_V2, BET_V2_ABI } from 'shared'
 import { base } from 'viem/chains'
 
 export default createConfig({
@@ -21,6 +21,20 @@ export default createConfig({
       startBlock: BET_FACTORY_V1.startBlock,
       address: factory({
         address: BET_FACTORY_V1.address,
+        event: parseAbiItem('event BetCreated(address indexed bet)'),
+        parameter: 'bet',
+      }) as any,
+    },
+    BetFactoryV2: {
+      chain: 'base',
+      ...BET_FACTORY_V2,
+    },
+    Bet2: {
+      chain: 'base',
+      abi: BET_V2_ABI,
+      startBlock: BET_FACTORY_V2.startBlock,
+      address: factory({
+        address: BET_FACTORY_V2.address,
         event: parseAbiItem('event BetCreated(address indexed bet)'),
         parameter: 'bet',
       }) as any,
