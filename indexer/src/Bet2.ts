@@ -3,10 +3,6 @@ import { bet } from 'ponder:schema'
 import { BET_V2_ABI } from 'shared'
 
 ponder.on('Bet2:BetCreated', async ({ event, context }) => {
-  // V2 ABI: 'endsBy' is when outcome must be known
-  // judgeDeadline is read from the contract (endsBy + JUDGING_WINDOW)
-  const endsBy = Number(event.args.endsBy)
-
   // Read judgeDeadline from the contract
   const judgeDeadline = await context.client.readContract({
     address: event.log.address,
@@ -18,8 +14,7 @@ ponder.on('Bet2:BetCreated', async ({ event, context }) => {
     ...event.args,
     address: event.log.address,
     createdAt: Number(event.block.timestamp),
-    endsBy,
-    judgeDeadline: Number(judgeDeadline),
+    judgeDeadline,
     version: 2,
   })
 })
