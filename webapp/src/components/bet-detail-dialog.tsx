@@ -1,8 +1,11 @@
 'use client'
 
 import { format } from 'date-fns'
+import { Loader2 } from 'lucide-react'
 import Image from 'next/image'
 import { useState } from 'react'
+import { type Address } from 'viem'
+import { useAccount } from 'wagmi'
 
 import { StatusPennant } from '@/components/status-pennant'
 import { Button } from '@/components/ui/button'
@@ -13,6 +16,9 @@ import {
   DrawerTitle,
 } from '@/components/ui/drawer'
 import { UserAvatar } from '@/components/user-avatar'
+import { useAcceptBet } from '@/hooks/useAcceptBet'
+import { useCancelBet } from '@/hooks/useCancelBet'
+import { useResolveBet } from '@/hooks/useResolveBet'
 import { BetStatus, type Bet } from 'indexer/types'
 import { getUsername } from '@/lib/utils'
 
@@ -42,17 +48,38 @@ const getStatusBgColor = (status: BetStatus) => {
 
 interface ActionCardProps {
   bet: Bet
+  userAddress?: Address
   onAcceptBet: () => void
   onResolveBet: (winner: 'maker' | 'taker') => void
   onCancelBet: () => void
+  isAccepting: boolean
+  isResolving: boolean
+  isCancelling: boolean
+  acceptPhase: string
+  resolvePhase: string
+  cancelPhase: string
+  error: string | null
 }
 
 function ActionCard({
   bet,
+  userAddress,
   onAcceptBet,
   onResolveBet,
   onCancelBet,
+  isAccepting,
+  isResolving,
+  isCancelling,
+  acceptPhase,
+  error,
 }: ActionCardProps) {
+  const isLoading = isAccepting || isResolving || isCancelling
+
+  // Determine user roles
+  const isMaker = userAddress?.toLowerCase() === bet.maker.address.toLowerCase()
+  const isTaker = userAddress?.toLowerCase() === bet.taker.address.toLowerCase()
+  const isJudge = userAddress?.toLowerCase() === bet.judge.address.toLowerCase()
+
   // State 3: Resolved - Winner display
   if (bet.status === BetStatus.RESOLVED && bet.winner) {
     return (
@@ -74,43 +101,66 @@ function ActionCard({
         <div className="flex items-center justify-center gap-3">
           <span className="text-2xl">❌</span>
           <span className="text-wb-brown text-center text-sm">
-            @{getUsername(bet.maker)} canceled the bet and funds were returned
+            Bet was cancelled and funds were returned
           </span>
         </div>
       </div>
     )
   }
 
-  // State 2: Judge Selection (active or judging + user is judge)
+  // State 2: Judge Selection (active or judging)
   if (
     (bet.status === BetStatus.ACTIVE || bet.status === BetStatus.JUDGING) &&
     bet.acceptedBy
   ) {
+    if (!isJudge) {
+      return (
+        <div className="bg-wb-sand/50 rounded-xl border px-4 py-3">
+          <p className="text-wb-taupe text-center text-sm">
+            Waiting for @{getUsername(bet.judge)} to pick a winner
+          </p>
+        </div>
+      )
+    }
+
     return (
       <div className="bg-wb-sand/50 space-y-3 rounded-xl border px-4 py-3">
+        {error && (
+          <div className="bg-red-50 text-red-600 rounded-lg p-2 text-xs">
+            {error}
+          </div>
+        )}
         <p className="text-wb-taupe text-center text-xs">
-          Pick a winner (mock - any user can click)
+          You are the judge. Pick a winner or cancel (draw).
         </p>
         <div className="flex gap-2">
           <Button
             onClick={() => onResolveBet('maker')}
+            disabled={isLoading}
             className="bg-wb-coral hover:bg-wb-coral/80 flex-1 text-white"
           >
+            {isResolving && <Loader2 className="mr-1 h-3 w-3 animate-spin" />}
             @{getUsername(bet.maker)}
           </Button>
           <Button
             onClick={() => onResolveBet('taker')}
+            disabled={isLoading}
             className="bg-wb-coral hover:bg-wb-coral/80 flex-1 text-white"
           >
+            {isResolving && <Loader2 className="mr-1 h-3 w-3 animate-spin" />}
             @{getUsername(bet.acceptedBy)}
           </Button>
-          <Button
-            onClick={onCancelBet}
-            className="bg-wb-coral hover:bg-wb-coral/80 flex-1 text-white"
-          >
-            Cancel
-          </Button>
         </div>
+        <Button
+          onClick={onCancelBet}
+          disabled={isLoading}
+          variant="outline"
+          className="w-full"
+          size="sm"
+        >
+          {isCancelling && <Loader2 className="mr-1 h-3 w-3 animate-spin" />}
+          Cancel (Draw)
+        </Button>
         <p className="text-wb-taupe text-center text-xs">
           Picking a winner will send them {Number(bet.amount) * 2} USDC. Cancel
           will split the funds evenly
@@ -121,33 +171,87 @@ function ActionCard({
 
   // State 1: Taker Accept (pending)
   if (bet.status === BetStatus.PENDING) {
+    // Only taker can accept
+    if (isTaker) {
+      return (
+        <div className="bg-wb-sand/50 space-y-3 rounded-xl border px-4 py-3">
+          {error && (
+            <div className="bg-red-50 text-red-600 rounded-lg p-2 text-xs">
+              {error}
+            </div>
+          )}
+          <Button
+            onClick={onAcceptBet}
+            disabled={isLoading}
+            className="bg-wb-coral hover:bg-wb-coral/80 w-full text-white"
+            size="lg"
+          >
+            {isAccepting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {getAcceptButtonText(acceptPhase)}
+          </Button>
+          <p className="text-wb-taupe text-center text-xs">
+            Accepting will send {bet.amount} USDC to the bet contract. Offer
+            ends {format(bet.acceptBy, 'MMM d, yyyy')}.
+          </p>
+        </div>
+      )
+    }
+
+    // Only maker can cancel pending bet
+    if (isMaker) {
+      return (
+        <div className="bg-wb-sand/50 space-y-3 rounded-xl border px-4 py-3">
+          {error && (
+            <div className="bg-red-50 text-red-600 rounded-lg p-2 text-xs">
+              {error}
+            </div>
+          )}
+          <p className="text-wb-taupe text-center text-sm">
+            Waiting for @{getUsername(bet.taker)} to accept your bet
+          </p>
+          <Button
+            onClick={onCancelBet}
+            disabled={isLoading}
+            variant="outline"
+            className="w-full"
+            size="sm"
+          >
+            {isCancelling && <Loader2 className="mr-1 h-3 w-3 animate-spin" />}
+            Cancel Bet
+          </Button>
+        </div>
+      )
+    }
+
+    // Other users can only view
     return (
-      <div className="bg-wb-sand/50 space-y-3 rounded-xl border px-4 py-3">
-        <Button
-          onClick={onAcceptBet}
-          className="bg-wb-coral hover:bg-wb-coral/80 w-full text-white"
-          size="lg"
-        >
-          Accept Bet
-        </Button>
-        <p className="text-wb-taupe text-center text-xs">
-          Accepting will send {bet.amount} USDC to the bet contract. Offer ends{' '}
-          {format(bet.acceptBy, 'MMM d, yyyy')}.
+      <div className="bg-wb-sand/50 rounded-xl border px-4 py-3">
+        <p className="text-wb-taupe text-center text-sm">
+          Waiting for @{getUsername(bet.taker)} to accept the bet
         </p>
-        <Button
-          onClick={onCancelBet}
-          variant="outline"
-          className="w-full"
-          size="sm"
-        >
-          Cancel Bet
-        </Button>
       </div>
     )
   }
 
   // No action available
   return null
+}
+
+function getAcceptButtonText(phase: string): string {
+  switch (phase) {
+    case 'checking-allowance':
+      return 'Checking allowance...'
+    case 'approving':
+      return 'Approve USDC...'
+    case 'waiting-approval':
+      return 'Waiting for approval...'
+    case 'accepting':
+      return 'Accepting...'
+    case 'waiting-accept':
+      return 'Confirming...'
+    default:
+      return 'Accept Bet'
+  }
 }
 
 interface BetDetailDialogProps {
@@ -162,30 +266,63 @@ export function BetDetailDialog({
   onOpenChange,
 }: BetDetailDialogProps) {
   const [showDetails, setShowDetails] = useState(false)
+  const [txError, setTxError] = useState<string | null>(null)
 
-  // Mock handlers - just log and close for now
-  const handleAcceptBet = () => {
-    // TODO: Implement real accept logic
-    console.log('Mock: Accept bet', bet.address)
-    alert('Mock: Bet accepted! (not really)')
+  const account = useAccount()
+  const betAddress = bet.address as Address
+
+  // Contract interaction hooks
+  const acceptBet = useAcceptBet(betAddress, bet.amount)
+  const resolveBet = useResolveBet(betAddress)
+  const cancelBet = useCancelBet(betAddress)
+
+  // Handle accept bet
+  const handleAcceptBet = async () => {
+    setTxError(null)
+    try {
+      await acceptBet.acceptBet()
+      // Success - close dialog after brief delay to show success state
+      setTimeout(() => onOpenChange(false), 1500)
+    } catch (err) {
+      setTxError(err instanceof Error ? err.message : 'Accept failed')
+    }
   }
 
-  const handleResolveBet = (winner: 'maker' | 'taker') => {
-    // TODO: Implement real resolve logic
-    console.log('Mock: Resolve bet', bet.address, 'winner:', winner)
-    alert(
-      `Mock: ${winner === 'maker' ? getUsername(bet.maker) : getUsername(bet.taker)} wins! (not really)`
-    )
+  // Handle resolve bet
+  const handleResolveBet = async (winner: 'maker' | 'taker') => {
+    setTxError(null)
+    const winnerAddress =
+      winner === 'maker'
+        ? (bet.maker.address as Address)
+        : (bet.acceptedBy?.address as Address)
+
+    try {
+      await resolveBet.resolveBet(winnerAddress)
+      // Success - close dialog after brief delay
+      setTimeout(() => onOpenChange(false), 1500)
+    } catch (err) {
+      setTxError(err instanceof Error ? err.message : 'Resolve failed')
+    }
   }
 
-  const handleCancelBet = () => {
-    // TODO: Implement real cancel logic
-    console.log('Mock: Cancel bet', bet.address)
-    alert('Mock: Bet cancelled! (not really)')
+  // Handle cancel bet
+  const handleCancelBet = async () => {
+    setTxError(null)
+    try {
+      await cancelBet.cancelBet()
+      // Success - close dialog after brief delay
+      setTimeout(() => onOpenChange(false), 1500)
+    } catch (err) {
+      setTxError(err instanceof Error ? err.message : 'Cancel failed')
+    }
   }
 
   const handleReset = () => {
     setShowDetails(false)
+    setTxError(null)
+    acceptBet.reset()
+    resolveBet.reset()
+    cancelBet.reset()
   }
 
   return (
@@ -283,9 +420,17 @@ export function BetDetailDialog({
           {/* Action Card - Context Dependent */}
           <ActionCard
             bet={bet}
+            userAddress={account.address}
             onAcceptBet={handleAcceptBet}
             onResolveBet={handleResolveBet}
             onCancelBet={handleCancelBet}
+            isAccepting={acceptBet.isLoading}
+            isResolving={resolveBet.isLoading}
+            isCancelling={cancelBet.isLoading}
+            acceptPhase={acceptBet.phase}
+            resolvePhase={resolveBet.phase}
+            cancelPhase={cancelBet.phase}
+            error={txError}
           />
 
           {/* Show More Details Link */}

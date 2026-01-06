@@ -3,6 +3,8 @@
 import { Loader2, Plus } from 'lucide-react'
 import Image from 'next/image'
 import { type ChangeEvent, useCallback, useEffect, useMemo, useState } from 'react'
+import { type Address, isAddress } from 'viem'
+import { useAccount } from 'wagmi'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -16,9 +18,33 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { UserSearch } from '@/components/user-search'
+import { useCreateBet } from '@/hooks/useCreateBet'
 import type { FarcasterUser } from 'indexer/types'
 
 type SubmitPhase = 'idle' | 'submitting' | 'done'
+
+// Helper to get button text based on transaction phase
+function getButtonText(
+  phase: string,
+  notConnected: boolean
+): string {
+  if (notConnected) return 'Connect Wallet'
+
+  switch (phase) {
+    case 'checking-allowance':
+      return 'Checking allowance...'
+    case 'approving':
+      return 'Approve USDC...'
+    case 'waiting-approval':
+      return 'Waiting for approval...'
+    case 'creating':
+      return 'Creating bet...'
+    case 'waiting-creation':
+      return 'Confirming...'
+    default:
+      return 'Create Bet'
+  }
+}
 
 interface FormData {
   taker: string
@@ -42,6 +68,10 @@ export function CreateBetDialog() {
   const [open, setOpen] = useState(false)
   const [formData, setFormData] = useState<FormData>(INITIAL_FORM_DATA)
   const [phase, setPhase] = useState<SubmitPhase>('idle')
+  const [txError, setTxError] = useState<string | null>(null)
+
+  const account = useAccount()
+  const createBet = useCreateBet()
 
   // Open dialog via #create hash
   useEffect(() => {
@@ -62,20 +92,22 @@ export function CreateBetDialog() {
 
   // Form validation
   const isFormValid = useMemo(() => {
-    const hasOpponent = formData.taker.trim().length > 0
+    const hasValidTaker = isAddress(formData.taker)
     const hasDescription = formData.description.trim().length > 5
     const hasValidDate = formData.expiresAt.length > 0
     const hasValidAmount = Number(formData.amount) > 0
-    const hasJudge = formData.judge.trim().length > 0
+    const hasValidJudge = isAddress(formData.judge)
+    const isConnected = !!account.address
 
     return (
-      hasOpponent &&
+      hasValidTaker &&
       hasDescription &&
       hasValidDate &&
       hasValidAmount &&
-      hasJudge
+      hasValidJudge &&
+      isConnected
     )
-  }, [formData])
+  }, [formData, account.address])
 
   const isSubmitting = phase === 'submitting'
 
@@ -83,7 +115,9 @@ export function CreateBetDialog() {
   const handleReset = useCallback(() => {
     setFormData(INITIAL_FORM_DATA)
     setPhase('idle')
-  }, [])
+    setTxError(null)
+    createBet.reset()
+  }, [createBet])
 
   // Update form field
   const updateField = useCallback(
@@ -93,16 +127,32 @@ export function CreateBetDialog() {
     []
   )
 
-  // Mock submit - just shows success after a delay
+  // Submit handler - creates bet on chain
   const handleSubmit = useCallback(async () => {
     setPhase('submitting')
+    setTxError(null)
 
-    // TODO: Implement real bet creation
-    // Simulate network delay
-    await new Promise((resolve) => setTimeout(resolve, 1500))
+    // Calculate dates - acceptBy is 7 days from now, endsBy is from form
+    const acceptBy = new Date()
+    acceptBy.setDate(acceptBy.getDate() + 7)
 
-    setPhase('done')
-  }, [])
+    const endsBy = new Date(formData.expiresAt)
+
+    try {
+      await createBet.createBet({
+        taker: formData.taker as Address,
+        judge: formData.judge as Address,
+        amount: formData.amount,
+        acceptBy,
+        endsBy,
+        description: formData.description,
+      })
+      setPhase('done')
+    } catch (err) {
+      setTxError(err instanceof Error ? err.message : 'Transaction failed')
+      setPhase('idle')
+    }
+  }, [formData, createBet])
 
   return (
     <Drawer
@@ -136,8 +186,22 @@ export function CreateBetDialog() {
                 Bet Created Successfully!
               </p>
               <p className="text-wb-taupe text-sm">
-                (This is a mock - real creation not implemented yet)
+                Your bet offer has been created and is now waiting for{' '}
+                {formData.takerUser?.username
+                  ? `@${formData.takerUser.username}`
+                  : 'your opponent'}{' '}
+                to accept.
               </p>
+              {createBet.createHash && (
+                <a
+                  href={`https://basescan.org/tx/${createBet.createHash}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-wb-coral text-xs hover:underline"
+                >
+                  View transaction on BaseScan
+                </a>
+              )}
               <div className="flex flex-col gap-2 pt-4">
                 <Button
                   className="w-full"
@@ -248,6 +312,13 @@ export function CreateBetDialog() {
                 inputClassName="bg-wb-sand text-wb-brown placeholder:text-wb-taupe"
               />
 
+              {/* Error Message */}
+              {txError && (
+                <div className="bg-red-50 text-red-600 rounded-lg p-3 text-sm">
+                  {txError}
+                </div>
+              )}
+
               {/* Submit */}
               <Button
                 className="bg-wb-coral hover:bg-wb-coral/90 w-full text-white"
@@ -258,7 +329,7 @@ export function CreateBetDialog() {
                 {isSubmitting && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}
-                {isSubmitting ? 'Creating...' : 'Create Bet'}
+                {getButtonText(createBet.phase, !account.address)}
               </Button>
 
               <p className="text-wb-taupe text-center text-xs">
