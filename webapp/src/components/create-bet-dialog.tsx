@@ -18,33 +18,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { UserSearch } from '@/components/user-search'
-import { useCreateBet } from '@/hooks/useCreateBet'
+import { useCreateBet, type CreateBetParams } from '@/hooks/useCreateBet'
 import type { FarcasterUser } from 'indexer/types'
-
-type SubmitPhase = 'idle' | 'submitting' | 'done'
-
-// Helper to get button text based on transaction phase
-function getButtonText(
-  phase: string,
-  notConnected: boolean
-): string {
-  if (notConnected) return 'Connect Wallet'
-
-  switch (phase) {
-    case 'checking-allowance':
-      return 'Checking allowance...'
-    case 'approving':
-      return 'Approve USDC...'
-    case 'waiting-approval':
-      return 'Waiting for approval...'
-    case 'creating':
-      return 'Creating bet...'
-    case 'waiting-creation':
-      return 'Confirming...'
-    default:
-      return 'Create Bet'
-  }
-}
 
 interface FormData {
   taker: string
@@ -67,22 +42,28 @@ const INITIAL_FORM_DATA: FormData = {
 export function CreateBetDialog() {
   const [open, setOpen] = useState(false)
   const [formData, setFormData] = useState<FormData>(INITIAL_FORM_DATA)
-  const [phase, setPhase] = useState<SubmitPhase>('idle')
-  const [txError, setTxError] = useState<string | null>(null)
+  const [pendingBetParams, setPendingBetParams] = useState<CreateBetParams | null>(null)
 
   const account = useAccount()
-  const createBet = useCreateBet()
+  const {
+    allowance,
+    needsApproval,
+    refetchAllowance,
+    approve,
+    approveReceipt,
+    submitApproval,
+    createBet,
+    createBetReceipt,
+    submitCreateBet,
+    reset,
+  } = useCreateBet()
 
   // Open dialog via #create hash
   useEffect(() => {
     const handleHash = () => {
       if (window.location.hash === '#create') {
         setOpen(true)
-        window.history.replaceState(
-          null,
-          '',
-          window.location.pathname + window.location.search
-        )
+        window.history.replaceState(null, '', window.location.pathname + window.location.search)
       }
     }
     window.addEventListener('hashchange', handleHash)
@@ -90,34 +71,43 @@ export function CreateBetDialog() {
     return () => window.removeEventListener('hashchange', handleHash)
   }, [])
 
+  // After approval succeeds, submit the create bet transaction
+  useEffect(() => {
+    if (approveReceipt.isSuccess && pendingBetParams) {
+      refetchAllowance()
+      submitCreateBet(pendingBetParams)
+    }
+  }, [approveReceipt.isSuccess, pendingBetParams, refetchAllowance, submitCreateBet])
+
   // Form validation
   const isFormValid = useMemo(() => {
-    const hasValidTaker = isAddress(formData.taker)
-    const hasDescription = formData.description.trim().length > 5
-    const hasValidDate = formData.expiresAt.length > 0
-    const hasValidAmount = Number(formData.amount) > 0
-    const hasValidJudge = isAddress(formData.judge)
-    const isConnected = !!account.address
-
     return (
-      hasValidTaker &&
-      hasDescription &&
-      hasValidDate &&
-      hasValidAmount &&
-      hasValidJudge &&
-      isConnected
+      isAddress(formData.taker) &&
+      formData.description.trim().length > 5 &&
+      formData.expiresAt.length > 0 &&
+      Number(formData.amount) > 0 &&
+      isAddress(formData.judge) &&
+      !!account.address
     )
   }, [formData, account.address])
 
-  const isSubmitting = phase === 'submitting'
+  // Derive loading state from wagmi hooks
+  const isLoading =
+    approve.isPending ||
+    approveReceipt.isLoading ||
+    createBet.isPending ||
+    createBetReceipt.isLoading
+
+  const isSuccess = createBetReceipt.isSuccess
+
+  const error = approve.error || createBet.error
 
   // Reset form
   const handleReset = useCallback(() => {
     setFormData(INITIAL_FORM_DATA)
-    setPhase('idle')
-    setTxError(null)
-    createBet.reset()
-  }, [createBet])
+    setPendingBetParams(null)
+    reset()
+  }, [reset])
 
   // Update form field
   const updateField = useCallback(
@@ -127,32 +117,40 @@ export function CreateBetDialog() {
     []
   )
 
-  // Submit handler - creates bet on chain
+  // Submit handler
   const handleSubmit = useCallback(async () => {
-    setPhase('submitting')
-    setTxError(null)
-
-    // Calculate dates - acceptBy is 7 days from now, endsBy is from form
     const acceptBy = new Date()
     acceptBy.setDate(acceptBy.getDate() + 7)
-
     const endsBy = new Date(formData.expiresAt)
 
-    try {
-      await createBet.createBet({
-        taker: formData.taker as Address,
-        judge: formData.judge as Address,
-        amount: formData.amount,
-        acceptBy,
-        endsBy,
-        description: formData.description,
-      })
-      setPhase('done')
-    } catch (err) {
-      setTxError(err instanceof Error ? err.message : 'Transaction failed')
-      setPhase('idle')
+    const params: CreateBetParams = {
+      taker: formData.taker as Address,
+      judge: formData.judge as Address,
+      amount: formData.amount,
+      acceptBy,
+      endsBy,
+      description: formData.description,
     }
-  }, [formData, createBet])
+
+    await refetchAllowance()
+
+    if (needsApproval(formData.amount)) {
+      setPendingBetParams(params)
+      submitApproval(formData.amount)
+    } else {
+      submitCreateBet(params)
+    }
+  }, [formData, refetchAllowance, needsApproval, submitApproval, submitCreateBet])
+
+  // Get button text based on current state
+  const getButtonText = () => {
+    if (!account.address) return 'Connect Wallet'
+    if (approve.isPending) return 'Approve USDC...'
+    if (approveReceipt.isLoading) return 'Waiting for approval...'
+    if (createBet.isPending) return 'Creating bet...'
+    if (createBetReceipt.isLoading) return 'Confirming...'
+    return 'Create Bet'
+  }
 
   return (
     <Drawer
@@ -179,7 +177,7 @@ export function CreateBetDialog() {
 
         <div className="px-6 pb-6">
           {/* Success State */}
-          {phase === 'done' && (
+          {isSuccess && (
             <div className="space-y-4 text-center">
               <div className="text-4xl">🎉</div>
               <p className="text-wb-brown text-lg font-semibold">
@@ -192,9 +190,9 @@ export function CreateBetDialog() {
                   : 'your opponent'}{' '}
                 to accept.
               </p>
-              {createBet.createHash && (
+              {createBet.data && (
                 <a
-                  href={`https://basescan.org/tx/${createBet.createHash}`}
+                  href={`https://basescan.org/tx/${createBet.data}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-wb-coral text-xs hover:underline"
@@ -218,9 +216,8 @@ export function CreateBetDialog() {
           )}
 
           {/* Form */}
-          {phase !== 'done' && (
+          {!isSuccess && (
             <div className="space-y-5">
-              {/* Opponent */}
               <UserSearch
                 label="Who I'm betting"
                 value={formData.taker}
@@ -233,7 +230,6 @@ export function CreateBetDialog() {
                 inputClassName="bg-wb-sand text-wb-brown placeholder:text-wb-taupe"
               />
 
-              {/* Description */}
               <div className="space-y-2">
                 <Label className="text-wb-brown">I am betting that...</Label>
                 <Textarea
@@ -244,14 +240,11 @@ export function CreateBetDialog() {
                 />
               </div>
 
-              {/* End Date */}
               <div className="space-y-2">
                 <Label className="text-wb-brown">When it ends</Label>
                 <Input
                   type="date"
-                  value={
-                    formData.expiresAt ? formData.expiresAt.split('T')[0] : ''
-                  }
+                  value={formData.expiresAt ? formData.expiresAt.split('T')[0] : ''}
                   onChange={(e) => {
                     if (e.target.value) {
                       const d = new Date(e.target.value)
@@ -269,7 +262,6 @@ export function CreateBetDialog() {
                 />
               </div>
 
-              {/* Amount */}
               <div className="space-y-2">
                 <Label className="text-wb-brown">How much (each)</Label>
                 <div className="relative">
@@ -299,7 +291,6 @@ export function CreateBetDialog() {
                 </div>
               </div>
 
-              {/* Judge */}
               <UserSearch
                 label="Who will judge"
                 value={formData.judge}
@@ -312,24 +303,20 @@ export function CreateBetDialog() {
                 inputClassName="bg-wb-sand text-wb-brown placeholder:text-wb-taupe"
               />
 
-              {/* Error Message */}
-              {txError && (
+              {error && (
                 <div className="bg-red-50 text-red-600 rounded-lg p-3 text-sm">
-                  {txError}
+                  {error.message}
                 </div>
               )}
 
-              {/* Submit */}
               <Button
                 className="bg-wb-coral hover:bg-wb-coral/90 w-full text-white"
                 size="lg"
                 onClick={handleSubmit}
-                disabled={!isFormValid || isSubmitting}
+                disabled={!isFormValid || isLoading}
               >
-                {isSubmitting && (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                )}
-                {getButtonText(createBet.phase, !account.address)}
+                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {getButtonText()}
               </Button>
 
               <p className="text-wb-taupe text-center text-xs">
