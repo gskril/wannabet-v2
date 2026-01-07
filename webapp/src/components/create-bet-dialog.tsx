@@ -15,6 +15,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { DatePicker } from '@/components/date-picker'
 import { UserSearch } from '@/components/user-search'
 import type { FarcasterUser } from 'indexer/types'
 
@@ -122,12 +123,12 @@ export function CreateBetDialog() {
         </Button>
       </DrawerTrigger>
 
-      <DrawerContent className="bg-wb-cream">
+      <DrawerContent className="bg-wb-cream max-h-[85vh]">
         <DrawerHeader>
           <DrawerTitle className="text-wb-brown">Create New Bet</DrawerTitle>
         </DrawerHeader>
 
-        <div className="px-6 pb-6">
+        <div className="overflow-y-auto px-6 pb-6">
           {/* Success State */}
           {phase === 'done' && (
             <div className="space-y-4 text-center">
@@ -183,25 +184,11 @@ export function CreateBetDialog() {
               {/* End Date */}
               <div className="space-y-2">
                 <Label className="text-wb-brown">When it ends</Label>
-                <Input
-                  type="date"
-                  value={
-                    formData.expiresAt ? formData.expiresAt.split('T')[0] : ''
-                  }
-                  onChange={(e) => {
-                    if (e.target.value) {
-                      const d = new Date(e.target.value)
-                      d.setHours(23, 59, 59, 999)
-                      updateField('expiresAt', d.toISOString())
-                    } else {
-                      updateField('expiresAt', '')
-                    }
-                  }}
-                  onClick={(e) => (e.target as HTMLInputElement).showPicker?.()}
-                  min={new Date().toISOString().split('T')[0]}
-                  className={`bg-wb-sand cursor-pointer [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none ${
-                    formData.expiresAt ? 'text-wb-brown' : 'text-wb-taupe'
-                  }`}
+                <DatePicker
+                  value={formData.expiresAt}
+                  onChange={(date) => updateField('expiresAt', date)}
+                  minDate={new Date()}
+                  placeholder="Select end date"
                 />
               </div>
 

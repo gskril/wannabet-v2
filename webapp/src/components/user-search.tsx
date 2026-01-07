@@ -23,12 +23,13 @@ interface UserSearchProps {
 
 const EMPTY_ARRAY: number[] = []
 
-// TODO: Replace with real Farcaster user search via Neynar API
 async function searchUsers(query: string): Promise<FarcasterUser[]> {
-  // Placeholder - returns empty array
-  // In production, this would call the Neynar search API
-  console.log('TODO: Implement user search for query:', query)
-  return []
+  const response = await fetch(`/api/users/search?q=${encodeURIComponent(query)}`)
+  if (!response.ok) {
+    throw new Error('Search failed')
+  }
+  const data = await response.json()
+  return data.users || []
 }
 
 export function UserSearch({
@@ -199,7 +200,7 @@ export function UserSearch({
                 ))
               ) : (
                 <div className="text-muted-foreground p-4 text-center text-sm">
-                  No users found (search not implemented yet)
+                  No users found
                 </div>
               )}
             </div>
