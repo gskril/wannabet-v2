@@ -3,6 +3,8 @@
 import { Loader2, Plus } from 'lucide-react'
 import Image from 'next/image'
 import { type ChangeEvent, useCallback, useEffect, useMemo, useState } from 'react'
+import { useAccount } from 'wagmi'
+import type { Address } from 'viem'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -17,9 +19,10 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { DatePicker } from '@/components/date-picker'
 import { UserSearch } from '@/components/user-search'
+import { useCreateBet } from '@/hooks/useCreateBet'
 import type { FarcasterUser } from 'indexer/types'
 
-type SubmitPhase = 'idle' | 'submitting' | 'done'
+type SubmitPhase = 'idle' | 'approving' | 'creating' | 'done' | 'error'
 
 interface FormData {
   taker: string
@@ -43,6 +46,26 @@ export function CreateBetDialog() {
   const [open, setOpen] = useState(false)
   const [formData, setFormData] = useState<FormData>(INITIAL_FORM_DATA)
   const [phase, setPhase] = useState<SubmitPhase>('idle')
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+
+  const { address, isConnected } = useAccount()
+  const {
+    submit: submitCreateBet,
+    reset: resetCreateBet,
+    phase: createPhase,
+    error: createError,
+  } = useCreateBet()
+
+  // Sync hook phase with local phase
+  useEffect(() => {
+    if (createPhase === 'approving') setPhase('approving')
+    else if (createPhase === 'creating') setPhase('creating')
+    else if (createPhase === 'success') setPhase('done')
+    else if (createPhase === 'error') {
+      setPhase('error')
+      setErrorMessage(createError)
+    }
+  }, [createPhase, createError])
 
   // Open dialog via #create hash
   useEffect(() => {
@@ -63,28 +86,31 @@ export function CreateBetDialog() {
 
   // Form validation
   const isFormValid = useMemo(() => {
-    const hasOpponent = formData.taker.trim().length > 0
+    const hasOpponent = formData.takerUser?.address
     const hasDescription = formData.description.trim().length > 5
     const hasValidDate = formData.expiresAt.length > 0
     const hasValidAmount = Number(formData.amount) > 0
-    const hasJudge = formData.judge.trim().length > 0
+    const hasJudge = formData.judgeUser?.address
 
     return (
       hasOpponent &&
       hasDescription &&
       hasValidDate &&
       hasValidAmount &&
-      hasJudge
+      hasJudge &&
+      isConnected
     )
-  }, [formData])
+  }, [formData, isConnected])
 
-  const isSubmitting = phase === 'submitting'
+  const isSubmitting = phase === 'approving' || phase === 'creating'
 
   // Reset form
   const handleReset = useCallback(() => {
     setFormData(INITIAL_FORM_DATA)
     setPhase('idle')
-  }, [])
+    setErrorMessage(null)
+    resetCreateBet()
+  }, [resetCreateBet])
 
   // Update form field
   const updateField = useCallback(
@@ -94,16 +120,43 @@ export function CreateBetDialog() {
     []
   )
 
-  // Mock submit - just shows success after a delay
+  // Submit bet creation
   const handleSubmit = useCallback(async () => {
-    setPhase('submitting')
+    if (!formData.takerUser?.address || !formData.judgeUser?.address) {
+      setErrorMessage('Please select valid users for opponent and judge')
+      setPhase('error')
+      return
+    }
 
-    // TODO: Implement real bet creation
-    // Simulate network delay
-    await new Promise((resolve) => setTimeout(resolve, 1500))
+    // Calculate timestamps
+    const now = Math.floor(Date.now() / 1000)
+    const endsBy = Math.floor(new Date(formData.expiresAt).getTime() / 1000)
 
-    setPhase('done')
-  }, [])
+    // acceptBy must be before endsBy - set to min(7 days from now, endsBy - 1 day)
+    // with a minimum of 1 day from now
+    const sevenDaysFromNow = now + 7 * 24 * 60 * 60
+    const oneDayBeforeEnd = endsBy - 24 * 60 * 60
+    const oneDayFromNow = now + 24 * 60 * 60
+
+    const acceptBy = Math.max(oneDayFromNow, Math.min(sevenDaysFromNow, oneDayBeforeEnd))
+
+    // Validate that endsBy is after acceptBy
+    if (endsBy <= acceptBy) {
+      setErrorMessage('End date must be at least 2 days in the future')
+      setPhase('error')
+      return
+    }
+
+    await submitCreateBet({
+      taker: formData.takerUser.address as Address,
+      judge: formData.judgeUser.address as Address,
+      makerStake: formData.amount,
+      takerStake: formData.amount, // Same stake for both sides
+      acceptBy,
+      endsBy,
+      description: formData.description,
+    })
+  }, [formData, submitCreateBet])
 
   return (
     <Drawer
@@ -137,7 +190,8 @@ export function CreateBetDialog() {
                 Bet Created Successfully!
               </p>
               <p className="text-wb-taupe text-sm">
-                (This is a mock - real creation not implemented yet)
+                Your bet has been created on Base. Waiting for{' '}
+                {formData.takerUser?.username || 'opponent'} to accept.
               </p>
               <div className="flex flex-col gap-2 pt-4">
                 <Button
@@ -154,8 +208,31 @@ export function CreateBetDialog() {
             </div>
           )}
 
+          {/* Error State */}
+          {phase === 'error' && (
+            <div className="space-y-4 text-center">
+              <div className="text-4xl">❌</div>
+              <p className="text-wb-brown text-lg font-semibold">
+                Failed to Create Bet
+              </p>
+              <p className="text-wb-taupe text-sm">{errorMessage}</p>
+              <div className="flex flex-col gap-2 pt-4">
+                <Button
+                  className="w-full"
+                  size="lg"
+                  onClick={() => {
+                    setPhase('idle')
+                    setErrorMessage(null)
+                  }}
+                >
+                  Try Again
+                </Button>
+              </div>
+            </div>
+          )}
+
           {/* Form */}
-          {phase !== 'done' && (
+          {phase !== 'done' && phase !== 'error' && (
             <div className="space-y-5">
               {/* Opponent */}
               <UserSearch
@@ -245,7 +322,13 @@ export function CreateBetDialog() {
                 {isSubmitting && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}
-                {isSubmitting ? 'Creating...' : 'Create Bet'}
+                {phase === 'approving'
+                  ? 'Approving USDC...'
+                  : phase === 'creating'
+                    ? 'Creating Bet...'
+                    : !isConnected
+                      ? 'Connect Wallet'
+                      : 'Create Bet'}
               </Button>
 
               <p className="text-wb-taupe text-center text-xs">
