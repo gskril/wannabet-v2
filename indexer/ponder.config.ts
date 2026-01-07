@@ -1,13 +1,13 @@
 import { parseAbiItem } from 'abitype'
 import { createConfig, factory } from 'ponder'
-import { BET_FACTORY_V1, BET_V1_ABI, BET_FACTORY_V2, BET_V2_ABI } from 'shared'
+import { BET_FACTORY_V1, BET_FACTORY_V2, BET_V1_ABI, BET_V2_ABI } from 'shared'
 import { base } from 'viem/chains'
 
 export default createConfig({
   chains: {
     base: {
       id: base.id,
-      rpc: 'https://base-rpc.publicnode.com',
+      rpc: 'https://mainnet.base.org',
     },
   },
   contracts: {
