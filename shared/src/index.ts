@@ -1,6 +1,6 @@
 export const BET_FACTORY_V1 = {
   address: '0x0F0A585aF686397d94428825D8cCfa2589b159A0',
-  startBlock: 37284620,
+  startBlock: 37339202,
   abi: [
     {
       inputs: [

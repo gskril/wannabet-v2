@@ -11,10 +11,6 @@ export default createConfig({
     },
   },
   contracts: {
-    BetFactory: {
-      chain: 'base',
-      ...BET_FACTORY_V1,
-    },
     Bet: {
       chain: 'base',
       abi: BET_V1_ABI,
@@ -24,10 +20,6 @@ export default createConfig({
         event: parseAbiItem('event BetCreated(address indexed bet)'),
         parameter: 'bet',
       }) as any,
-    },
-    BetFactoryV2: {
-      chain: 'base',
-      ...BET_FACTORY_V2,
     },
     Bet2: {
       chain: 'base',
