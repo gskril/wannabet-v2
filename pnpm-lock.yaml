@@ -42,7 +42,7 @@ importers:
     dependencies:
       '@aave-dao/aave-v3-origin':
         specifier: github:aave-dao/aave-v3-origin#main
-        version: https://codeload.github.com/aave-dao/aave-v3-origin/tar.gz/1ce897ba99d5a9ab659861b591576cd4278e9e27
+        version: https://codeload.github.com/aave-dao/aave-v3-origin/tar.gz/5a230ec82fcb10afc7fe7cffa8978752fb17aa2b
       '@openzeppelin/contracts':
         specifier: ^5.4.0
         version: 5.4.0
@@ -114,6 +114,9 @@ importers:
       '@farcaster/miniapp-sdk':
         specifier: ^0.2.0
         version: 0.2.1(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.76)
+      '@farcaster/miniapp-wagmi-connector':
+        specifier: ^1.1.0
+        version: 1.1.0(@farcaster/miniapp-sdk@0.2.1(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.76))(@wagmi/core@2.22.1(@tanstack/query-core@5.90.5)(@types/react@19.0.0)(immer@10.0.2)(react@19.2.1)(typescript@5.8.3)(use-sync-external-store@1.4.0(react@19.2.1))(viem@2.38.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.76)))(viem@2.38.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.76))
       '@neynar/nodejs-sdk':
         specifier: ^3.34.0
         version: 3.34.0(@types/node@20.19.22)(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.76)
@@ -214,9 +217,9 @@ importers:
 
 packages:
 
-  '@aave-dao/aave-v3-origin@https://codeload.github.com/aave-dao/aave-v3-origin/tar.gz/1ce897ba99d5a9ab659861b591576cd4278e9e27':
-    resolution: {tarball: https://codeload.github.com/aave-dao/aave-v3-origin/tar.gz/1ce897ba99d5a9ab659861b591576cd4278e9e27}
-    version: 3.5.0
+  '@aave-dao/aave-v3-origin@https://codeload.github.com/aave-dao/aave-v3-origin/tar.gz/5a230ec82fcb10afc7fe7cffa8978752fb17aa2b':
+    resolution: {tarball: https://codeload.github.com/aave-dao/aave-v3-origin/tar.gz/5a230ec82fcb10afc7fe7cffa8978752fb17aa2b}
+    version: 3.6.0
 
   '@actions/core@1.11.1':
     resolution: {integrity: sha512-hXJCSrkwfA46Vd9Z3q4cpEpHB1rL5NG04+/rbqW9d3+CSvtB1tYe8UTpAlixa1vj0m/ULglfEK2UKxMGxCxv5A==}
@@ -914,6 +917,13 @@ packages:
 
   '@farcaster/miniapp-sdk@0.2.1':
     resolution: {integrity: sha512-2SnDeOtDdlN1lGQt7UyH2jkrZRQDOkmhcrlzNWazYChyPh9XfV8+9fMS+Lr/E2pEws9Q40Xl9POrCzdpUC19lg==}
+
+  '@farcaster/miniapp-wagmi-connector@1.1.0':
+    resolution: {integrity: sha512-gf0nDx9nNJ6hJXbFBCgiTitb0eEqBvCU/njcyTXf7ebZhT0pzOrarOod2dkeisU5Py+WWjFyOVcqmeo4G3IvDA==}
+    peerDependencies:
+      '@farcaster/miniapp-sdk': ^0.2.0
+      '@wagmi/core': ^2.14.1
+      viem: ^2.21.55
 
   '@farcaster/quick-auth@0.0.6':
     resolution: {integrity: sha512-tiZndhpfDtEhaKlkmS5cVDuS+A/tafqZT3y9I44rC69m3beJok6e8dIH2JhxVy3EvOWTyTBnrmNn6GOOh+qK6A==}
@@ -3269,10 +3279,6 @@ packages:
 
   caniuse-lite@1.0.30001751:
     resolution: {integrity: sha512-A0QJhug0Ly64Ii3eIqHu5X51ebln3k4yTUkY1j8drqpWHVreg/VLijN48cZ1bYPiqOQuqpkIKnzr/Ul8V+p6Cw==}
-
-  catapulta-verify@1.4.3:
-    resolution: {integrity: sha512-9FPHSOKL/hRm5L62YEj35dnXq+YikU/6u6XWPqZ5nG3x95Ouwk++3F/ffSt1n4HIQXusmYHZvEOx2GUKd6tQjA==}
-    hasBin: true
 
   cbor2@1.12.0:
     resolution: {integrity: sha512-3Cco8XQhi27DogSp9Ri6LYNZLi/TBY/JVnDe+mj06NkBjW/ZYOtekaEU4wZ4xcRMNrFkDv8KNtOAqHyDfz3lYg==}
@@ -7292,10 +7298,9 @@ packages:
 
 snapshots:
 
-  '@aave-dao/aave-v3-origin@https://codeload.github.com/aave-dao/aave-v3-origin/tar.gz/1ce897ba99d5a9ab659861b591576cd4278e9e27':
+  '@aave-dao/aave-v3-origin@https://codeload.github.com/aave-dao/aave-v3-origin/tar.gz/5a230ec82fcb10afc7fe7cffa8978752fb17aa2b':
     dependencies:
       '@bgd-labs/solidity-utils': 1.1.2
-      catapulta-verify: 1.4.3
 
   '@actions/core@1.11.1':
     dependencies:
@@ -8043,6 +8048,12 @@ snapshots:
       - typescript
       - utf-8-validate
       - zod
+
+  '@farcaster/miniapp-wagmi-connector@1.1.0(@farcaster/miniapp-sdk@0.2.1(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.76))(@wagmi/core@2.22.1(@tanstack/query-core@5.90.5)(@types/react@19.0.0)(immer@10.0.2)(react@19.2.1)(typescript@5.8.3)(use-sync-external-store@1.4.0(react@19.2.1))(viem@2.38.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.76)))(viem@2.38.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.76))':
+    dependencies:
+      '@farcaster/miniapp-sdk': 0.2.1(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.76)
+      '@wagmi/core': 2.22.1(@tanstack/query-core@5.90.5)(@types/react@19.0.0)(immer@10.0.2)(react@19.2.1)(typescript@5.8.3)(use-sync-external-store@1.4.0(react@19.2.1))(viem@2.38.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.76))
+      viem: 2.38.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.76)
 
   '@farcaster/quick-auth@0.0.6(typescript@5.8.3)':
     dependencies:
@@ -11436,8 +11447,6 @@ snapshots:
   camelcase@6.3.0: {}
 
   caniuse-lite@1.0.30001751: {}
-
-  catapulta-verify@1.4.3: {}
 
   cbor2@1.12.0: {}
 

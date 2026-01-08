@@ -38,13 +38,19 @@ export async function GET(request: NextRequest) {
       username: string
       display_name: string
       pfp_url: string
-      verified_addresses?: { eth_addresses?: string[] }
+      verified_addresses?: {
+        eth_addresses?: string[]
+        primary?: { eth_address?: string }
+      }
     }) => ({
       fid: user.fid,
       username: user.username,
       displayName: user.display_name,
       pfpUrl: user.pfp_url,
-      address: user.verified_addresses?.eth_addresses?.[0] || null,
+      // Use primary address if available, fall back to first verified address
+      address: user.verified_addresses?.primary?.eth_address
+        || user.verified_addresses?.eth_addresses?.[0]
+        || null,
     })) || []
 
     return NextResponse.json({ users })

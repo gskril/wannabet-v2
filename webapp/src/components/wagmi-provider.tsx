@@ -20,19 +20,24 @@ function FarcasterAutoConnect() {
     const autoConnect = async () => {
       setHasAttempted(true)
 
+      // Log available connectors for debugging
+      console.log('Available connectors:', connectors.map(c => c.id))
+
       // Check if we're in a MiniApp context by checking if the SDK has a provider
       try {
         const provider = sdk.wallet.ethProvider
         if (provider) {
           // Try to get accounts to see if already authorized
           const accounts = await provider.request({ method: 'eth_accounts' })
+          console.log('MiniApp accounts:', accounts)
           if (Array.isArray(accounts) && accounts.length > 0) {
-            // Find the farcaster-frame connector and connect
-            const frameConnector = connectors.find(
-              (c) => c.id === 'farcaster-frame'
+            // Find the farcaster miniapp connector
+            const miniAppConnector = connectors.find(
+              (c) => c.id.includes('farcaster') || c.type === 'farcasterMiniApp'
             )
-            if (frameConnector) {
-              connect({ connector: frameConnector })
+            console.log('Found connector:', miniAppConnector?.id)
+            if (miniAppConnector) {
+              connect({ connector: miniAppConnector })
             }
           }
         }

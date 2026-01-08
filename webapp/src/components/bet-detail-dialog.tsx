@@ -16,6 +16,7 @@ import {
   DrawerTitle,
 } from '@/components/ui/drawer'
 import { UserAvatar } from '@/components/user-avatar'
+import { useMiniApp } from '@/components/sdk-provider'
 import { useAcceptBet } from '@/hooks/useAcceptBet'
 import { useResolveBet } from '@/hooks/useResolveBet'
 import { useCancelBet } from '@/hooks/useCancelBet'
@@ -162,6 +163,7 @@ function BetHistory({ bet, onClose }: BetHistoryProps) {
 interface ActionCardProps {
   bet: Bet
   connectedAddress?: Address
+  connectedFid?: number
   onAcceptBet: () => void
   onResolveBet: (winner: 'maker' | 'taker') => void
   onCancelBet: () => void
@@ -173,6 +175,7 @@ interface ActionCardProps {
 function ActionCard({
   bet,
   connectedAddress,
+  connectedFid,
   onAcceptBet,
   onResolveBet,
   onCancelBet,
@@ -184,9 +187,17 @@ function ActionCard({
 
   // Normalize addresses for comparison
   const normalizedConnected = connectedAddress?.toLowerCase()
-  const isTaker = normalizedConnected === bet.taker?.address?.toLowerCase()
-  const isMaker = normalizedConnected === bet.maker?.address?.toLowerCase()
-  const isJudge = normalizedConnected === bet.judge?.address?.toLowerCase()
+
+  // Check by address OR by FID (Farcaster users can have multiple addresses)
+  const isTaker =
+    normalizedConnected === bet.taker?.address?.toLowerCase() ||
+    (connectedFid && bet.taker?.fid && connectedFid === bet.taker.fid)
+  const isMaker =
+    normalizedConnected === bet.maker?.address?.toLowerCase() ||
+    (connectedFid && bet.maker?.fid && connectedFid === bet.maker.fid)
+  const isJudge =
+    normalizedConnected === bet.judge?.address?.toLowerCase() ||
+    (connectedFid && bet.judge?.fid && connectedFid === bet.judge.fid)
 
   // State 3: Resolved - Winner display
   if (bet.status === BetStatus.RESOLVED && bet.winner) {
@@ -347,6 +358,7 @@ export function BetDetailDialog({
 }: BetDetailDialogProps) {
   const [showDetails, setShowDetails] = useState(false)
   const { address } = useAccount()
+  const { miniAppUser } = useMiniApp()
 
   // Contract interaction hooks
   const {
@@ -488,6 +500,7 @@ export function BetDetailDialog({
           <ActionCard
             bet={bet}
             connectedAddress={address}
+            connectedFid={miniAppUser?.fid}
             onAcceptBet={handleAcceptBet}
             onResolveBet={handleResolveBet}
             onCancelBet={handleCancelBet}
