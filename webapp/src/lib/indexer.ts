@@ -1,6 +1,6 @@
 import type { Bet, FarcasterUser } from 'indexer/types'
 
-const INDEXER_URL = 'https://wannabet-v2.marble.live'
+const INDEXER_URL = 'https://wannabet-v2-production.up.railway.app'
 
 export async function fetchBets(): Promise<Bet[]> {
   const response = await fetch(`${INDEXER_URL}/bets`)
