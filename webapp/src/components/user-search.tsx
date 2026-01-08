@@ -129,34 +129,29 @@ export function UserSearch({
   }
 
   return (
-    <div className="space-y-2">
-      <Label htmlFor="user-search" className={cn('text-base', labelClassName)}>
+    <div className="space-y-1">
+      <Label htmlFor="user-search" className={cn(labelClassName)}>
         {label}
       </Label>
 
       {/* Show avatar card if user is selected, otherwise show search input */}
       {selectedUser ? (
-        <div className="border-primary bg-primary/10 flex min-h-[72px] items-center justify-between gap-3 rounded-lg border-2 p-3">
-          <div className="flex items-center gap-3">
-            <UserAvatar user={selectedUser} size="md" clickable={false} />
-            <div>
-              <p className="font-semibold">{selectedUser.displayName}</p>
-              <p className="text-muted-foreground text-sm">
-                @{selectedUser.username}
-              </p>
-            </div>
+        <div className="border-primary bg-primary/10 flex h-10 items-center justify-between gap-2 rounded-md border-2 px-3">
+          <div className="flex items-center gap-2">
+            <UserAvatar user={selectedUser} size="sm" clickable={false} />
+            <p className="text-sm font-medium">@{selectedUser.username}</p>
           </div>
           <button
             type="button"
             onClick={handleClearSelection}
-            className="text-muted-foreground hover:text-foreground rounded-lg px-3 py-1.5 text-sm font-medium transition-colors"
+            className="text-muted-foreground hover:text-foreground text-xs font-medium transition-colors"
           >
             Change
           </button>
         </div>
       ) : (
-        <div className="relative min-h-[72px]">
-          <Search className="text-muted-foreground absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2" />
+        <div className="relative">
+          <Search className="text-muted-foreground absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" />
           <Input
             id="user-search"
             type="text"
@@ -169,7 +164,7 @@ export function UserSearch({
               setTimeout(() => setIsFocused(false), 200)
             }}
             required={required}
-            className={cn('h-[72px] pl-10 text-base', inputClassName)}
+            className={cn('h-10 pl-9 text-sm', inputClassName)}
           />
 
           {/* Dropdown with user suggestions */}

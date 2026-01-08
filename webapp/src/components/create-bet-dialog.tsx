@@ -233,7 +233,7 @@ export function CreateBetDialog() {
 
           {/* Form */}
           {phase !== 'done' && phase !== 'error' && (
-            <div className="space-y-5">
+            <div className="space-y-3">
               {/* Opponent */}
               <UserSearch
                 label="Who I'm betting"
@@ -243,58 +243,59 @@ export function CreateBetDialog() {
                   updateField('taker', value)
                   updateField('takerUser', user)
                 }}
-                labelClassName="text-wb-brown"
+                labelClassName="text-wb-brown text-sm"
                 inputClassName="bg-wb-sand text-wb-brown placeholder:text-wb-taupe"
               />
 
               {/* Description */}
-              <div className="space-y-2">
-                <Label className="text-wb-brown">I am betting that...</Label>
+              <div className="space-y-1">
+                <Label className="text-wb-brown text-sm">I am betting that...</Label>
                 <Textarea
-                  placeholder="e.g., the Knicks will win the championship this season"
+                  placeholder="e.g., the Knicks will win the championship"
                   value={formData.description}
                   onChange={(e) => updateField('description', e.target.value)}
-                  className="min-h-[72px] resize-none bg-wb-sand text-wb-brown placeholder:text-wb-taupe"
+                  className="min-h-[60px] resize-none bg-wb-sand text-sm text-wb-brown placeholder:text-wb-taupe"
                 />
               </div>
 
-              {/* End Date */}
-              <div className="space-y-2">
-                <Label className="text-wb-brown">When it ends</Label>
-                <DatePicker
-                  value={formData.expiresAt}
-                  onChange={(date) => updateField('expiresAt', date)}
-                  minDate={new Date()}
-                  placeholder="Select end date"
-                />
-              </div>
-
-              {/* Amount */}
-              <div className="space-y-2">
-                <Label className="text-wb-brown">How much (each)</Label>
-                <div className="relative">
-                  <Input
-                    type="text"
-                    inputMode="decimal"
-                    pattern="[0-9]*\.?[0-9]*"
-                    placeholder="100"
-                    value={formData.amount}
-                    onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                      const val = e.target.value
-                      if (val === '' || /^\d*\.?\d*$/.test(val)) {
-                        updateField('amount', val)
-                      }
-                    }}
-                    className="bg-wb-sand text-wb-brown placeholder:text-wb-taupe pr-12"
+              {/* End Date and Amount - Side by side */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-wb-brown text-sm">When it ends</Label>
+                  <DatePicker
+                    value={formData.expiresAt}
+                    onChange={(date) => updateField('expiresAt', date)}
+                    minDate={new Date()}
+                    placeholder="Select date"
                   />
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                    <Image
-                      src="/img/usdc.png"
-                      alt="USDC"
-                      width={24}
-                      height={24}
-                      className="rounded-full"
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-wb-brown text-sm">How much (each)</Label>
+                  <div className="relative">
+                    <Input
+                      type="text"
+                      inputMode="decimal"
+                      pattern="[0-9]*\.?[0-9]*"
+                      placeholder="100"
+                      value={formData.amount}
+                      onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                        const val = e.target.value
+                        if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                          updateField('amount', val)
+                        }
+                      }}
+                      className="bg-wb-sand text-wb-brown placeholder:text-wb-taupe pr-10"
                     />
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                      <Image
+                        src="/img/usdc.png"
+                        alt="USDC"
+                        width={20}
+                        height={20}
+                        className="rounded-full"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -308,14 +309,13 @@ export function CreateBetDialog() {
                   updateField('judge', value)
                   updateField('judgeUser', user)
                 }}
-                labelClassName="text-wb-brown"
+                labelClassName="text-wb-brown text-sm"
                 inputClassName="bg-wb-sand text-wb-brown placeholder:text-wb-taupe"
               />
 
               {/* Submit */}
               <Button
                 className="bg-wb-coral hover:bg-wb-coral/90 w-full text-white"
-                size="lg"
                 onClick={handleSubmit}
                 disabled={!isFormValid || isSubmitting}
               >

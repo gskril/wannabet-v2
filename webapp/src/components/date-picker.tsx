@@ -145,9 +145,9 @@ export function DatePicker({
         {formatDisplayDate()}
       </button>
 
-      {/* Calendar Dropdown */}
+      {/* Calendar Dropdown - Fixed position to avoid clipping */}
       {isOpen && (
-        <div className="absolute left-0 top-full z-50 mt-1 w-full rounded-xl border-0 bg-wb-cream p-2 shadow-lg">
+        <div className="fixed left-1/2 top-1/2 z-50 w-64 -translate-x-1/2 -translate-y-1/2 rounded-xl border bg-wb-cream p-3 shadow-xl">
           {/* Header */}
           <div className="mb-2 flex items-center justify-between">
             <button
