@@ -268,7 +268,11 @@ export function BetDetailDialog({
   }
 
   const handleCancelBet = async () => {
-    await submitCancel()
+    const success = await submitCancel()
+    // Close dialog after successful cancellation so user sees updated list
+    if (success) {
+      onOpenChange(false)
+    }
   }
 
   const handleReset = () => {
@@ -298,7 +302,7 @@ export function BetDetailDialog({
               className={`rounded-full ring-4 ${getStatusRingColor(bet.status)} z-10 ${
                 bet.status === BetStatus.RESOLVED &&
                 bet.winner &&
-                bet.winner.fid !== bet.maker.fid
+                bet.winner.address?.toLowerCase() !== bet.maker.address?.toLowerCase()
                   ? 'grayscale'
                   : ''
               }`}
@@ -328,7 +332,7 @@ export function BetDetailDialog({
               className={`rounded-full ring-4 ${getStatusRingColor(bet.status)} ${
                 bet.status === BetStatus.RESOLVED &&
                 bet.winner &&
-                bet.winner.fid !== (bet.acceptedBy || bet.taker)?.fid
+                bet.winner.address?.toLowerCase() !== (bet.acceptedBy || bet.taker)?.address?.toLowerCase()
                   ? 'grayscale'
                   : ''
               }`}

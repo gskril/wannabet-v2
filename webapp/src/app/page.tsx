@@ -8,8 +8,21 @@ import { BetsTable } from '@/components/bets-table'
 import { ConnectWalletButton } from '@/components/connect-wallet-button'
 import { WelcomeModal } from '@/components/welcome-modal'
 import { useBets } from '@/hooks/useBets'
+import { BetStatus, type Bet } from 'indexer/types'
 
 type FilterType = 'all' | 'my' | 'notifications'
+
+// Helper to check if a bet requires action from the user
+function betRequiresAction(bet: Bet, userAddress: string): boolean {
+  const addr = userAddress.toLowerCase()
+  // Bet proposed to me - I need to accept
+  const needsAccept =
+    bet.taker.address?.toLowerCase() === addr && bet.status === BetStatus.PENDING
+  // Bet needs my judgment
+  const needsJudgment =
+    bet.judge.address?.toLowerCase() === addr && bet.status === BetStatus.JUDGING
+  return needsAccept || needsJudgment
+}
 
 const WELCOME_DISMISSED_KEY = 'welcomeDismissed'
 
@@ -31,9 +44,6 @@ export default function HomePage() {
   const [activeFilter, setActiveFilter] = useState<FilterType>('all')
   const { address } = useAccount()
 
-  // Dummy: number of pending notifications (bets requiring action)
-  const pendingNotifications = 2
-
   // Load initial state from localStorage after client mounts
   useEffect(() => {
     const dismissed = localStorage.getItem(WELCOME_DISMISSED_KEY) === 'true'
@@ -42,6 +52,12 @@ export default function HomePage() {
 
   // Fetch bets data
   const betsQuery = useBets()
+
+  // Bets requiring action (for notifications tab and badge)
+  const betsRequiringAction = useMemo(() => {
+    if (!betsQuery.data || !address) return []
+    return betsQuery.data.filter((bet) => betRequiresAction(bet, address))
+  }, [betsQuery.data, address])
 
   // Filter bets based on active filter
   const filteredBets = useMemo(() => {
@@ -58,13 +74,13 @@ export default function HomePage() {
             bet.judge.address?.toLowerCase() === address.toLowerCase()
         )
       case 'notifications':
-        // Dummy: for now just show first 2 bets as "requiring action"
-        return betsQuery.data.slice(0, 2)
+        // Show bets requiring action from the user
+        return betsRequiringAction
       case 'all':
       default:
         return betsQuery.data
     }
-  }, [betsQuery.data, activeFilter, address])
+  }, [betsQuery.data, activeFilter, address, betsRequiringAction])
 
   const handleCloseWelcome = (open: boolean) => {
     setShowWelcome(open)
@@ -81,7 +97,7 @@ export default function HomePage() {
           <div className="flex items-center">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="/img/bettingmutt.png"
+              src="/img/logo.png"
               alt="WannaBet"
               className="h-16 w-16 md:h-20 md:w-20"
             />
@@ -120,9 +136,9 @@ export default function HomePage() {
           }`}
         >
           <Bell className="h-5 w-5" />
-          {pendingNotifications > 0 && (
+          {betsRequiringAction.length > 0 && (
             <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
-              {pendingNotifications}
+              {betsRequiringAction.length}
             </span>
           )}
         </button>

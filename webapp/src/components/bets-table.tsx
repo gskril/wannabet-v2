@@ -37,20 +37,20 @@ export function BetsTable({ bets }: BetsTableProps) {
                 <div
                   className={`relative rounded-full ring-2 ${
                     bet.status === BetStatus.RESOLVED &&
-                    bet.winner?.fid === bet.maker.fid
+                    bet.winner?.address?.toLowerCase() === bet.maker.address?.toLowerCase()
                       ? 'ring-wb-gold'
                       : 'ring-wb-taupe'
                   } ${
                     bet.status === BetStatus.RESOLVED &&
                     bet.winner &&
-                    bet.winner.fid !== bet.maker.fid
+                    bet.winner.address?.toLowerCase() !== bet.maker.address?.toLowerCase()
                       ? 'grayscale'
                       : ''
                   }`}
                 >
                   <UserAvatar user={bet.maker} size="sm" clickable={false} />
                   {bet.status === BetStatus.RESOLVED &&
-                    bet.winner?.fid === bet.maker.fid && (
+                    bet.winner?.address?.toLowerCase() === bet.maker.address?.toLowerCase() && (
                       <span className="absolute -bottom-1 -right-1 text-sm">
                         🏆
                       </span>
@@ -63,20 +63,20 @@ export function BetsTable({ bets }: BetsTableProps) {
                 <div
                   className={`relative rounded-full ring-2 ${
                     bet.status === BetStatus.RESOLVED &&
-                    bet.winner?.fid === bet.taker.fid
+                    bet.winner?.address?.toLowerCase() === bet.taker.address?.toLowerCase()
                       ? 'ring-wb-gold'
                       : 'ring-wb-taupe'
                   } ${
                     bet.status === BetStatus.RESOLVED &&
                     bet.winner &&
-                    bet.winner.fid !== bet.taker.fid
+                    bet.winner.address?.toLowerCase() !== bet.taker.address?.toLowerCase()
                       ? 'grayscale'
                       : ''
                   }`}
                 >
                   <UserAvatar user={bet.taker} size="sm" clickable={false} />
                   {bet.status === BetStatus.RESOLVED &&
-                    bet.winner?.fid === bet.taker.fid && (
+                    bet.winner?.address?.toLowerCase() === bet.taker.address?.toLowerCase() && (
                       <span className="absolute -bottom-1 -right-1 text-sm">
                         🏆
                       </span>
@@ -107,6 +107,7 @@ export function BetsTable({ bets }: BetsTableProps) {
                   />
                 </div>
                 <span className="text-wb-taupe text-sm">
+                  Ends:{' '}
                   {new Intl.DateTimeFormat('en-US', {
                     month: 'short',
                     day: 'numeric',

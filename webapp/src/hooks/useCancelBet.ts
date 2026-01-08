@@ -29,11 +29,11 @@ export function useCancelBet(betAddress: Address) {
     resetCancel()
   }, [resetCancel])
 
-  const submit = useCallback(async () => {
+  const submit = useCallback(async (): Promise<boolean> => {
     if (!address) {
       setError('Wallet not connected')
       setPhase('error')
-      return
+      return false
     }
 
     try {
@@ -54,10 +54,12 @@ export function useCancelBet(betAddress: Address) {
       await queryClient.invalidateQueries({ queryKey: ['bet', betAddress] })
 
       setPhase('success')
+      return true
     } catch (err) {
       console.error('Cancel bet error:', err)
       setError(err instanceof Error ? err.message : 'Failed to cancel bet')
       setPhase('error')
+      return false
     }
   }, [address, cancel, betAddress, queryClient])
 

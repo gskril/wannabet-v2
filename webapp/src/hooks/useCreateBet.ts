@@ -176,6 +176,9 @@ export function useCreateBet() {
           setBetAddress(predictedBetAddress)
         }
 
+        // Wait for indexer to pick up the new bet before refreshing
+        await new Promise((resolve) => setTimeout(resolve, 5000))
+
         // Invalidate the bets query to refresh the list
         await queryClient.invalidateQueries({ queryKey: ['bets'] })
 

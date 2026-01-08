@@ -45,6 +45,10 @@ function deriveBetStatus(
     }
     return BetStatus.ACTIVE
   }
+  // Bet not accepted - check if acceptBy deadline has passed (expired)
+  if (now > bet.acceptBy) {
+    return BetStatus.CANCELLED
+  }
   return BetStatus.PENDING
 }
 

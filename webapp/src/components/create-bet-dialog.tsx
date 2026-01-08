@@ -132,20 +132,20 @@ export function CreateBetDialog() {
     const now = Math.floor(Date.now() / 1000)
     const endsBy = Math.floor(new Date(formData.expiresAt).getTime() / 1000)
 
-    // acceptBy must be before endsBy - set to min(7 days from now, endsBy - 1 day)
-    // with a minimum of 1 day from now
-    const sevenDaysFromNow = now + 7 * 24 * 60 * 60
-    const oneDayBeforeEnd = endsBy - 24 * 60 * 60
-    const oneDayFromNow = now + 24 * 60 * 60
-
-    const acceptBy = Math.max(oneDayFromNow, Math.min(sevenDaysFromNow, oneDayBeforeEnd))
-
-    // Validate that endsBy is after acceptBy
-    if (endsBy <= acceptBy) {
-      setErrorMessage('End date must be at least 2 days in the future')
+    // Validate that endsBy is in the future
+    if (endsBy <= now) {
+      setErrorMessage('End date must be in the future')
       setPhase('error')
       return
     }
+
+    // acceptBy must be before endsBy - set to min(7 days from now, endsBy - 1 hour)
+    // with a minimum of 1 hour from now
+    const sevenDaysFromNow = now + 7 * 24 * 60 * 60
+    const oneHourBeforeEnd = endsBy - 60 * 60
+    const oneHourFromNow = now + 60 * 60
+
+    const acceptBy = Math.max(oneHourFromNow, Math.min(sevenDaysFromNow, oneHourBeforeEnd))
 
     await submitCreateBet({
       taker: formData.takerUser.address as Address,
