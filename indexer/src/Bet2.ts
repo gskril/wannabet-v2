@@ -3,8 +3,6 @@ import { bet } from 'ponder:schema'
 import { BET_V2_ABI } from 'shared'
 
 ponder.on('Bet2:BetCreated', async ({ event, context }) => {
-  console.log('Bet2:BetCreated', event)
-
   // Read judgeDeadline from the contract
   const judgeDeadline = await context.client.readContract({
     address: event.log.address,
@@ -19,8 +17,6 @@ ponder.on('Bet2:BetCreated', async ({ event, context }) => {
     judgeDeadline,
     version: 2,
   })
-
-  console.log('Inserted bet2', event.id)
 })
 
 ponder.on('Bet2:BetAccepted', async ({ event, context }) => {
