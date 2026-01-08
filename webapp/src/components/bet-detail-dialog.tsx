@@ -1,7 +1,7 @@
 'use client'
 
 import { format } from 'date-fns'
-import { Loader2 } from 'lucide-react'
+import { ArrowUpRight, Loader2, X } from 'lucide-react'
 import Image from 'next/image'
 import { useState } from 'react'
 import { useAccount } from 'wagmi'
@@ -21,6 +21,9 @@ import { useResolveBet } from '@/hooks/useResolveBet'
 import { useCancelBet } from '@/hooks/useCancelBet'
 import { BetStatus, type Bet } from 'indexer/types'
 import { getUsername } from '@/lib/utils'
+
+// Base scan URL for transaction links
+const BASE_SCAN_URL = 'https://basescan.org/address'
 
 // Helper to get ring color based on bet status
 const getStatusRingColor = (status: BetStatus) => {
@@ -44,6 +47,116 @@ const getStatusBgColor = (status: BetStatus) => {
     [BetStatus.CANCELLED]: 'bg-wb-pink',
   }
   return colors[status]
+}
+
+// Timeline event component
+interface TimelineEventProps {
+  icon: '⏳' | '🤝' | '⚖️' | '❌' | '💸'
+  title: string
+  description: string
+  link?: string
+}
+
+function TimelineEvent({ icon, title, description, link }: TimelineEventProps) {
+  return (
+    <div className="bg-wb-sand/50 flex items-start gap-3 rounded-xl border px-4 py-3">
+      <span className="text-2xl">{icon}</span>
+      <div className="flex-1">
+        <p className="text-wb-brown font-semibold">{title}</p>
+        <p className="text-wb-taupe text-sm">
+          {description}
+          {link && (
+            <a
+              href={link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-wb-coral ml-1 inline-flex items-center hover:underline"
+            >
+              <ArrowUpRight className="h-3 w-3" />
+            </a>
+          )}
+        </p>
+      </div>
+    </div>
+  )
+}
+
+// Bet History component
+interface BetHistoryProps {
+  bet: Bet
+  onClose: () => void
+}
+
+function BetHistory({ bet, onClose }: BetHistoryProps) {
+  const contractLink = `${BASE_SCAN_URL}/${bet.address}`
+
+  return (
+    <div className="bg-background absolute inset-0 z-30 space-y-3 overflow-y-auto rounded-t-[10px] p-4">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <h3 className="text-wb-brown text-lg font-bold">Bet History</h3>
+      </div>
+
+      {/* Timeline Events */}
+      <div className="space-y-2">
+        {/* Bet Proposed - Always shown */}
+        <TimelineEvent
+          icon="⏳"
+          title="Bet Proposed"
+          description={`@${getUsername(bet.maker)} proposed this bet on ${format(bet.createdAt, 'MMM d, yyyy')}`}
+          link={contractLink}
+        />
+
+        {/* Bet Accepted - Show if accepted */}
+        {bet.acceptedAt && bet.acceptedBy && (
+          <TimelineEvent
+            icon="🤝"
+            title="Bet Accepted"
+            description={`@${getUsername(bet.acceptedBy)} accepted the bet on ${format(bet.acceptedAt, 'MMM d, yyyy')}`}
+            link={contractLink}
+          />
+        )}
+
+        {/* Bet Expired - Show if cancelled and never accepted */}
+        {bet.status === BetStatus.CANCELLED && !bet.acceptedAt && (
+          <TimelineEvent
+            icon="❌"
+            title="Bet Expired"
+            description={`No one accepted the bet within 7 days. Bet expired on ${format(bet.acceptBy, 'MMM d, yyyy')}`}
+          />
+        )}
+
+        {/* Winner Determined - Show if resolved */}
+        {bet.status === BetStatus.RESOLVED && bet.winner && (
+          <TimelineEvent
+            icon="⚖️"
+            title="Winner Determined"
+            description={`@${getUsername(bet.judge)} determined @${getUsername(bet.winner)} was the winner`}
+            link={contractLink}
+          />
+        )}
+
+        {/* Funds Returned - Show if cancelled */}
+        {bet.status === BetStatus.CANCELLED && (
+          <TimelineEvent
+            icon="💸"
+            title="Funds Returned"
+            description={`Funds returned to @${getUsername(bet.maker)}`}
+            link={contractLink}
+          />
+        )}
+      </div>
+
+      {/* Hide Details Link */}
+      <button
+        type="button"
+        className="text-wb-coral mx-auto block text-sm font-medium hover:underline"
+        onClick={onClose}
+      >
+        Hide Details
+      </button>
+    </div>
+  )
 }
 
 interface ActionCardProps {
@@ -287,7 +400,7 @@ export function BetDetailDialog({
         if (!isOpen) handleReset()
       }}
     >
-      <DrawerContent className="fixed bottom-0 left-0 right-0 mx-auto flex max-h-[90dvh] max-w-3xl flex-col pb-[env(safe-area-inset-bottom)]">
+      <DrawerContent className="relative fixed bottom-0 left-0 right-0 mx-auto flex max-h-[90dvh] max-w-3xl flex-col pb-[env(safe-area-inset-bottom)]">
         <DrawerHeader className="relative pb-2">
           <DrawerTitle className="sr-only">Bet Details</DrawerTitle>
           {/* Status Pennant - Top right */}
@@ -384,48 +497,21 @@ export function BetDetailDialog({
           />
 
           {/* Show More Details Link */}
-          <button
-            type="button"
-            className="text-wb-coral mx-auto block text-sm font-medium hover:underline"
-            onClick={() => setShowDetails(!showDetails)}
-          >
-            {showDetails ? 'Hide Details' : 'Show More Details'}
-          </button>
-
-          {/* Collapsible Details Section */}
-          {showDetails && (
-            <div className="bg-wb-sand/30 space-y-2 rounded-lg p-3 text-sm">
-              <div className="flex justify-between">
-                <span className="text-wb-taupe">Contract</span>
-                <span className="text-wb-brown font-mono">
-                  {bet.address.slice(0, 10)}...{bet.address.slice(-8)}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-wb-taupe">Judge</span>
-                <span className="text-wb-brown">@{getUsername(bet.judge)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-wb-taupe">Created</span>
-                <span className="text-wb-brown">
-                  {format(bet.createdAt, 'MMM d, yyyy')}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-wb-taupe">Accept by</span>
-                <span className="text-wb-brown">
-                  {format(bet.acceptBy, 'MMM d, yyyy')}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-wb-taupe">Judge deadline</span>
-                <span className="text-wb-brown">
-                  {format(bet.judgeDeadline, 'MMM d, yyyy')}
-                </span>
-              </div>
-            </div>
+          {!showDetails && (
+            <button
+              type="button"
+              className="text-wb-coral mx-auto block text-sm font-medium hover:underline"
+              onClick={() => setShowDetails(true)}
+            >
+              Show More Details
+            </button>
           )}
         </div>
+
+        {/* Bet History Overlay */}
+        {showDetails && (
+          <BetHistory bet={bet} onClose={() => setShowDetails(false)} />
+        )}
       </DrawerContent>
     </Drawer>
   )
