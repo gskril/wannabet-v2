@@ -1,11 +1,19 @@
 'use client'
 
+import type { FarcasterUser } from 'indexer/types'
 import { Loader2, Plus } from 'lucide-react'
 import Image from 'next/image'
-import { type ChangeEvent, useCallback, useEffect, useMemo, useState } from 'react'
-import { useAccount } from 'wagmi'
+import {
+  type ChangeEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react'
 import type { Address } from 'viem'
+import { useAccount } from 'wagmi'
 
+import { DatePicker } from '@/components/date-picker'
 import { Button } from '@/components/ui/button'
 import {
   Drawer,
@@ -17,11 +25,9 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { DatePicker } from '@/components/date-picker'
 import { UserSearch } from '@/components/user-search'
 import { useCreateBet } from '@/hooks/useCreateBet'
 import { useNotifications } from '@/hooks/useNotifications'
-import type { FarcasterUser } from 'indexer/types'
 
 type SubmitPhase = 'idle' | 'approving' | 'creating' | 'done' | 'error'
 
@@ -159,7 +165,10 @@ export function CreateBetDialog() {
     const oneHourBeforeEnd = endsBy - 60 * 60
     const oneHourFromNow = now + 60 * 60
 
-    const acceptBy = Math.max(oneHourFromNow, Math.min(sevenDaysFromNow, oneHourBeforeEnd))
+    const acceptBy = Math.max(
+      oneHourFromNow,
+      Math.min(sevenDaysFromNow, oneHourBeforeEnd)
+    )
 
     await submitCreateBet({
       taker: formData.takerUser.address as Address,
@@ -263,12 +272,14 @@ export function CreateBetDialog() {
 
               {/* Description */}
               <div className="space-y-1">
-                <Label className="text-wb-brown text-sm">I am betting that...</Label>
+                <Label className="text-wb-brown text-sm">
+                  I am betting that...
+                </Label>
                 <Textarea
                   placeholder="e.g., the Knicks will win the championship"
                   value={formData.description}
                   onChange={(e) => updateField('description', e.target.value)}
-                  className="min-h-[60px] resize-none bg-wb-sand text-sm text-wb-brown placeholder:text-wb-taupe"
+                  className="bg-wb-sand text-wb-brown placeholder:text-wb-taupe min-h-[60px] resize-none"
                 />
               </div>
 
@@ -285,7 +296,9 @@ export function CreateBetDialog() {
                 </div>
 
                 <div className="space-y-1">
-                  <Label className="text-wb-brown text-sm">How much (each)</Label>
+                  <Label className="text-wb-brown text-sm">
+                    How much (each)
+                  </Label>
                   <div className="relative">
                     <Input
                       type="text"
