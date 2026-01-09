@@ -10,6 +10,7 @@
     "iconUrl": "https://wannabet.cc/img/bettingmutt.png",
     "splashImageUrl": "https://wannabet.cc/img/bettingmutt.png",
     "splashBackgroundColor": "#fefce8",
-    "homeUrl": "https://wannabet.cc"
+    "homeUrl": "https://wannabet.cc",
+    "webhookUrl": "https://api.neynar.com/f/app/WannaBet/event"
   }
 }

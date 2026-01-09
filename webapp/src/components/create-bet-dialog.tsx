@@ -20,6 +20,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { DatePicker } from '@/components/date-picker'
 import { UserSearch } from '@/components/user-search'
 import { useCreateBet } from '@/hooks/useCreateBet'
+import { useNotifications } from '@/hooks/useNotifications'
 import type { FarcasterUser } from 'indexer/types'
 
 type SubmitPhase = 'idle' | 'approving' | 'creating' | 'done' | 'error'
@@ -54,18 +55,31 @@ export function CreateBetDialog() {
     reset: resetCreateBet,
     phase: createPhase,
     error: createError,
+    betAddress,
   } = useCreateBet()
+  const { notifyBetCreated } = useNotifications()
 
-  // Sync hook phase with local phase
+  // Sync hook phase with local phase and send notification on success
   useEffect(() => {
     if (createPhase === 'approving') setPhase('approving')
     else if (createPhase === 'creating') setPhase('creating')
-    else if (createPhase === 'success') setPhase('done')
-    else if (createPhase === 'error') {
+    else if (createPhase === 'success') {
+      setPhase('done')
+      // Send notification to taker
+      if (betAddress && formData.takerUser?.fid) {
+        notifyBetCreated({
+          address: betAddress,
+          description: formData.description,
+          amount: formData.amount,
+          maker: { fid: null, username: 'Someone' }, // We don't have maker's username here
+          taker: { fid: formData.takerUser.fid },
+        })
+      }
+    } else if (createPhase === 'error') {
       setPhase('error')
       setErrorMessage(createError)
     }
-  }, [createPhase, createError])
+  }, [createPhase, createError, betAddress, formData, notifyBetCreated])
 
   // Open dialog via #create hash
   useEffect(() => {

@@ -20,6 +20,7 @@ import { useMiniApp } from '@/components/sdk-provider'
 import { useAcceptBet } from '@/hooks/useAcceptBet'
 import { useResolveBet } from '@/hooks/useResolveBet'
 import { useCancelBet } from '@/hooks/useCancelBet'
+import { useNotifications } from '@/hooks/useNotifications'
 import { BetStatus, type Bet } from 'indexer/types'
 import { getUsername } from '@/lib/utils'
 
@@ -360,6 +361,9 @@ export function BetDetailDialog({
   const { address } = useAccount()
   const { miniAppUser } = useMiniApp()
 
+  // Notification hooks
+  const { notifyBetAccepted, notifyBetResolved, notifyBetCancelled } = useNotifications()
+
   // Contract interaction hooks
   const {
     submit: submitAccept,
@@ -380,6 +384,8 @@ export function BetDetailDialog({
   // Close dialog on successful action
   const handleAcceptBet = async () => {
     await submitAccept()
+    // Notify maker that their bet was accepted
+    notifyBetAccepted(bet)
   }
 
   const handleResolveBet = async (winner: 'maker' | 'taker') => {
@@ -389,11 +395,20 @@ export function BetDetailDialog({
         : (bet.acceptedBy?.address as Address)
     if (winnerAddress) {
       await submitResolve(winnerAddress)
+      // Notify winner and loser
+      notifyBetResolved({
+        ...bet,
+        winner: { address: winnerAddress },
+      })
     }
   }
 
   const handleCancelBet = async () => {
     const success = await submitCancel()
+    // Notify taker that bet was cancelled (only if bet was PENDING)
+    if (success && bet.status === BetStatus.PENDING) {
+      notifyBetCancelled(bet)
+    }
     // Close dialog after successful cancellation so user sees updated list
     if (success) {
       onOpenChange(false)
