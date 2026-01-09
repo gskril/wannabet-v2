@@ -1,12 +1,12 @@
 'use client'
 
+import type { FarcasterUser } from 'indexer/types'
 import { Search } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { UserAvatar } from '@/components/user-avatar'
-import type { FarcasterUser } from 'indexer/types'
 import { cn } from '@/lib/utils'
 
 interface UserSearchProps {
@@ -24,7 +24,9 @@ interface UserSearchProps {
 const EMPTY_ARRAY: number[] = []
 
 async function searchUsers(query: string): Promise<FarcasterUser[]> {
-  const response = await fetch(`/api/users/search?q=${encodeURIComponent(query)}`)
+  const response = await fetch(
+    `/api/users/search?q=${encodeURIComponent(query)}`
+  )
   if (!response.ok) {
     throw new Error('Search failed')
   }
@@ -164,7 +166,7 @@ export function UserSearch({
               setTimeout(() => setIsFocused(false), 200)
             }}
             required={required}
-            className={cn('h-10 pl-9 text-sm', inputClassName)}
+            className={cn('h-10 pl-9', inputClassName)}
           />
 
           {/* Dropdown with user suggestions */}
