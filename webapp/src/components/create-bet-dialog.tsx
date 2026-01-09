@@ -1,31 +1,10 @@
 'use client'
 
-import { sendCallsSync } from '@wagmi/core'
-import { Calendar, Loader2, Plus } from 'lucide-react'
+import { Loader2, Plus } from 'lucide-react'
 import Image from 'next/image'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import {
-  type Address,
-  decodeEventLog,
-  encodeFunctionData,
-  parseUnits,
-  zeroAddress,
-} from 'viem'
-import { base } from 'viem/chains'
-import {
-  useAccount,
-  useConnect,
-  useReadContract,
-  useSwitchChain,
-  useWriteContract,
-} from 'wagmi'
-import {
-  getCallsStatus,
-  getConnections,
-  readContract,
-  waitForTransactionReceipt,
-  writeContract,
-} from 'wagmi/actions'
+import { type ChangeEvent, useCallback, useEffect, useMemo, useState } from 'react'
+import { useAccount } from 'wagmi'
+import type { Address } from 'viem'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -37,34 +16,14 @@ import {
 } from '@/components/ui/drawer'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { DatePicker } from '@/components/date-picker'
 import { UserSearch } from '@/components/user-search'
-import { resolveAddressFromFid } from '@/lib/address-resolver'
-import {
-  BETFACTORY_ABI,
-  BETFACTORY_ADDRESS,
-  ERC20_ABI,
-  USDC_ADDRESS,
-} from '@/lib/contracts'
-import type { FarcasterUser } from '@/lib/types'
-import { wagmiConfig } from '@/lib/wagmi-config'
+import { useCreateBet } from '@/hooks/useCreateBet'
+import { useNotifications } from '@/hooks/useNotifications'
+import type { FarcasterUser } from 'indexer/types'
 
-import { useMiniApp } from './sdk-provider'
-
-/** -----------------------------
- * constants & types
- * ------------------------------ */
-const BASE_CHAIN_ID = base.id
-type DateOption = '1day' | '7days' | '30days' | 'custom'
-type SubmitPhase =
-  | 'idle'
-  | 'precheck'
-  | 'predicting'
-  | 'approving'
-  | 'creating'
-  | 'confirming'
-  | 'verifying'
-  | 'done'
-type Step = 1 | 2 | 3 | 4 | 5
+type SubmitPhase = 'idle' | 'approving' | 'creating' | 'done' | 'error'
 
 interface FormData {
   taker: string
@@ -73,93 +32,58 @@ interface FormData {
   judgeUser?: FarcasterUser
   amount: string
   expiresAt: string
-  dateOption: DateOption | null
   description: string
 }
 
-interface UiError {
-  title: string
-  detail?: string
-}
-
-/** tiny helpers */
-const ZERO_ADDR = zeroAddress
-const isNonEmpty = (s?: string) => !!s && s.trim().length > 0
-const fmtDate = (iso?: string) =>
-  !iso
-    ? ''
-    : new Date(iso).toLocaleDateString('en-US', {
-        weekday: 'short',
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-      })
-
-/** centralize feature logging behind a flag */
-const DEBUG = false
-const log = (...args: unknown[]) => {
-  if (DEBUG) console.log('[CreateBet]', ...args)
+const INITIAL_FORM_DATA: FormData = {
+  taker: '',
+  judge: '',
+  amount: '',
+  expiresAt: '',
+  description: '',
 }
 
 export function CreateBetDialog() {
-  const { miniAppUser: currentUser } = useMiniApp()
-
-  /** dialog + wizard state */
   const [open, setOpen] = useState(false)
-  const [step, setStep] = useState<Step>(1)
-  const [uiError, setUiError] = useState<UiError | null>(null)
-  const hasPrefilledDescription = useRef(false)
-
-  /** result/derived state */
-  const [createdBetAddress, setCreatedBetAddress] = useState<Address | null>(
-    null
-  )
-  const [predictedBetAddress, setPredictedBetAddress] =
-    useState<Address | null>(null)
-  const [betCreationHash, setBetCreationHash] = useState<`0x${string}` | null>(
-    null
-  )
+  const [formData, setFormData] = useState<FormData>(INITIAL_FORM_DATA)
   const [phase, setPhase] = useState<SubmitPhase>('idle')
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
-  /** form state */
-  const [formData, setFormData] = useState<FormData>({
-    taker: '',
-    judge: '',
-    amount: '',
-    expiresAt: '',
-    dateOption: null,
-    description: '',
-  })
+  const { address, isConnected } = useAccount()
+  const {
+    submit: submitCreateBet,
+    reset: resetCreateBet,
+    phase: createPhase,
+    error: createError,
+    betAddress,
+  } = useCreateBet()
+  const { notifyBetCreated } = useNotifications()
 
-  const [debugInfo, setDebugInfo] = useState<string>('')
-
-  /** web3 hooks */
-  const { address, isConnected, chain } = useAccount()
-  const { connect, connectors } = useConnect()
-  const { switchChainAsync, isPending: isSwitchingChain } = useSwitchChain()
-  const { writeContractAsync: approveWrite, isPending: isApprovingWrite } =
-    useWriteContract()
-  const { data: usdcBalance } = useReadContract({
-    address: USDC_ADDRESS,
-    abi: ERC20_ABI,
-    functionName: 'balanceOf',
-    args: [address!],
-    chainId: BASE_CHAIN_ID, // <--- force to Base
-    query: { enabled: isConnected && step === 5 },
-  })
-
-  /** mounted ref to avoid state updates after unmount */
-  const mounted = useRef(true)
+  // Sync hook phase with local phase and send notification on success
   useEffect(() => {
-    mounted.current = true
-    return () => {
-      mounted.current = false
+    if (createPhase === 'approving') setPhase('approving')
+    else if (createPhase === 'creating') setPhase('creating')
+    else if (createPhase === 'success') {
+      setPhase('done')
+      // Send notification to taker
+      if (betAddress && formData.takerUser?.fid) {
+        notifyBetCreated({
+          address: betAddress,
+          description: formData.description,
+          amount: formData.amount,
+          maker: { fid: null, username: 'Someone' }, // We don't have maker's username here
+          taker: { fid: formData.takerUser.fid },
+        })
+      }
+    } else if (createPhase === 'error') {
+      setPhase('error')
+      setErrorMessage(createError)
     }
-  }, [])
+  }, [createPhase, createError, betAddress, formData, notifyBetCreated])
 
-  /** open via #create hash */
+  // Open dialog via #create hash
   useEffect(() => {
-    const onHash = () => {
+    const handleHash = () => {
       if (window.location.hash === '#create') {
         setOpen(true)
         window.history.replaceState(
@@ -169,345 +93,84 @@ export function CreateBetDialog() {
         )
       }
     }
-    window.addEventListener('hashchange', onHash)
-    onHash()
-    return () => window.removeEventListener('hashchange', onHash)
+    window.addEventListener('hashchange', handleHash)
+    handleHash()
+    return () => window.removeEventListener('hashchange', handleHash)
   }, [])
 
-  /** prefill description at entry to step 4 (only once per dialog session) */
-  // useEffect(() => {
-  //   if (step === 4 && !hasPrefilledDescription.current) {
-  //     const username = currentUser?.username || 'testuser'
-  //     setFormData((prev) => ({
-  //       ...prev,
-  //       description: `${username} bets that `,
-  //     }))
-  //     hasPrefilledDescription.current = true
-  //   }
-  // }, [step, currentUser])
+  // Form validation
+  const isFormValid = useMemo(() => {
+    const hasOpponent = formData.takerUser?.address
+    const hasDescription = formData.description.trim().length > 5
+    const hasValidDate = formData.expiresAt.length > 0
+    const hasValidAmount = Number(formData.amount) > 0
+    const hasJudge = formData.judgeUser?.address
 
-  /** simple wizard guards */
-  const canProceed = useMemo(() => {
-    switch (step) {
-      case 1:
-        // judge required
-        return isNonEmpty(formData.judge)
-      case 2: {
-        const n = Number(formData.amount)
-        return isFinite(n) && n > 0
-      }
-      case 3:
-        return formData.dateOption !== null && isNonEmpty(formData.expiresAt)
-      case 4: {
-        return (formData.description || '').length > 5
-      }
-      case 5:
-        return true
-      default:
-        return false
-    }
-  }, [step, formData, currentUser])
-
-  const DATE_PRESETS: { key: DateOption; label: string; days: number }[] =
-    useMemo(
-      () => [
-        { key: '1day', label: 'Day', days: 1 },
-        { key: '7days', label: 'Days', days: 7 },
-        { key: '30days', label: 'Days', days: 30 },
-      ],
-      []
+    return (
+      hasOpponent &&
+      hasDescription &&
+      hasValidDate &&
+      hasValidAmount &&
+      hasJudge &&
+      isConnected
     )
+  }, [formData, isConnected])
 
-  /** reset everything cleanly */
+  const isSubmitting = phase === 'approving' || phase === 'creating'
+
+  // Reset form
   const handleReset = useCallback(() => {
-    setStep(1)
-    setUiError(null)
-    setFormData({
-      taker: '',
-      judge: '',
-      amount: '',
-      expiresAt: '',
-      dateOption: null,
-      description: '',
-    })
-    setCreatedBetAddress(null)
-    setPredictedBetAddress(null)
-    setBetCreationHash(null)
+    setFormData(INITIAL_FORM_DATA)
     setPhase('idle')
-    hasPrefilledDescription.current = false
-  }, [])
+    setErrorMessage(null)
+    resetCreateBet()
+  }, [resetCreateBet])
 
-  /** step navigation */
-  const handleNext = useCallback(() => {
-    if (!canProceed || step >= 5) return
-    setStep((s) => (s < 5 ? ((s + 1) as Step) : s))
-  }, [canProceed, step])
+  // Update form field
+  const updateField = useCallback(
+    <K extends keyof FormData>(field: K, value: FormData[K]) => {
+      setFormData((prev) => ({ ...prev, [field]: value }))
+    },
+    []
+  )
 
-  const handleBack = useCallback(() => {
-    if (step <= 1) return
-    setStep((s) => (s - 1) as Step)
-  }, [step])
-
-  /** date helpers */
-  const handleDateSelect = (option: DateOption) => {
-    const now = new Date()
-    let expiryDate: Date | null = null
-
-    if (option === '1day') {
-      expiryDate = new Date(now)
-      expiryDate.setDate(now.getDate() + 1)
-    } else if (option === '7days') {
-      expiryDate = new Date(now)
-      expiryDate.setDate(now.getDate() + 7)
-    } else if (option === '30days') {
-      expiryDate = new Date(now)
-      expiryDate.setDate(now.getDate() + 30)
-    } else {
-      setFormData((p) => ({ ...p, dateOption: option, expiresAt: '' }))
+  // Submit bet creation
+  const handleSubmit = useCallback(async () => {
+    if (!formData.takerUser?.address || !formData.judgeUser?.address) {
+      setErrorMessage('Please select valid users for opponent and judge')
+      setPhase('error')
       return
     }
 
-    setFormData((p) => ({
-      ...p,
-      dateOption: option,
-      expiresAt: expiryDate.toISOString(),
-    }))
-  }
+    // Calculate timestamps
+    const now = Math.floor(Date.now() / 1000)
+    const endsBy = Math.floor(new Date(formData.expiresAt).getTime() / 1000)
 
-  const handleCustomDateChange = (dateString: string) => {
-    if (dateString) {
-      const d = new Date(dateString)
-      d.setHours(23, 59, 59, 999)
-      setFormData((p) => ({
-        ...p,
-        dateOption: 'custom',
-        expiresAt: d.toISOString(),
-      }))
-    } else {
-      setFormData((p) => ({ ...p, dateOption: 'custom', expiresAt: '' }))
+    // Validate that endsBy is in the future
+    if (endsBy <= now) {
+      setErrorMessage('End date must be in the future')
+      setPhase('error')
+      return
     }
-  }
 
-  /** submission flow */
-  const handleSubmit = useCallback(
-    async (e: React.FormEvent) => {
-      e.preventDefault()
-      setUiError(null)
+    // acceptBy must be before endsBy - set to min(7 days from now, endsBy - 1 hour)
+    // with a minimum of 1 hour from now
+    const sevenDaysFromNow = now + 7 * 24 * 60 * 60
+    const oneHourBeforeEnd = endsBy - 60 * 60
+    const oneHourFromNow = now + 60 * 60
 
-      if (!isConnected || !address) {
-        setUiError({ title: 'Connect your wallet to continue.' })
-        return
-      }
-      if (chain?.id !== BASE_CHAIN_ID) {
-        try {
-          // setPhase('precheck')
-          await switchChainAsync({ chainId: BASE_CHAIN_ID })
-        } catch {
-          setUiError({ title: 'Please switch to Base (8453) in your wallet.' })
-          setPhase('idle')
-          return
-        }
-      }
+    const acceptBy = Math.max(oneHourFromNow, Math.min(sevenDaysFromNow, oneHourBeforeEnd))
 
-      try {
-        // setPhase('precheck')
-
-        // validate amount & balance
-        const amountNum = Number(formData.amount)
-        if (!isFinite(amountNum) || amountNum <= 0) {
-          throw new Error('Enter a valid USDC amount.')
-        }
-        const amountInUnits = parseUnits(formData.amount, 6)
-
-        // resolve optional taker/judge
-        const takerAddress: Address = formData.takerUser?.fid
-          ? ((await resolveAddressFromFid(
-              formData.takerUser.fid
-            )) as Address) || ZERO_ADDR
-          : ZERO_ADDR
-
-        const judgeAddress: Address = formData.judgeUser?.fid
-          ? ((await resolveAddressFromFid(
-              formData.judgeUser.fid
-            )) as Address) || ZERO_ADDR
-          : ZERO_ADDR
-
-        if (formData.judgeUser?.fid && judgeAddress === ZERO_ADDR) {
-          throw new Error(
-            'Could not resolve judge address. Ensure judge has a verified ETH address.'
-          )
-        }
-
-        // compute timing windows
-        const acceptBy = Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60
-        const expiresAtTs = Math.floor(
-          new Date(formData.expiresAt).getTime() / 1000
-        )
-        const resolveBy = expiresAtTs + 90 * 24 * 60 * 60
-
-        // predict address (source of truth for allowance + verification)
-        // setPhase('predicting')
-        const predicted = (await readContract(wagmiConfig, {
-          address: BETFACTORY_ADDRESS,
-          abi: BETFACTORY_ABI,
-          functionName: 'predictBetAddress',
-          args: [address, takerAddress, acceptBy, resolveBy],
-          chainId: BASE_CHAIN_ID,
-        })) as Address
-
-        if (!mounted.current) return
-        setPredictedBetAddress(predicted)
-        log('predicted address:', predicted)
-
-        // ensure allowance for predicted spender
-        setPhase('approving')
-
-        // Create the function data for the approve call
-        const approveData = encodeFunctionData({
-          abi: ERC20_ABI,
-          functionName: 'approve',
-          args: [predicted, amountInUnits],
-        })
-
-        // Create the function data for the create bet call
-        const createBetData = encodeFunctionData({
-          abi: BETFACTORY_ABI,
-          functionName: 'createBet',
-          args: [
-            takerAddress,
-            judgeAddress,
-            USDC_ADDRESS,
-            amountInUnits,
-            amountInUnits,
-            acceptBy,
-            resolveBy,
-            formData.description,
-          ],
-        })
-
-        // Submit a batch call
-        setPhase('creating')
-        const batchResult = await sendCallsSync(wagmiConfig, {
-          calls: [
-            {
-              to: USDC_ADDRESS,
-              data: approveData,
-            },
-            {
-              to: BETFACTORY_ADDRESS,
-              data: createBetData,
-            },
-          ],
-          chainId: BASE_CHAIN_ID,
-        })
-
-        // confirm bet creation
-        setPhase('confirming')
-        const connections = getConnections(wagmiConfig)
-        const { receipts } = await getCallsStatus(wagmiConfig, {
-          id: batchResult.id,
-          connector: connections[0]?.connector,
-        })
-        setBetCreationHash(receipts?.[0]?.transactionHash || null)
-
-        if (!receipts) throw new Error('No receipts found.')
-
-        // extract emitted bet address
-        setPhase('verifying')
-
-        console.log({ receipts })
-
-        const factoryLog = receipts
-          .flatMap((r) => r.logs)
-          .find(
-            (log) =>
-              log.address.toLowerCase() === BETFACTORY_ADDRESS.toLowerCase()
-          )
-
-        if (!factoryLog) throw new Error('No BetFactory log found.')
-
-        const decoded = decodeEventLog({
-          abi: BETFACTORY_ABI,
-          data: factoryLog.data,
-          // @ts-expect-error Idk why this is showing an error but it seems to work fine
-          topics: factoryLog.topics,
-        })
-
-        if (decoded.eventName !== 'BetCreated')
-          throw new Error('Unexpected event emitted.')
-
-        const emittedBet = decoded.args.bet
-        setCreatedBetAddress(emittedBet)
-
-        // hard verify against predicted
-        // if (emittedBet.toLowerCase() !== predicted.toLowerCase()) {
-        //   setUiError({
-        //     title: 'Address mismatch',
-        //     detail: `Predicted ${predicted} but emitted ${emittedBet}. Please contact support.`,
-        //   })
-        //   setPhase('idle')
-        //   return
-        // }
-
-        setPhase('done')
-        setStep(5)
-      } catch (err: unknown) {
-        if (!mounted.current) return
-        setPhase('idle')
-        setUiError({
-          title: 'Transaction failed',
-          detail:
-            (err as { shortMessage?: string; message?: string })
-              ?.shortMessage ||
-            (err as { shortMessage?: string; message?: string })?.message ||
-            'Unknown error',
-        })
-      }
-    },
-    [
-      isConnected,
-      address,
-      chain?.id,
-      switchChainAsync,
-      formData.amount,
-      formData.expiresAt,
-      formData.description,
-      formData.judgeUser?.fid,
-      formData.takerUser?.fid,
-      approveWrite,
-    ]
-  )
-
-  /** derived ui booleans */
-  const isBusy =
-    phase === 'precheck' ||
-    phase === 'predicting' ||
-    phase === 'approving' ||
-    phase === 'creating' ||
-    phase === 'confirming' ||
-    phase === 'verifying' ||
-    isSwitchingChain ||
-    isApprovingWrite
-
-  const submitCta = (() => {
-    if (isSwitchingChain) return 'Switching Network...'
-    switch (phase) {
-      case 'precheck':
-        return 'Checking...'
-      case 'predicting':
-        return 'Predicting Address...'
-      case 'approving':
-        return 'Approving USDC...'
-      case 'creating':
-        return 'Creating Bet...'
-      case 'confirming':
-        return 'Confirming...'
-      case 'verifying':
-        return 'Verifying...'
-      default:
-        return chain?.id !== BASE_CHAIN_ID ? 'Wrong Network' : 'Create Bet'
-    }
-  })()
+    await submitCreateBet({
+      taker: formData.takerUser.address as Address,
+      judge: formData.judgeUser.address as Address,
+      makerStake: formData.amount,
+      takerStake: formData.amount, // Same stake for both sides
+      acceptBy,
+      endsBy,
+      description: formData.description,
+    })
+  }, [formData, submitCreateBet])
 
   return (
     <Drawer
@@ -520,435 +183,174 @@ export function CreateBetDialog() {
     >
       <DrawerTrigger asChild>
         <Button
-          size="lg"
-          className="hidden sm:fixed sm:bottom-4 sm:right-4 sm:z-50 sm:flex sm:h-auto sm:w-auto sm:items-center sm:gap-2 sm:rounded-md sm:px-6 sm:shadow-lg"
+          size="icon"
+          className="bg-wb-coral hover:bg-wb-coral/90 fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full text-white shadow-lg [&_svg]:size-8"
         >
-          <Plus className="h-5 w-5" />
-          <span>Create Bet</span>
+          <Plus className="h-8 w-8" />
         </Button>
       </DrawerTrigger>
-      <DrawerContent>
+
+      <DrawerContent className="bg-wb-cream max-h-[85vh]">
         <DrawerHeader>
-          <DrawerTitle>Create a New Bet</DrawerTitle>
+          <DrawerTitle className="text-wb-brown">Create New Bet</DrawerTitle>
         </DrawerHeader>
 
-        {/* progress */}
-        <div className="mb-4 flex items-center justify-center gap-2 px-6">
-          {[1, 2, 3, 4, 5].map((s) => (
-            <div
-              key={s}
-              className={`h-2 w-12 rounded-full transition-all ${
-                s === step
-                  ? 'bg-primary'
-                  : s < step
-                    ? 'bg-primary/50'
-                    : 'bg-muted'
-              }`}
-            />
-          ))}
-        </div>
-
-        <form onSubmit={handleSubmit} className="px-6 py-2 pb-4">
-          {/* connect */}
-          {!isConnected && (
+        <div className="overflow-y-auto px-6 pb-6">
+          {/* Success State */}
+          {phase === 'done' && (
             <div className="space-y-4 text-center">
-              <Label className="text-lg font-semibold">Connect Wallet</Label>
-              <p className="text-muted-foreground text-sm">
-                Connect your wallet to create a bet.
+              <div className="text-4xl">🎉</div>
+              <p className="text-wb-brown text-lg font-semibold">
+                Bet Created Successfully!
               </p>
-              <Button
-                type="button"
-                onClick={() => {
-                  const injected = connectors.find((c) => c.type === 'injected')
-                  if (injected) connect({ connector: injected })
-                }}
-                className="w-full"
-              >
-                Connect Wallet
-              </Button>
+              <p className="text-wb-taupe text-sm">
+                Your bet has been created on Base. Waiting for{' '}
+                {formData.takerUser?.username || 'opponent'} to accept.
+              </p>
+              <div className="flex flex-col gap-2 pt-4">
+                <Button
+                  className="w-full"
+                  size="lg"
+                  onClick={() => {
+                    setOpen(false)
+                    handleReset()
+                  }}
+                >
+                  Done
+                </Button>
+              </div>
             </div>
           )}
 
-          {/* step 1: participants */}
-          {isConnected && step === 1 && (
-            <div className="space-y-4">
+          {/* Error State */}
+          {phase === 'error' && (
+            <div className="space-y-4 text-center">
+              <div className="text-4xl">❌</div>
+              <p className="text-wb-brown text-lg font-semibold">
+                Failed to Create Bet
+              </p>
+              <p className="text-wb-taupe text-sm">{errorMessage}</p>
+              <div className="flex flex-col gap-2 pt-4">
+                <Button
+                  className="w-full"
+                  size="lg"
+                  onClick={() => {
+                    setPhase('idle')
+                    setErrorMessage(null)
+                  }}
+                >
+                  Try Again
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Form */}
+          {phase !== 'done' && phase !== 'error' && (
+            <div className="space-y-3">
+              {/* Opponent */}
               <UserSearch
-                label="Who are you betting?"
+                label="Who I'm betting"
                 value={formData.taker}
                 required
-                onChange={(value, user) =>
-                  setFormData((p) => ({ ...p, taker: value, takerUser: user }))
-                }
+                onChange={(value, user) => {
+                  updateField('taker', value)
+                  updateField('takerUser', user)
+                }}
+                labelClassName="text-wb-brown text-sm"
+                inputClassName="bg-wb-sand text-wb-brown placeholder:text-wb-taupe"
               />
-              <UserSearch
-                label="Who should judge?"
-                helperText="Pick someone both parties trust to decide the outcome"
-                required
-                value={formData.judge}
-                onChange={(value, user) =>
-                  setFormData((p) => ({ ...p, judge: value, judgeUser: user }))
-                }
-              />
-            </div>
-          )}
 
-          {/* step 2: amount */}
-          {isConnected && step === 2 && (
-            <div className="space-y-4">
-              <Label className="text-lg font-semibold">How much USDC?</Label>
-              <div className="grid grid-cols-3 gap-3">
-                {[1, 5, 100].map((preset) => (
-                  <button
-                    key={preset}
-                    type="button"
-                    onClick={() =>
-                      setFormData((p) => ({ ...p, amount: String(preset) }))
-                    }
-                    className={`flex h-20 flex-col items-center justify-center rounded-lg border-2 transition-all ${
-                      formData.amount === String(preset)
-                        ? 'border-primary bg-primary text-primary-foreground'
-                        : 'border-muted bg-primary/10 hover:border-primary/50'
-                    }`}
-                  >
-                    <span className="text-2xl font-bold">{preset}</span>
-                    <span className="text-xs">USDC</span>
-                  </button>
-                ))}
+              {/* Description */}
+              <div className="space-y-1">
+                <Label className="text-wb-brown text-sm">I am betting that...</Label>
+                <Textarea
+                  placeholder="e.g., the Knicks will win the championship"
+                  value={formData.description}
+                  onChange={(e) => updateField('description', e.target.value)}
+                  className="min-h-[60px] resize-none bg-wb-sand text-sm text-wb-brown placeholder:text-wb-taupe"
+                />
               </div>
-              <div className="relative">
-                <div className="absolute left-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center">
-                  <Image
-                    src="/img/usdc.png"
-                    alt="USDC"
-                    width={32}
-                    height={32}
-                    className="rounded-full"
+
+              {/* End Date and Amount - Side by side */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-wb-brown text-sm">When it ends</Label>
+                  <DatePicker
+                    value={formData.expiresAt}
+                    onChange={(date) => updateField('expiresAt', date)}
+                    minDate={new Date()}
+                    placeholder="Select date"
                   />
                 </div>
-                <Input
-                  id="amount"
-                  type="number"
-                  step="0.01"
-                  min="0.01"
-                  placeholder="Custom amount"
-                  value={formData.amount}
-                  onChange={(e) =>
-                    setFormData((p) => ({ ...p, amount: e.target.value }))
-                  }
-                  required
-                  className="h-14 pl-14 pr-16 text-xl font-semibold"
-                />
-                <span className="text-muted-foreground absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium">
-                  USDC
-                </span>
+
+                <div className="space-y-1">
+                  <Label className="text-wb-brown text-sm">How much (each)</Label>
+                  <div className="relative">
+                    <Input
+                      type="text"
+                      inputMode="decimal"
+                      pattern="[0-9]*\.?[0-9]*"
+                      placeholder="100"
+                      value={formData.amount}
+                      onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                        const val = e.target.value
+                        if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                          updateField('amount', val)
+                        }
+                      }}
+                      className="bg-wb-sand text-wb-brown placeholder:text-wb-taupe pr-10"
+                    />
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                      <Image
+                        src="/img/usdc.png"
+                        alt="USDC"
+                        width={20}
+                        height={20}
+                        className="rounded-full"
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
-              <p className="text-muted-foreground text-sm">
-                Both you and your opponent will put up this amount.
+
+              {/* Judge */}
+              <UserSearch
+                label="Who will judge"
+                value={formData.judge}
+                required
+                onChange={(value, user) => {
+                  updateField('judge', value)
+                  updateField('judgeUser', user)
+                }}
+                labelClassName="text-wb-brown text-sm"
+                inputClassName="bg-wb-sand text-wb-brown placeholder:text-wb-taupe"
+              />
+
+              {/* Submit */}
+              <Button
+                className="bg-wb-coral hover:bg-wb-coral/90 w-full text-white"
+                onClick={handleSubmit}
+                disabled={!isFormValid || isSubmitting}
+              >
+                {isSubmitting && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
+                {phase === 'approving'
+                  ? 'Approving USDC...'
+                  : phase === 'creating'
+                    ? 'Creating Bet...'
+                    : !isConnected
+                      ? 'Connect Wallet'
+                      : 'Create Bet'}
+              </Button>
+
+              <p className="text-wb-taupe text-center text-xs">
+                Bet offers expire 7 days after creation
               </p>
             </div>
           )}
-
-          {/* step 3: end date */}
-          {isConnected && step === 3 && (
-            <div className="space-y-4">
-              <Label className="text-lg font-semibold">
-                When does the bet end?
-              </Label>
-              <div className="grid grid-cols-3 gap-3">
-                {DATE_PRESETS.map(({ key, label, days }) => (
-                  <button
-                    key={key}
-                    type="button"
-                    onClick={() => handleDateSelect(key)}
-                    className={`flex h-24 flex-col items-center justify-center rounded-lg border-2 transition-all ${
-                      formData.dateOption === key
-                        ? 'border-primary bg-primary text-primary-foreground'
-                        : 'border-muted bg-primary/10 hover:border-primary/50'
-                    }`}
-                  >
-                    <span className="text-2xl font-bold">{days}</span>
-                    <span className="text-sm">{label}</span>
-                  </button>
-                ))}
-              </div>
-              <div
-                className="relative cursor-pointer"
-                onClick={() =>
-                  document
-                    .querySelector<HTMLInputElement>('input[type="date"]')
-                    ?.showPicker?.()
-                }
-              >
-                <Input
-                  type="date"
-                  value={
-                    formData.expiresAt
-                      ? new Date(formData.expiresAt).toISOString().split('T')[0]
-                      : ''
-                  }
-                  onChange={(e) => handleCustomDateChange(e.target.value)}
-                  min={new Date().toISOString().split('T')[0]}
-                  className={`h-12 cursor-pointer pr-10 text-base [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none ${
-                    formData.expiresAt ? 'border-primary bg-primary/10' : ''
-                  }`}
-                />
-                <Calendar className="text-muted-foreground pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2" />
-              </div>
-            </div>
-          )}
-
-          {/* step 4: description */}
-          {isConnected && step === 4 && (
-            <div className="space-y-4">
-              <Label className="text-lg font-semibold">
-                What&apos;s the bet?
-              </Label>
-              <div className="space-y-3 pt-1">
-                <Input
-                  id="description"
-                  type="text"
-                  value={formData.description}
-                  onChange={(e) =>
-                    setFormData((p) => ({ ...p, description: e.target.value }))
-                  }
-                  required
-                  autoFocus
-                  placeholder="Farcaster will have 38 users by ..."
-                />
-                {formData.expiresAt && (
-                  <p className="text-muted-foreground text-sm">
-                    Bet ends:{' '}
-                    <span className="font-medium">
-                      {fmtDate(formData.expiresAt)}
-                    </span>
-                  </p>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* step 5: review + submit */}
-          {isConnected && step === 5 && (
-            <div className="space-y-4">
-              {chain?.id !== BASE_CHAIN_ID && (
-                <div className="rounded-lg border border-yellow-500/20 bg-yellow-500/10 p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="text-2xl">⚠️</div>
-                    <div className="flex-1">
-                      <p className="text-sm font-semibold">Wrong Network</p>
-                      <p className="text-muted-foreground text-xs">
-                        You&apos;re on {chain?.name || 'Unknown'}. Switch to
-                        Base to create a bet.
-                      </p>
-                    </div>
-                    <Button
-                      size="sm"
-                      onClick={async () =>
-                        await switchChainAsync({ chainId: BASE_CHAIN_ID })
-                      }
-                      disabled={isSwitchingChain}
-                    >
-                      {isSwitchingChain ? (
-                        <>
-                          <Loader2 className="mr-2 h-3 w-3 animate-spin" />
-                          Switching...
-                        </>
-                      ) : (
-                        'Switch to Base'
-                      )}
-                    </Button>
-                  </div>
-                </div>
-              )}
-
-              {/* success block */}
-              {phase === 'done' && createdBetAddress ? (
-                <div className="space-y-4 text-center">
-                  <div className="text-4xl">🎉</div>
-                  <Label className="text-lg font-semibold">
-                    Bet Created Successfully!
-                  </Label>
-
-                  {/* <div className="bg-muted/50 space-y-2 rounded-lg p-4 text-sm">
-                    <p className="text-muted-foreground text-xs">
-                      Predicted Address
-                    </p>
-                    <p className="break-all font-mono text-xs">
-                      {predictedBetAddress}
-                    </p>
-                  </div>
-
-                  <div className="bg-muted/50 space-y-2 rounded-lg p-4 text-sm">
-                    <p className="text-muted-foreground text-xs">
-                      Emitted Address
-                    </p>
-                    <p className="break-all font-mono text-xs">
-                      {createdBetAddress}
-                    </p>
-                  </div> */}
-
-                  <div className="flex flex-col gap-2 pt-4">
-                    <Button
-                      variant="default"
-                      className="w-full"
-                      size="lg"
-                      type="button"
-                      onClick={() => {
-                        // Reload page to refresh bets
-                        window.location.reload()
-                      }}
-                    >
-                      View Bet
-                    </Button>
-                    {betCreationHash && (
-                      <Button
-                        asChild
-                        variant="outline"
-                        className="w-full"
-                        size="sm"
-                      >
-                        <a
-                          href={`https://basescan.org/tx/${betCreationHash}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          View on BaseScan
-                        </a>
-                      </Button>
-                    )}
-                    {/* <Button
-                      variant="ghost"
-                      onClick={() => {
-                        handleReset()
-                        setOpen(false)
-                      }}
-                      className="w-full"
-                    >
-                      Create Another
-                    </Button> */}
-                  </div>
-                </div>
-              ) : (
-                <>
-                  <Label className="text-base font-semibold">
-                    Review Your Bet
-                  </Label>
-                  <div className="space-y-2">
-                    <div className="bg-card space-y-2 rounded-lg border p-3">
-                      <div>
-                        <p className="text-muted-foreground text-xs">
-                          Opponent
-                        </p>
-                        <p className="text-sm font-medium">
-                          {formData.takerUser
-                            ? `@${formData.takerUser.username}`
-                            : 'Open to anyone'}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground text-xs">Judge</p>
-                        <p className="text-sm font-medium">
-                          {formData.judgeUser
-                            ? `@${formData.judgeUser.username}`
-                            : formData.judge}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground text-xs">Amount</p>
-                        <p className="text-sm font-medium">
-                          {formData.amount} USDC (each)
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground text-xs">
-                          End Date
-                        </p>
-                        <p className="text-sm font-medium">
-                          {fmtDate(formData.expiresAt)}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground text-xs">
-                          Bet Description
-                        </p>
-                        <p className="text-sm font-medium">
-                          {formData.description}
-                        </p>
-                      </div>
-                      {/* Hiding because this is debugging info */}
-                      {/* {predictedBetAddress && (
-                        <div>
-                          <p className="text-muted-foreground text-xs">
-                            Predicted Address
-                          </p>
-                          <p className="break-all font-mono text-xs">
-                            {predictedBetAddress}
-                          </p>
-                        </div>
-                      )} */}
-                    </div>
-                  </div>
-
-                  {/* inline error */}
-                  {uiError && (
-                    <div className="border-destructive/30 bg-destructive/10 rounded-md border p-2">
-                      <p className="text-destructive-foreground text-sm font-semibold">
-                        {uiError.title}
-                      </p>
-                      {uiError.detail && (
-                        <p className="text-destructive-foreground/80 text-xs">
-                          {uiError.detail}
-                        </p>
-                      )}
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
-          )}
-
-          {/* nav */}
-          {isConnected && (
-            <div className="flex gap-3 pb-2 pt-4">
-              {step > 1 && phase !== 'done' && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="h-12 flex-1 text-base"
-                  onClick={handleBack}
-                  disabled={isBusy}
-                >
-                  Back
-                </Button>
-              )}
-
-              {step < 5 ? (
-                <Button
-                  type="button"
-                  className="h-12 flex-1 text-base"
-                  onClick={handleNext}
-                  disabled={!canProceed || isBusy}
-                >
-                  Next
-                </Button>
-              ) : phase !== 'done' ? (
-                <Button
-                  type="button"
-                  className="h-12 flex-1 text-base"
-                  onClick={handleSubmit}
-                  disabled={
-                    !canProceed || chain?.id !== BASE_CHAIN_ID || isBusy
-                  }
-                >
-                  {isBusy ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : null}
-                  {submitCta}
-                </Button>
-              ) : null}
-            </div>
-          )}
-        </form>
+        </div>
       </DrawerContent>
     </Drawer>
   )

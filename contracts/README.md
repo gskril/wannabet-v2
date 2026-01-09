@@ -4,8 +4,8 @@
 
 | Contract       | Address                                                                                                               |
 | -------------- | --------------------------------------------------------------------------------------------------------------------- |
-| Implementation | [0xD57D184fe57C9D35033558baC301c90dA5282C4a](https://basescan.org/address/0xD57D184fe57C9D35033558baC301c90dA5282C4a) |
-| Factory        | [0x0F0A585aF686397d94428825D8cCfa2589b159A0](https://basescan.org/address/0x0F0A585aF686397d94428825D8cCfa2589b159A0) |
+| Implementation | [0xa1Ee0B13f1a691E005273D5F5AFE9d18A64E4def](https://basescan.org/address/0xa1Ee0B13f1a691E005273D5F5AFE9d18A64E4def) |
+| Factory        | [0x252B30995510703D09cB4f3597b098D4a96b4E62](https://basescan.org/address/0x252B30995510703D09cB4f3597b098D4a96b4E62) |
 
 ## Usage
 

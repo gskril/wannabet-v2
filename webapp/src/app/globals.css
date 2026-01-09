@@ -56,10 +56,23 @@
   --color-success: #22c55e;
   --color-warning: #eab308;
   --color-danger: #ef4444;
+
+  /* WannaBet brand palette */
+  --color-wb-mint: #72d397;
+  --color-wb-brown: #774e38;
+  --color-wb-taupe: #9a7b6b;
+  --color-wb-coral: #e08e79;
+  --color-wb-cream: #ede5ce;
+  --color-wb-sand: #f0d4ae;
+  --color-wb-gold: #fcc900;
+  --color-wb-yellow: #fde68b;
+  --color-wb-pink: #ffa3a2;
+  --color-wb-lavender: #c4b5fd;
 }
 
 body {
-  @apply bg-background text-foreground font-sans antialiased;
+  @apply bg-background text-foreground antialiased;
+  font-family: 'Comic Sans MS', 'Comic Sans', cursive;
 }
 
 /* Utility classes */

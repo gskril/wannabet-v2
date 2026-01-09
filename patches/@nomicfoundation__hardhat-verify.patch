@@ -1,0 +1,13 @@
+diff --git a/dist/src/internal/etherscan.js b/dist/src/internal/etherscan.js
+index 89c2420487f73d8918c90d1e21b1683d90ed23a6..b7171b51d53539a58ac7083eca137385b6bf72f0 100644
+--- a/dist/src/internal/etherscan.js
++++ b/dist/src/internal/etherscan.js
+@@ -89,7 +89,7 @@ export class Etherscan {
+         this.chainId = String(etherscanConfig.chainId);
+         this.name = etherscanConfig.name ?? "Etherscan";
+         this.url = etherscanConfig.url;
+-        this.apiUrl = etherscanConfig.apiUrl ?? ETHERSCAN_API_URL;
++        this.apiUrl = ETHERSCAN_API_URL;
+         const proxyUrl = shouldUseProxy(this.apiUrl)
+             ? getProxyUrl(this.apiUrl)
+             : undefined;

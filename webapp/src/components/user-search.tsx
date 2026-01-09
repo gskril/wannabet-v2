@@ -6,8 +6,8 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { UserAvatar } from '@/components/user-avatar'
-import { searchUsers } from '@/lib/neynar'
-import type { FarcasterUser } from '@/lib/types'
+import type { FarcasterUser } from 'indexer/types'
+import { cn } from '@/lib/utils'
 
 interface UserSearchProps {
   label: string
@@ -17,9 +17,20 @@ interface UserSearchProps {
   value: string
   onChange: (value: string, user?: FarcasterUser) => void
   excludeFids?: number[]
+  labelClassName?: string
+  inputClassName?: string
 }
 
 const EMPTY_ARRAY: number[] = []
+
+async function searchUsers(query: string): Promise<FarcasterUser[]> {
+  const response = await fetch(`/api/users/search?q=${encodeURIComponent(query)}`)
+  if (!response.ok) {
+    throw new Error('Search failed')
+  }
+  const data = await response.json()
+  return data.users || []
+}
 
 export function UserSearch({
   label,
@@ -29,6 +40,8 @@ export function UserSearch({
   value,
   onChange,
   excludeFids = EMPTY_ARRAY,
+  labelClassName,
+  inputClassName,
 }: UserSearchProps) {
   const [isFocused, setIsFocused] = useState(false)
   const [searchQuery, setSearchQuery] = useState(value)
@@ -36,16 +49,13 @@ export function UserSearch({
   const [isLoading, setIsLoading] = useState(false)
   const [selectedUser, setSelectedUser] = useState<FarcasterUser | undefined>()
 
-  // Use ref to track the last search query to prevent duplicate requests
   const lastSearchRef = useRef<string>('')
-  const abortControllerRef = useRef<AbortController | null>(null)
 
-  // Memoize the search function to prevent re-creation
+  // Search function
   const performSearch = useCallback(
     async (query: string) => {
       const trimmedQuery = query.trim()
 
-      // Don't search if query is too short or same as last search
       if (
         !trimmedQuery ||
         trimmedQuery.length < 2 ||
@@ -54,31 +64,20 @@ export function UserSearch({
         return
       }
 
-      // Cancel any in-flight request
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort()
-      }
-
-      // Create new abort controller for this request
-      abortControllerRef.current = new AbortController()
       lastSearchRef.current = trimmedQuery
-
       setIsLoading(true)
+
       try {
         const results = await searchUsers(trimmedQuery)
         const filtered = results.filter(
-          (user) => !excludeFids.includes(user.fid)
+          (user) => user.fid !== null && !excludeFids.includes(user.fid)
         )
         setUsers(filtered.slice(0, 10))
       } catch (error) {
-        // Only log if not an abort error
-        if (error instanceof Error && error.name !== 'AbortError') {
-          console.error('Search error:', error)
-        }
+        console.error('Search error:', error)
         setUsers([])
       } finally {
         setIsLoading(false)
-        abortControllerRef.current = null
       }
     },
     [excludeFids]
@@ -94,14 +93,10 @@ export function UserSearch({
 
     const timeoutId = setTimeout(() => {
       performSearch(searchQuery)
-    }, 500) // 500ms debounce (increased from 300ms)
+    }, 300)
 
     return () => {
       clearTimeout(timeoutId)
-      // Cancel any in-flight request when effect cleans up
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort()
-      }
     }
   }, [searchQuery, performSearch])
 
@@ -111,7 +106,6 @@ export function UserSearch({
     setSelectedUser(user)
     onChange(username, user)
     setIsFocused(false)
-    // Clear search results after selection
     setUsers([])
     lastSearchRef.current = username
   }
@@ -135,34 +129,29 @@ export function UserSearch({
   }
 
   return (
-    <div className="space-y-2">
-      <Label htmlFor="user-search" className="text-base">
+    <div className="space-y-1">
+      <Label htmlFor="user-search" className={cn(labelClassName)}>
         {label}
       </Label>
 
       {/* Show avatar card if user is selected, otherwise show search input */}
       {selectedUser ? (
-        <div className="border-primary bg-primary/10 flex min-h-[72px] items-center justify-between gap-3 rounded-lg border-2 p-3">
-          <div className="flex items-center gap-3">
-            <UserAvatar user={selectedUser} size="md" clickable={false} />
-            <div>
-              <p className="font-semibold">{selectedUser.displayName}</p>
-              <p className="text-muted-foreground text-sm">
-                @{selectedUser.username}
-              </p>
-            </div>
+        <div className="border-primary bg-primary/10 flex h-10 items-center justify-between gap-2 rounded-md border-2 px-3">
+          <div className="flex items-center gap-2">
+            <UserAvatar user={selectedUser} size="sm" clickable={false} />
+            <p className="text-sm font-medium">@{selectedUser.username}</p>
           </div>
           <button
             type="button"
             onClick={handleClearSelection}
-            className="text-muted-foreground hover:text-foreground rounded-lg px-3 py-1.5 text-sm font-medium transition-colors"
+            className="text-muted-foreground hover:text-foreground text-xs font-medium transition-colors"
           >
             Change
           </button>
         </div>
       ) : (
-        <div className="relative min-h-[72px]">
-          <Search className="text-muted-foreground absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2" />
+        <div className="relative">
+          <Search className="text-muted-foreground absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" />
           <Input
             id="user-search"
             type="text"
@@ -175,7 +164,7 @@ export function UserSearch({
               setTimeout(() => setIsFocused(false), 200)
             }}
             required={required}
-            className="h-[72px] pl-10 text-base"
+            className={cn('h-10 pl-9 text-sm', inputClassName)}
           />
 
           {/* Dropdown with user suggestions */}
@@ -188,7 +177,7 @@ export function UserSearch({
               ) : users.length > 0 ? (
                 users.map((user) => (
                   <button
-                    key={user.fid}
+                    key={user.fid ?? user.address}
                     type="button"
                     onClick={() => handleUserSelect(user)}
                     className="hover:bg-farcaster-brand/20 flex w-full items-center gap-3 border-b p-3 text-left transition-colors last:border-b-0"
@@ -204,15 +193,11 @@ export function UserSearch({
                     </div>
                   </button>
                 ))
-              ) : searchQuery.trim().length >= 2 ? (
+              ) : (
                 <div className="text-muted-foreground p-4 text-center text-sm">
                   No users found
                 </div>
-              ) : searchQuery.trim().length > 0 ? (
-                <div className="text-muted-foreground p-4 text-center text-sm">
-                  Type at least 2 characters to search
-                </div>
-              ) : null}
+              )}
             </div>
           )}
         </div>
