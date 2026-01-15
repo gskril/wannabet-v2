@@ -360,6 +360,11 @@ export function BetDetailDialog({
   const [showDetails, setShowDetails] = useState(false)
   const [shareStatus, setShareStatus] = useState<'idle' | 'copied'>('idle')
   const [showAcceptSuccess, setShowAcceptSuccess] = useState(false)
+  const [showCancelSuccess, setShowCancelSuccess] = useState(false)
+  const [showResolveSuccess, setShowResolveSuccess] = useState<{
+    show: boolean
+    winnerName: string | null
+  }>({ show: false, winnerName: null })
   const { address } = useAccount()
   const { miniAppUser } = useMiniApp()
 
@@ -426,12 +431,18 @@ export function BetDetailDialog({
       winner === 'maker'
         ? (bet.maker.address as Address)
         : (bet.acceptedBy?.address as Address)
+    const winnerUser = winner === 'maker' ? bet.maker : bet.acceptedBy
     if (winnerAddress) {
       await submitResolve(winnerAddress)
       // Notify winner and loser
       notifyBetResolved({
         ...bet,
         winner: { address: winnerAddress },
+      })
+      // Show success state
+      setShowResolveSuccess({
+        show: true,
+        winnerName: getUsername(winnerUser),
       })
     }
   }
@@ -442,15 +453,17 @@ export function BetDetailDialog({
     if (success && bet.status === BetStatus.PENDING) {
       notifyBetCancelled(bet)
     }
-    // Close dialog after successful cancellation so user sees updated list
+    // Show success state
     if (success) {
-      onOpenChange(false)
+      setShowCancelSuccess(true)
     }
   }
 
   const handleReset = () => {
     setShowDetails(false)
     setShowAcceptSuccess(false)
+    setShowCancelSuccess(false)
+    setShowResolveSuccess({ show: false, winnerName: null })
   }
 
   return (
@@ -481,6 +494,65 @@ export function BetDetailDialog({
               >
                 <Share2 className="mr-2 h-4 w-4" />
                 {shareStatus === 'copied' ? 'Copied!' : 'Share Bet'}
+              </Button>
+              <Button
+                variant="outline"
+                className="w-full"
+                size="lg"
+                onClick={() => {
+                  onOpenChange(false)
+                  handleReset()
+                }}
+              >
+                Done
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Cancel Success Overlay */}
+        {showCancelSuccess && (
+          <div className="absolute inset-0 z-30 flex flex-col items-center justify-center rounded-t-[10px] bg-background/95 px-6 py-12">
+            <div className="text-4xl mb-4">✅</div>
+            <p className="text-wb-brown text-lg font-semibold mb-2">
+              Bet Cancelled
+            </p>
+            <p className="text-wb-taupe text-sm text-center mb-6">
+              The bet has been cancelled and funds have been returned.
+            </p>
+            <div className="flex flex-col gap-2 w-full max-w-xs">
+              <Button
+                className="bg-wb-coral hover:bg-wb-coral/90 w-full text-white"
+                size="lg"
+                onClick={() => {
+                  onOpenChange(false)
+                  handleReset()
+                }}
+              >
+                Done
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Resolve Success Overlay */}
+        {showResolveSuccess.show && (
+          <div className="absolute inset-0 z-30 flex flex-col items-center justify-center rounded-t-[10px] bg-background/95 px-6 py-12">
+            <div className="text-4xl mb-4">🏆</div>
+            <p className="text-wb-brown text-lg font-semibold mb-2">
+              Winner Selected!
+            </p>
+            <p className="text-wb-taupe text-sm text-center mb-6">
+              @{showResolveSuccess.winnerName} has been declared the winner and will receive {Number(bet.amount) * 2} USDC.
+            </p>
+            <div className="flex flex-col gap-2 w-full max-w-xs">
+              <Button
+                className="bg-wb-coral hover:bg-wb-coral/90 w-full text-white"
+                size="lg"
+                onClick={handleShare}
+              >
+                <Share2 className="mr-2 h-4 w-4" />
+                {shareStatus === 'copied' ? 'Copied!' : 'Share Result'}
               </Button>
               <Button
                 variant="outline"
