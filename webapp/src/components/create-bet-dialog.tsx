@@ -25,6 +25,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { UsdcBalance } from '@/components/usdc-balance'
 import { UserSearch } from '@/components/user-search'
 import { useCreateBet } from '@/hooks/useCreateBet'
 import { useNotifications } from '@/hooks/useNotifications'
@@ -380,6 +381,9 @@ export function CreateBetDialog() {
                 labelClassName="text-wb-brown text-sm"
                 inputClassName="bg-wb-sand text-wb-brown placeholder:text-wb-taupe"
               />
+
+              {/* USDC Balance */}
+              <UsdcBalance />
 
               {/* Submit */}
               <Button

@@ -8,6 +8,7 @@ import { useAccount } from 'wagmi'
 import type { Address } from 'viem'
 
 import { StatusPennant } from '@/components/status-pennant'
+import { UsdcBalance } from '@/components/usdc-balance'
 import { Button } from '@/components/ui/button'
 import {
   Drawer,
@@ -298,6 +299,7 @@ function ActionCard({
       <div className="bg-wb-sand/50 space-y-3 rounded-xl border px-4 py-3">
         {isTaker ? (
           <>
+            <UsdcBalance />
             <Button
               onClick={onAcceptBet}
               className="bg-wb-coral hover:bg-wb-coral/80 w-full text-white"
