@@ -1,7 +1,7 @@
 'use client'
 
 import type { FarcasterUser } from 'indexer/types'
-import { Loader2, Plus } from 'lucide-react'
+import { Loader2, Plus, Share2 } from 'lucide-react'
 import Image from 'next/image'
 import {
   type ChangeEvent,
@@ -54,6 +54,7 @@ export function CreateBetDialog() {
   const [formData, setFormData] = useState<FormData>(INITIAL_FORM_DATA)
   const [phase, setPhase] = useState<SubmitPhase>('idle')
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [shareStatus, setShareStatus] = useState<'idle' | 'copied'>('idle')
 
   const { address, isConnected } = useAccount()
   const {
@@ -129,8 +130,39 @@ export function CreateBetDialog() {
     setFormData(INITIAL_FORM_DATA)
     setPhase('idle')
     setErrorMessage(null)
+    setShareStatus('idle')
     resetCreateBet()
   }, [resetCreateBet])
+
+  // Share bet functionality
+  const handleShare = useCallback(async () => {
+    if (!betAddress) return
+    const betUrl = `${window.location.origin}/bet/${betAddress}`
+    const shareText = `${formData.description} - ${formData.amount} USDC bet on WannaBet`
+
+    // Try native share first (works in Farcaster app and mobile)
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'WannaBet',
+          text: shareText,
+          url: betUrl,
+        })
+        return
+      } catch (err) {
+        // User cancelled or share failed, fall through to clipboard
+      }
+    }
+
+    // Fallback: copy to clipboard
+    try {
+      await navigator.clipboard.writeText(betUrl)
+      setShareStatus('copied')
+      setTimeout(() => setShareStatus('idle'), 2000)
+    } catch (err) {
+      console.error('Failed to copy:', err)
+    }
+  }, [betAddress, formData.description, formData.amount])
 
   // Update form field
   const updateField = useCallback(
@@ -218,6 +250,15 @@ export function CreateBetDialog() {
               </p>
               <div className="flex flex-col gap-2 pt-4">
                 <Button
+                  className="bg-wb-coral hover:bg-wb-coral/90 w-full text-white"
+                  size="lg"
+                  onClick={handleShare}
+                >
+                  <Share2 className="mr-2 h-4 w-4" />
+                  {shareStatus === 'copied' ? 'Copied!' : 'Share Bet'}
+                </Button>
+                <Button
+                  variant="outline"
                   className="w-full"
                   size="lg"
                   onClick={() => {
