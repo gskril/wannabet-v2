@@ -668,7 +668,7 @@ export function BetDetailDialog({
           {bet.status === BetStatus.PENDING &&
             (address?.toLowerCase() === bet.taker.address?.toLowerCase() ||
               miniAppUser?.fid === bet.taker.fid) && (
-              <div className="text-center">
+              <div className="-mt-2 text-center">
                 <UsdcBalance />
               </div>
             )}
