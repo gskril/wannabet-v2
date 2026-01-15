@@ -372,26 +372,11 @@ export function BetDetailDialog({
   const { address } = useAccount()
   const { miniAppUser } = useMiniApp()
 
-  // Share bet functionality
+  // Share bet functionality - always copy to clipboard for confirmation
   const handleShare = useCallback(async () => {
     const betUrl = `${window.location.origin}/bet/${bet.address}`
-    const shareText = `${bet.description} - ${bet.amount} USDC bet on WannaBet`
 
-    // Try native share first (works in Farcaster app and mobile)
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: 'WannaBet',
-          text: shareText,
-          url: betUrl,
-        })
-        return
-      } catch (err) {
-        // User cancelled or share failed, fall through to clipboard
-      }
-    }
-
-    // Fallback: copy to clipboard
+    // Always copy to clipboard first
     try {
       await navigator.clipboard.writeText(betUrl)
       setShareStatus('copied')
@@ -399,7 +384,7 @@ export function BetDetailDialog({
     } catch (err) {
       console.error('Failed to copy:', err)
     }
-  }, [bet.address, bet.description, bet.amount])
+  }, [bet.address])
 
   // Notification hooks
   const { notifyBetAccepted, notifyBetResolved, notifyBetCancelled } = useNotifications()
