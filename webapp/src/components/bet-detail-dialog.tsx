@@ -310,13 +310,10 @@ function ActionCard({
               ) : null}
               {isAccepting ? 'Accepting...' : 'Accept Bet'}
             </Button>
-            <div className="space-y-1 text-center">
-              <p className="text-wb-taupe text-xs">
-                Accepting will send {bet.amount} USDC to the bet contract. Offer
-                ends {format(bet.acceptBy, 'MMM d, yyyy')}.
-              </p>
-              <UsdcBalance />
-            </div>
+            <p className="text-wb-taupe text-center text-xs">
+              Accepting will send {bet.amount} USDC to the bet contract. Offer
+              ends {format(bet.acceptBy, 'MMM d, yyyy')}.
+            </p>
           </>
         ) : isMaker ? (
           <>
@@ -666,6 +663,15 @@ export function BetDetailDialog({
             isResolving={isResolving}
             isCancelling={isCancelling}
           />
+
+          {/* USDC Balance - Show for takers of pending bets */}
+          {bet.status === BetStatus.PENDING &&
+            (address?.toLowerCase() === bet.taker.address?.toLowerCase() ||
+              miniAppUser?.fid === bet.taker.fid) && (
+              <div className="text-center">
+                <UsdcBalance />
+              </div>
+            )}
 
           {/* Show More Details Link */}
           {!showDetails && (
