@@ -32,7 +32,7 @@ export function WelcomeModal({ open, onOpenChange }: WelcomeModalProps) {
         {/* Coral Header */}
         <div className="bg-wb-coral flex items-center justify-between px-4 py-3">
           <DialogTitle className="text-wb-brown text-lg font-bold">
-            How WannaBet Works
+            Info
           </DialogTitle>
           <DialogClose className="rounded-sm text-white opacity-80 transition-opacity hover:opacity-100">
             <X className="h-6 w-6" />
