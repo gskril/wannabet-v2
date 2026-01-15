@@ -5,5 +5,13 @@
   "iconUrl": "/img/bettingmutt.png",
   "splashImageUrl": "/img/bettingmutt.png",
   "splashBackgroundColor": "#fefce8",
-  "homeUrl": "/"
+  "homeUrl": "/",
+  "frame": {
+    "version": "1",
+    "name": "WannaBet",
+    "iconUrl": "/img/bettingmutt.png",
+    "splashImageUrl": "/img/bettingmutt.png",
+    "splashBackgroundColor": "#fefce8",
+    "webhookUrl": "/api/notifications/webhook"
+  }
 }
