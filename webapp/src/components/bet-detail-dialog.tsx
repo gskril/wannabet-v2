@@ -310,7 +310,7 @@ function ActionCard({
               ) : null}
               {isAccepting ? 'Accepting...' : 'Accept Bet'}
             </Button>
-            <div className="text-center">
+            <div className="space-y-1 text-center">
               <p className="text-wb-taupe text-xs">
                 Accepting will send {bet.amount} USDC to the bet contract. Offer
                 ends {format(bet.acceptBy, 'MMM d, yyyy')}.

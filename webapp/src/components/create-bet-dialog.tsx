@@ -326,7 +326,7 @@ export function CreateBetDialog() {
               </div>
 
               {/* End Date and Amount - Side by side */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 items-end gap-3">
                 <div className="space-y-1">
                   <Label className="text-wb-brown text-sm">When it ends</Label>
                   <DatePicker
@@ -366,8 +366,10 @@ export function CreateBetDialog() {
                       />
                     </div>
                   </div>
-                  <UsdcBalance />
                 </div>
+              </div>
+              <div className="text-right">
+                <UsdcBalance />
               </div>
 
               {/* Judge */}
