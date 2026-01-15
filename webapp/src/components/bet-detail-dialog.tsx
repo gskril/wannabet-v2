@@ -3,7 +3,7 @@
 import { format } from 'date-fns'
 import { ArrowUpRight, Loader2, Share2 } from 'lucide-react'
 import Image from 'next/image'
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useAccount } from 'wagmi'
 import type { Address } from 'viem'
 
@@ -421,14 +421,18 @@ export function BetDetailDialog({
     isPending: isCancelling,
   } = useCancelBet(bet.address as Address)
 
-  // Handle accept bet with success state
+  // Handle accept bet - just trigger the submit, useEffect handles success
   const handleAcceptBet = async () => {
     await submitAccept()
-    // Notify maker that their bet was accepted
-    notifyBetAccepted(bet)
-    // Show success state
-    setShowAcceptSuccess(true)
   }
+
+  // Watch for successful accept and show success state
+  useEffect(() => {
+    if (acceptPhase === 'success') {
+      notifyBetAccepted(bet)
+      setShowAcceptSuccess(true)
+    }
+  }, [acceptPhase, bet, notifyBetAccepted])
 
   const handleResolveBet = async (winner: 'maker' | 'taker') => {
     const winnerAddress =
