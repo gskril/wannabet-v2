@@ -374,7 +374,7 @@ export function BetDetailDialog({
 
   // Share bet functionality - always copy to clipboard for confirmation
   const handleShare = useCallback(async () => {
-    const betUrl = `${window.location.origin}/bet/${bet.address}`
+    const betUrl = `https://farcaster.xyz/miniapps/E7dxAafMr7wy/wannabet/bet/${bet.address}`
 
     // Always copy to clipboard first
     try {

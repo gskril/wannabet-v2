@@ -138,24 +138,9 @@ export function CreateBetDialog() {
   // Share bet functionality
   const handleShare = useCallback(async () => {
     if (!betAddress) return
-    const betUrl = `${window.location.origin}/bet/${betAddress}`
-    const shareText = `${formData.description} - ${formData.amount} USDC bet on WannaBet`
+    const betUrl = `https://farcaster.xyz/miniapps/E7dxAafMr7wy/wannabet/bet/${betAddress}`
 
-    // Try native share first (works in Farcaster app and mobile)
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: 'WannaBet',
-          text: shareText,
-          url: betUrl,
-        })
-        return
-      } catch (err) {
-        // User cancelled or share failed, fall through to clipboard
-      }
-    }
-
-    // Fallback: copy to clipboard
+    // Copy to clipboard
     try {
       await navigator.clipboard.writeText(betUrl)
       setShareStatus('copied')
@@ -163,7 +148,7 @@ export function CreateBetDialog() {
     } catch (err) {
       console.error('Failed to copy:', err)
     }
-  }, [betAddress, formData.description, formData.amount])
+  }, [betAddress])
 
   // Update form field
   const updateField = useCallback(
