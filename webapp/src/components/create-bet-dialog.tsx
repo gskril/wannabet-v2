@@ -337,11 +337,11 @@ export function CreateBetDialog() {
                   />
                 </div>
 
-                <div>
+                <div className="space-y-1">
                   <Label className="text-wb-brown text-sm">
                     How much (each)
                   </Label>
-                  <div className="relative mt-1">
+                  <div className="relative">
                     <Input
                       type="text"
                       inputMode="decimal"
