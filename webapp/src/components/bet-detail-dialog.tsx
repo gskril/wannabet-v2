@@ -462,9 +462,9 @@ export function BetDetailDialog({
       }}
     >
       <DrawerContent className="relative fixed bottom-0 left-0 right-0 mx-auto flex max-h-[90dvh] max-w-3xl flex-col pb-[env(safe-area-inset-bottom)]">
-        {/* Accept Success State */}
+        {/* Accept Success Overlay */}
         {showAcceptSuccess && (
-          <div className="flex flex-col items-center justify-center px-6 py-12">
+          <div className="absolute inset-0 z-30 flex flex-col items-center justify-center rounded-t-[10px] bg-background/95 px-6 py-12">
             <div className="text-4xl mb-4">🤝</div>
             <p className="text-wb-brown text-lg font-semibold mb-2">
               Bet Accepted!
@@ -497,9 +497,6 @@ export function BetDetailDialog({
           </div>
         )}
 
-        {/* Normal Bet Details View */}
-        {!showAcceptSuccess && (
-        <>
         <DrawerHeader className="relative pb-2">
           <DrawerTitle className="sr-only">Bet Details</DrawerTitle>
           {/* Share button - Top left */}
@@ -620,8 +617,6 @@ export function BetDetailDialog({
         {/* Bet History Overlay */}
         {showDetails && (
           <BetHistory bet={bet} onClose={() => setShowDetails(false)} />
-        )}
-        </>
         )}
       </DrawerContent>
     </Drawer>
