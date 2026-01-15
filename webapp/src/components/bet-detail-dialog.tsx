@@ -1,9 +1,9 @@
 'use client'
 
 import { format } from 'date-fns'
-import { ArrowUpRight, Loader2, X } from 'lucide-react'
+import { ArrowUpRight, Loader2, Share2 } from 'lucide-react'
 import Image from 'next/image'
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { useAccount } from 'wagmi'
 import type { Address } from 'viem'
 
@@ -358,8 +358,38 @@ export function BetDetailDialog({
   onOpenChange,
 }: BetDetailDialogProps) {
   const [showDetails, setShowDetails] = useState(false)
+  const [shareStatus, setShareStatus] = useState<'idle' | 'copied'>('idle')
   const { address } = useAccount()
   const { miniAppUser } = useMiniApp()
+
+  // Share bet functionality
+  const handleShare = useCallback(async () => {
+    const betUrl = `${window.location.origin}/bet/${bet.address}`
+    const shareText = `${bet.description} - ${bet.amount} USDC bet on WannaBet`
+
+    // Try native share first (works in Farcaster app and mobile)
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'WannaBet',
+          text: shareText,
+          url: betUrl,
+        })
+        return
+      } catch (err) {
+        // User cancelled or share failed, fall through to clipboard
+      }
+    }
+
+    // Fallback: copy to clipboard
+    try {
+      await navigator.clipboard.writeText(betUrl)
+      setShareStatus('copied')
+      setTimeout(() => setShareStatus('idle'), 2000)
+    } catch (err) {
+      console.error('Failed to copy:', err)
+    }
+  }, [bet.address, bet.description, bet.amount])
 
   // Notification hooks
   const { notifyBetAccepted, notifyBetResolved, notifyBetCancelled } = useNotifications()
@@ -430,6 +460,15 @@ export function BetDetailDialog({
       <DrawerContent className="relative fixed bottom-0 left-0 right-0 mx-auto flex max-h-[90dvh] max-w-3xl flex-col pb-[env(safe-area-inset-bottom)]">
         <DrawerHeader className="relative pb-2">
           <DrawerTitle className="sr-only">Bet Details</DrawerTitle>
+          {/* Share button - Top left */}
+          <button
+            type="button"
+            onClick={handleShare}
+            className="absolute left-4 top-4 flex items-center gap-1 rounded-lg bg-wb-sand/50 px-2 py-1 text-sm text-wb-taupe transition-colors hover:bg-wb-sand hover:text-wb-brown"
+          >
+            <Share2 className="h-4 w-4" />
+            {shareStatus === 'copied' ? 'Copied!' : 'Share'}
+          </button>
           {/* Status Pennant - Top right */}
           <div className="absolute right-4 top-0">
             <StatusPennant status={bet.status} />
