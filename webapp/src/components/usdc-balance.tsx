@@ -28,7 +28,7 @@ export function UsdcBalance() {
     : '0.00'
 
   return (
-    <p className="text-wb-taupe text-xs">
+    <p className="text-wb-taupe text-xs mt-1">
       Your balance: {formattedBalance} USDC
     </p>
   )
