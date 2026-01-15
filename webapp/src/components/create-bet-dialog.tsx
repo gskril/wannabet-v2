@@ -366,6 +366,7 @@ export function CreateBetDialog() {
                       />
                     </div>
                   </div>
+                  <UsdcBalance />
                 </div>
               </div>
 
@@ -381,9 +382,6 @@ export function CreateBetDialog() {
                 labelClassName="text-wb-brown text-sm"
                 inputClassName="bg-wb-sand text-wb-brown placeholder:text-wb-taupe"
               />
-
-              {/* USDC Balance */}
-              <UsdcBalance />
 
               {/* Submit */}
               <Button

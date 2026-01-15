@@ -299,7 +299,6 @@ function ActionCard({
       <div className="bg-wb-sand/50 space-y-3 rounded-xl border px-4 py-3">
         {isTaker ? (
           <>
-            <UsdcBalance />
             <Button
               onClick={onAcceptBet}
               className="bg-wb-coral hover:bg-wb-coral/80 w-full text-white"
@@ -311,10 +310,13 @@ function ActionCard({
               ) : null}
               {isAccepting ? 'Accepting...' : 'Accept Bet'}
             </Button>
-            <p className="text-wb-taupe text-center text-xs">
-              Accepting will send {bet.amount} USDC to the bet contract. Offer
-              ends {format(bet.acceptBy, 'MMM d, yyyy')}.
-            </p>
+            <div className="text-center">
+              <p className="text-wb-taupe text-xs">
+                Accepting will send {bet.amount} USDC to the bet contract. Offer
+                ends {format(bet.acceptBy, 'MMM d, yyyy')}.
+              </p>
+              <UsdcBalance />
+            </div>
           </>
         ) : isMaker ? (
           <>
