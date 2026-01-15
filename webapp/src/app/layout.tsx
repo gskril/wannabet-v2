@@ -18,6 +18,10 @@ const comicNeue = Comic_Neue({
 export const metadata: Metadata = {
   title: 'WannaBet - Peer-to-Peer Betting on Farcaster',
   description: 'Create and accept friendly bets with friends on Farcaster',
+  icons: {
+    icon: '/img/logo-icon.png',
+    apple: '/img/logo-icon.png',
+  },
   openGraph: {
     title: 'WannaBet - Peer-to-Peer Betting on Farcaster',
     description: 'Create and accept friendly bets with friends on Farcaster',
