@@ -359,6 +359,7 @@ export function BetDetailDialog({
 }: BetDetailDialogProps) {
   const [showDetails, setShowDetails] = useState(false)
   const [shareStatus, setShareStatus] = useState<'idle' | 'copied'>('idle')
+  const [showAcceptSuccess, setShowAcceptSuccess] = useState(false)
   const { address } = useAccount()
   const { miniAppUser } = useMiniApp()
 
@@ -411,11 +412,13 @@ export function BetDetailDialog({
     isPending: isCancelling,
   } = useCancelBet(bet.address as Address)
 
-  // Close dialog on successful action
+  // Handle accept bet with success state
   const handleAcceptBet = async () => {
     await submitAccept()
     // Notify maker that their bet was accepted
     notifyBetAccepted(bet)
+    // Show success state
+    setShowAcceptSuccess(true)
   }
 
   const handleResolveBet = async (winner: 'maker' | 'taker') => {
@@ -447,6 +450,7 @@ export function BetDetailDialog({
 
   const handleReset = () => {
     setShowDetails(false)
+    setShowAcceptSuccess(false)
   }
 
   return (
@@ -458,6 +462,44 @@ export function BetDetailDialog({
       }}
     >
       <DrawerContent className="relative fixed bottom-0 left-0 right-0 mx-auto flex max-h-[90dvh] max-w-3xl flex-col pb-[env(safe-area-inset-bottom)]">
+        {/* Accept Success State */}
+        {showAcceptSuccess && (
+          <div className="flex flex-col items-center justify-center px-6 py-12">
+            <div className="text-4xl mb-4">🤝</div>
+            <p className="text-wb-brown text-lg font-semibold mb-2">
+              Bet Accepted!
+            </p>
+            <p className="text-wb-taupe text-sm text-center mb-6">
+              You&apos;re now in a bet with @{getUsername(bet.maker)} for {bet.amount} USDC each.
+              Good luck!
+            </p>
+            <div className="flex flex-col gap-2 w-full max-w-xs">
+              <Button
+                className="bg-wb-coral hover:bg-wb-coral/90 w-full text-white"
+                size="lg"
+                onClick={handleShare}
+              >
+                <Share2 className="mr-2 h-4 w-4" />
+                {shareStatus === 'copied' ? 'Copied!' : 'Share Bet'}
+              </Button>
+              <Button
+                variant="outline"
+                className="w-full"
+                size="lg"
+                onClick={() => {
+                  onOpenChange(false)
+                  handleReset()
+                }}
+              >
+                Done
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Normal Bet Details View */}
+        {!showAcceptSuccess && (
+        <>
         <DrawerHeader className="relative pb-2">
           <DrawerTitle className="sr-only">Bet Details</DrawerTitle>
           {/* Share button - Top left */}
@@ -578,6 +620,8 @@ export function BetDetailDialog({
         {/* Bet History Overlay */}
         {showDetails && (
           <BetHistory bet={bet} onClose={() => setShowDetails(false)} />
+        )}
+        </>
         )}
       </DrawerContent>
     </Drawer>
