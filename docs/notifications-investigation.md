@@ -212,55 +212,90 @@ POST /api/notifications/test
 
 ---
 
-## Solution Paths
+## Solution: Minimal Viable Fix
 
-### Path A: Minimal Fix (Add Opt-In Prompt)
+**Goal:** Get notifications working with no new infrastructure.
 
-**Effort:** Low
-**Impact:** Enables notifications for users who opt in
+Neynar already handles token storage and filtering. We just need to:
+1. Ask users to opt in
+2. Fix a minor API issue
 
-1. Add a "Enable Notifications" button to the app (e.g., in profile or welcome modal)
-2. Wire it to `sdk.actions.addFrame()`
-3. Track opt-in state in the SDK context
-4. Show notification status to users
+### Phase 1: Enable Opt-In (Required)
+
+**Files to modify:**
+- `webapp/src/components/sdk-provider.tsx` - Expose `addFrame` action
+- `webapp/src/components/welcome-modal.tsx` OR new component - Add "Enable Notifications" button
+
+**Implementation:**
 
 ```typescript
-// Example implementation
-const handleEnableNotifications = async () => {
-  const result = await sdk.actions.addFrame()
-  if (result.added) {
-    // User added the miniapp
-    if (result.notificationDetails) {
-      // User also enabled notifications
-    }
+// sdk-provider.tsx - add to useMiniApp hook
+const addFrame = async () => {
+  try {
+    const result = await sdk.actions.addFrame()
+    return result
+  } catch (e) {
+    console.error('Failed to add frame:', e)
+    return null
   }
+}
+
+return {
+  isMiniApp: !!context,
+  miniAppUser: context,
+  addFrame,
 }
 ```
 
-### Path B: Comprehensive Fix
+```typescript
+// Component with enable button
+const { addFrame, isMiniApp } = useMiniApp()
 
-**Effort:** Medium
-**Impact:** Full notification system with visibility and reliability
+const handleEnableNotifications = async () => {
+  const result = await addFrame()
+  if (result?.added && result?.notificationDetails) {
+    // Success - user enabled notifications
+  }
+}
 
-Everything in Path A, plus:
+// Only show in MiniApp context
+{isMiniApp && (
+  <Button onClick={handleEnableNotifications}>
+    Enable Notifications
+  </Button>
+)}
+```
 
-1. **Add `uuid` to all notifications** for idempotency
-2. **Create notification preferences UI** (per-type toggles)
-3. **Add success/failure feedback** when sending notifications
-4. **Track notification state in database** (who has opted in, what was sent)
-5. **Add retry logic** for `retryable_fids`
-6. **Deduplication for cron jobs** (track sent reminders in DB)
+### Phase 2: Fix Send Route (Quick Win)
 
-### Path C: Alternative Notification Channels
+**File:** `webapp/src/app/api/notifications/send/route.ts`
 
-**Effort:** High
-**Impact:** Reaches users who don't opt in to miniapp notifications
+Add `uuid` to notification payload:
 
-Consider supplementing with:
+```typescript
+import { randomUUID } from 'crypto'
 
-1. **In-app notification center** (polling or websockets)
-2. **Email notifications** (requires collecting emails)
-3. **Farcaster direct casts** (via Neynar's cast API)
+// In the fetch body:
+notification: {
+  title: payload.title,
+  body: payload.body,
+  target_url: payload.targetUrl,
+  uuid: randomUUID(),
+}
+```
+
+### That's It
+
+Once users opt in via the UI, notifications will work. Neynar handles:
+- Token storage
+- Filtering non-opted-in users
+- Rate limiting
+
+**Future improvements** (not required for MVP):
+- Webhook signature verification
+- Local opt-in tracking
+- Event deduplication
+- Rate limit handling
 
 ---
 
@@ -314,60 +349,20 @@ Headers: x-api-key: <NEYNAR_API_KEY>
 
 ---
 
-## Implementation Recommendations
+## Implementation Checklist
 
-### Phase 1: Quick Win (Enable Opt-In)
+### Must Do (MVP)
 
-1. **Update `sdk-provider.tsx`** to expose notification methods:
-   ```typescript
-   export function useMiniApp() {
-     const context = useContext(Context)
+- [ ] **Update `sdk-provider.tsx`** - Expose `sdk.actions.addFrame()` method
+- [ ] **Add notification opt-in UI** - Button in welcome modal or profile
+- [ ] **Add `uuid` to send route** - Import `randomUUID` from crypto, add to payload
+- [ ] **Test end-to-end** - Opt in via Warpcast, trigger a bet event, verify notification received
 
-     const promptNotifications = async () => {
-       return await sdk.actions.addFrame()
-     }
+### Nice to Have (Later)
 
-     return {
-       isMiniApp: !!context,
-       miniAppUser: context,
-       promptNotifications,
-       notificationsEnabled: context?.notificationDetails?.enabled ?? false
-     }
-   }
-   ```
-
-2. **Add notification prompt UI** in `welcome-modal.tsx` or create a dedicated component
-
-3. **Update `useNotifications` hook** to check if user has notifications enabled before attempting to send
-
-### Phase 2: Reliability
-
-1. **Add `uuid` to send route:**
-   ```typescript
-   import { randomUUID } from 'crypto'
-
-   notification: {
-     title: payload.title,
-     body: payload.body,
-     target_url: payload.targetUrl,
-     uuid: randomUUID(),
-   }
-   ```
-
-2. **Return meaningful responses** from the hook instead of fire-and-forget
-
-3. **Add logging/monitoring** for notification success rates
-
-### Phase 3: Production Readiness
-
-1. **Database table** to track:
-   - Which users have opted in
-   - Which notifications were sent (for deduplication)
-   - Delivery status
-
-2. **Admin dashboard** to view notification analytics
-
-3. **Rate limit handling** for the 100/day per user limit
+- [ ] Show notification status in UI (enabled/disabled indicator)
+- [ ] Add max 100 FID check to send route
+- [ ] Better error visibility in useNotifications hook
 
 ---
 
@@ -381,12 +376,12 @@ Headers: x-api-key: <NEYNAR_API_KEY>
 
 ## Next Steps
 
-1. [ ] Review this document with another LLM for feedback
-2. [ ] Decide on solution path (A, B, or C)
-3. [ ] Implement opt-in UI prompt
-4. [ ] Test with a real opted-in user
-5. [ ] Monitor notification delivery rates
-6. [ ] Consider database tracking for production
+1. [x] Review this document with another LLM for feedback
+2. [x] Simplify to minimal viable fix
+3. [ ] Update `sdk-provider.tsx` to expose `addFrame`
+4. [ ] Add opt-in button to UI (welcome modal or profile)
+5. [ ] Add `uuid` to send route
+6. [ ] Test: opt in via Warpcast, create bet, verify notification received
 
 ---
 
@@ -403,3 +398,20 @@ To manually test notifications:
    curl "https://wannabet.cc/api/notifications/test?fid=YOUR_FID"
    ```
 6. Check for notification in Warpcast
+
+---
+
+## Deferred Items (Post-MVP)
+
+The following were identified during review but are **not required** for basic functionality. Neynar's managed service handles most of these concerns:
+
+| Item | Why Deferred |
+|------|--------------|
+| Webhook signature verification | Neynar stores tokens regardless; we just log events |
+| Opt-in persistence in DB | Neynar filters non-opted-in users automatically |
+| Event-level idempotency | Low risk; worst case is duplicate notification |
+| Rate-limit handling | Neynar returns errors; notifications still "work" |
+| Automated tests | Add after MVP is validated |
+| Content/cadence limits | Character limits already enforced |
+
+**Revisit these if:** notification volume increases significantly, or we need analytics on delivery rates.
