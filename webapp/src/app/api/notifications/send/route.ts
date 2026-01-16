@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
 
 // Send notification via Neynar's managed notification service
@@ -42,7 +43,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'targetUrl required' }, { status: 400 })
     }
 
-    const response = await fetch('https://api.neynar.com/v2/farcaster/frame/notifications', {
+    const response = await fetch('https://api.neynar.com/v2/farcaster/frame/notifications/', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -54,6 +55,7 @@ export async function POST(request: NextRequest) {
           title: payload.title,
           body: payload.body,
           target_url: payload.targetUrl,
+          uuid: randomUUID(),
         },
       }),
     })

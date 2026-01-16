@@ -1,7 +1,9 @@
 'use client'
 
-import { X } from 'lucide-react'
+import { Bell, BellOff, Check, X } from 'lucide-react'
+import { useState } from 'react'
 
+import { useMiniApp } from '@/components/sdk-provider'
 import { STATUS_CONFIG, StatusPennant } from '@/components/status-pennant'
 import {
   Dialog,
@@ -26,6 +28,19 @@ const STATUS_ORDER: BetStatus[] = [
 ]
 
 export function WelcomeModal({ open, onOpenChange }: WelcomeModalProps) {
+  const { isMiniApp, notificationsEnabled, enableNotifications } = useMiniApp()
+  const [isEnabling, setIsEnabling] = useState(false)
+  const [justEnabled, setJustEnabled] = useState(false)
+
+  const handleEnableNotifications = async () => {
+    setIsEnabling(true)
+    const result = await enableNotifications()
+    setIsEnabling(false)
+    if (result.success && result.enabled) {
+      setJustEnabled(true)
+    }
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="bg-wb-sand max-h-[85vh] w-[90vw] max-w-sm gap-0 overflow-hidden rounded-xl border-0 p-0 [&>button:last-child]:hidden">
@@ -117,6 +132,42 @@ export function WelcomeModal({ open, onOpenChange }: WelcomeModalProps) {
               })}
             </div>
           </section>
+
+          {/* Notifications - only show in MiniApp context */}
+          {isMiniApp && (
+            <section>
+              <h3 className="mb-2 text-base font-bold">Notifications</h3>
+              {notificationsEnabled || justEnabled ? (
+                <div className="bg-wb-cream flex items-center gap-2 rounded-lg px-3 py-2">
+                  <Check className="text-wb-mint h-5 w-5" />
+                  <span className="text-sm">
+                    Notifications enabled! You'll be notified about bet activity.
+                  </span>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <p className="text-wb-taupe text-sm">
+                    Get notified when someone challenges you, accepts your bet, or
+                    when a ruling is needed.
+                  </p>
+                  <button
+                    onClick={handleEnableNotifications}
+                    disabled={isEnabling}
+                    className="bg-wb-coral hover:bg-wb-coral/90 text-wb-cream flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-bold transition-colors disabled:opacity-50"
+                  >
+                    {isEnabling ? (
+                      <>Enabling...</>
+                    ) : (
+                      <>
+                        <Bell className="h-4 w-4" />
+                        Enable Notifications
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
+            </section>
+          )}
         </div>
       </DialogContent>
     </Dialog>
