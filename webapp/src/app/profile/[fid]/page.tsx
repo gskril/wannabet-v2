@@ -3,9 +3,10 @@
 import { Activity, ArrowLeft, Coins, Loader2, TrendingUp, Trophy } from 'lucide-react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 
 import { BetsTable } from '@/components/bets-table'
+import { StatusFilter } from '@/components/status-filter'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { UserAvatar } from '@/components/user-avatar'
