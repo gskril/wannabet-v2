@@ -6,7 +6,6 @@ import { useAccount } from 'wagmi'
 
 import { BetsTable } from '@/components/bets-table'
 import { ConnectWalletButton } from '@/components/connect-wallet-button'
-import { StatusFilter } from '@/components/status-filter'
 import { WelcomeModal } from '@/components/welcome-modal'
 import { useBets } from '@/hooks/useBets'
 import { BetStatus, type Bet } from 'indexer/types'
