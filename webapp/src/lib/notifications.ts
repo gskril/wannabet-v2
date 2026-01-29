@@ -1,6 +1,6 @@
 import type { NotificationPayload } from '@/app/api/notifications/send/route'
 
-const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://wannabet.cc'
+const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://heywannabet.com'
 
 // Send notification via the internal API route
 export async function sendNotification(payload: NotificationPayload): Promise<boolean> {

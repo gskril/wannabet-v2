@@ -2,7 +2,7 @@
 
 A Farcaster MiniApp to interact with the WannaBet [smart contracts](../contracts/README.md), with data from the [indexer](../indexer/README.md) and [Neynar](https://neynar.com/).
 
-Deployed at https://wannabet.cc. You can access the MiniApp [directly here](https://farcaster.xyz/miniapps/E7dxAafMr7wy/wannabet).
+Deployed at https://heywannabet.com. You can access the MiniApp [directly here](https://farcaster.xyz/miniapps/E7dxAafMr7wy/wannabet).
 
 ## Usage
 

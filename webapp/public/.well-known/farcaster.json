@@ -7,10 +7,10 @@
   "frame": {
     "version": "1",
     "name": "WannaBet",
-    "iconUrl": "https://wannabet.cc/img/logo-icon.png",
-    "splashImageUrl": "https://wannabet.cc/img/logo.png",
+    "iconUrl": "https://heywannabet.com/img/logo-icon.png",
+    "splashImageUrl": "https://heywannabet.com/img/logo.png",
     "splashBackgroundColor": "#fefce8",
-    "homeUrl": "https://wannabet.cc",
+    "homeUrl": "https://heywannabet.com",
     "webhookUrl": "https://api.neynar.com/f/app/817e51c1-3c90-452c-9bc7-aa1510944494/event"
   }
 }

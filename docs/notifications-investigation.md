@@ -391,11 +391,11 @@ To manually test notifications:
 
 1. Open WannaBet in Warpcast
 2. Go to Warpcast Settings > Developer Tools > Domains
-3. Find wannabet.cc and add it as a miniapp
+3. Find heywannabet.com and add it as a miniapp
 4. Enable notifications when prompted
 5. Run the test endpoint:
    ```bash
-   curl "https://wannabet.cc/api/notifications/test?fid=YOUR_FID"
+   curl "https://heywannabet.com/api/notifications/test?fid=YOUR_FID"
    ```
 6. Check for notification in Warpcast
 

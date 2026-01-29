@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'targetFid (number) required' }, { status: 400 })
     }
 
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://wannabet.cc'
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://heywannabet.com'
     const uuid = randomUUID()
 
     const notificationPayload = {
