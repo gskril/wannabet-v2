@@ -26,7 +26,7 @@ export default createConfig({
         address: BET_FACTORY_V1.address,
         event: parseAbiItem('event BetCreated(address indexed bet)'),
         parameter: 'bet',
-      }) as any,
+      }),
     },
     Bet2Factory: {
       chain: 'base',
@@ -42,7 +42,7 @@ export default createConfig({
         address: BET_FACTORY_V2.address,
         event: parseAbiItem('event BetCreated(address indexed bet)'),
         parameter: 'bet',
-      }) as any,
+      }),
     },
   },
 })

@@ -87,8 +87,8 @@ importers:
         specifier: ^4.5.0
         version: 4.10.3
       ponder:
-        specifier: ^0.16.2
-        version: 0.16.2(@opentelemetry/api@1.9.0)(@types/node@20.19.22)(bufferutil@4.0.9)(hono@4.10.3)(lightningcss@1.30.1)(terser@5.44.0)(typescript@5.8.3)(utf-8-validate@5.0.10)(viem@2.45.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.76))(zod@3.25.76)
+        specifier: ^0.16.3
+        version: 0.16.3(@opentelemetry/api@1.9.0)(@types/node@20.19.22)(bufferutil@4.0.9)(hono@4.10.3)(lightningcss@1.30.1)(terser@5.44.0)(typescript@5.8.3)(utf-8-validate@5.0.10)(viem@2.45.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.76))(zod@3.25.76)
       shared:
         specifier: workspace:*
         version: link:../shared
@@ -4444,10 +4444,6 @@ packages:
     resolution: {integrity: sha512-XxwI8EOhVQgWp6iDL+3b0r86f4d6AX6zSU55HfB4ydCEuXLXc5FcYeOu+nnGftS4TEju/11rt4KJPTMgbfmv4A==}
     engines: {node: '>=10.13.0'}
 
-  glob@10.4.5:
-    resolution: {integrity: sha512-7Bv8RF0k6xjo7d4A/PxYLbUCfb6c+Vpd2/mB2yRDlew7Jb5hEXiCD9ibfO7wpk8i4sevK6DFny9h7EYbM3/sHg==}
-    hasBin: true
-
   glob@10.5.0:
     resolution: {integrity: sha512-DfXN8DfhJ7NH3Oe7cFmu3NCu1wKbkReJ8TorzSAFbSKrlNaQSKfIzqYqVY8zlbs2NLBbWpRiU52GX2PbaBVNkg==}
     hasBin: true
@@ -5800,8 +5796,8 @@ packages:
     resolution: {integrity: sha512-40QW5YalBNfQo5yRYmiw7Yz6TKKVr3h6970B2YE+3fQpsWcrbj1PzJgxeJ19DRQjhMbKPIuMY8rFaXc8moolVw==}
     engines: {node: '>=10.13.0'}
 
-  ponder@0.16.2:
-    resolution: {integrity: sha512-cUTtcrGxSt5ReJc0z7UuJWirHtQZ33KAepaIrp2W+Smzi8FJ2Odm5TedrtdlmHnaagUpl8eagpRUBsoXrPYXYw==}
+  ponder@0.16.3:
+    resolution: {integrity: sha512-QwAg5eFUujWR87ZMeTTKmF17q9IVTew26tpdaTfQrrtJVf/oU8ZN1qu7ZcP2SPtK5oScblJMWQm9zfwst6tJcg==}
     engines: {node: '>=18.14'}
     hasBin: true
     peerDependencies:
@@ -6573,10 +6569,12 @@ packages:
   tar@6.2.1:
     resolution: {integrity: sha512-DZ4yORTwrbTj/7MZYq2w+/ZFdI6OZ/f9SFHR+71gIVUZhOQPHzVCLpvRnPgyaMpfWxxk/4ONva3GQSyNIKRv6A==}
     engines: {node: '>=10'}
+    deprecated: Old versions of tar are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exhorbitant rates) by contacting i@izs.me
 
   tar@7.5.1:
     resolution: {integrity: sha512-nlGpxf+hv0v7GkWBK2V9spgactGOp0qvfWRxUMjqHyzrt3SgwE48DIv/FhqPHJYLHpgW1opq3nERbz5Anq7n1g==}
     engines: {node: '>=18'}
+    deprecated: Old versions of tar are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exhorbitant rates) by contacting i@izs.me
 
   tdigest@0.1.2:
     resolution: {integrity: sha512-+G0LLgjjo9BZX2MfdvPfH+MKLCrxlXSYec5DaPYP1fe6Iyhf0/fSmJ0bFiZ1F8BT6cGXl2LpltQptzjXKWEkKA==}
@@ -10319,7 +10317,7 @@ snapshots:
       async-sema: 3.1.1
       bindings: 1.5.0
       estree-walker: 2.0.2
-      glob: 10.4.5
+      glob: 10.5.0
       graceful-fs: 4.2.11
       node-gyp-build: 4.8.4
       picomatch: 4.0.3
@@ -12687,15 +12685,6 @@ snapshots:
     dependencies:
       is-glob: 4.0.3
 
-  glob@10.4.5:
-    dependencies:
-      foreground-child: 3.3.1
-      jackspeak: 3.4.3
-      minimatch: 9.0.5
-      minipass: 7.1.2
-      package-json-from-dist: 1.0.1
-      path-scurry: 1.11.1
-
   glob@10.5.0:
     dependencies:
       foreground-child: 3.3.1
@@ -13993,7 +13982,7 @@ snapshots:
       '@noble/hashes': 1.8.0
       '@scure/bip32': 1.7.0
       '@scure/bip39': 1.6.0
-      abitype: 1.1.0(typescript@5.8.3)(zod@3.25.76)
+      abitype: 1.2.3(typescript@5.8.3)(zod@3.25.76)
       eventemitter3: 5.0.1
     optionalDependencies:
       typescript: 5.8.3
@@ -14007,7 +13996,7 @@ snapshots:
       '@noble/hashes': 1.8.0
       '@scure/bip32': 1.7.0
       '@scure/bip39': 1.6.0
-      abitype: 1.1.0(typescript@5.8.3)(zod@3.25.76)
+      abitype: 1.2.3(typescript@5.8.3)(zod@3.25.76)
       eventemitter3: 5.0.1
     optionalDependencies:
       typescript: 5.8.3
@@ -14277,7 +14266,7 @@ snapshots:
 
   pngjs@5.0.0: {}
 
-  ponder@0.16.2(@opentelemetry/api@1.9.0)(@types/node@20.19.22)(bufferutil@4.0.9)(hono@4.10.3)(lightningcss@1.30.1)(terser@5.44.0)(typescript@5.8.3)(utf-8-validate@5.0.10)(viem@2.45.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.76))(zod@3.25.76):
+  ponder@0.16.3(@opentelemetry/api@1.9.0)(@types/node@20.19.22)(bufferutil@4.0.9)(hono@4.10.3)(lightningcss@1.30.1)(terser@5.44.0)(typescript@5.8.3)(utf-8-validate@5.0.10)(viem@2.45.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.76))(zod@3.25.76):
     dependencies:
       '@babel/code-frame': 7.27.1
       '@commander-js/extra-typings': 12.1.0(commander@12.1.0)

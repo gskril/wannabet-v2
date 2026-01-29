@@ -12,7 +12,7 @@
     "@neynar/nodejs-sdk": "^3.117.0",
     "abitype": "^0.10.2",
     "hono": "^4.5.0",
-    "ponder": "^0.16.2",
+    "ponder": "^0.16.3",
     "shared": "workspace:*",
     "viem": "^2.45.0"
   },
