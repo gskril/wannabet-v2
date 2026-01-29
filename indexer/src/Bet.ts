@@ -1,5 +1,5 @@
 import { ponder } from 'ponder:registry'
-import { bet, factoryBetCreatedEvent } from 'ponder:schema'
+import { bet, betCreatedEvent, factoryBetCreatedEvent } from 'ponder:schema'
 
 ponder.on('BetFactory:BetCreated', async ({ event, context }) => {
   await context.db.insert(factoryBetCreatedEvent).values({
@@ -12,8 +12,15 @@ ponder.on('BetFactory:BetCreated', async ({ event, context }) => {
 ponder.on('Bet:BetCreated', async ({ event, context }) => {
   // V1 ABI: 'resolveBy' was the judge deadline (no separate endsBy)
   // V2 ABI: 'endsBy' is when outcome must be known, judgeDeadline = endsBy + 30 days
-  // TODO: Update to V2 ABI when ready (change resolveBy -> endsBy)
   const judgeDeadline = Number(event.args.resolveBy)
+
+  await context.db.insert(betCreatedEvent).values({
+    ...event.args,
+    bet: event.log.address,
+    id: event.id,
+    endsBy: judgeDeadline,
+  })
+
   await context.db.insert(bet).values({
     ...event.args,
     address: event.log.address,

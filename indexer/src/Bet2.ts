@@ -1,5 +1,5 @@
 import { ponder } from 'ponder:registry'
-import { bet, factoryBetCreatedEvent } from 'ponder:schema'
+import { bet, betCreatedEvent, factoryBetCreatedEvent } from 'ponder:schema'
 import { BET_V2_ABI } from 'shared'
 
 ponder.on('Bet2Factory:BetCreated', async ({ event, context }) => {
@@ -16,6 +16,12 @@ ponder.on('Bet2:BetCreated', async ({ event, context }) => {
     address: event.log.address,
     abi: BET_V2_ABI,
     functionName: 'judgingDeadline',
+  })
+
+  await context.db.insert(betCreatedEvent).values({
+    ...event.args,
+    bet: event.log.address,
+    id: event.id,
   })
 
   await context.db.insert(bet).values({

@@ -20,6 +20,20 @@ export const bet = onchainTable('bet', (t) => ({
   version: t.integer().notNull(),
 }))
 
+export const betCreatedEvent = onchainTable('betCreatedEvent', (t) => ({
+  id: t.text().primaryKey(),
+  bet: t.hex().notNull(),
+  maker: t.hex().notNull(),
+  taker: t.hex().notNull(),
+  judge: t.hex().notNull(),
+  asset: t.hex().notNull(),
+  acceptBy: t.integer().notNull(),
+  endsBy: t.integer().notNull(),
+  makerStake: t.bigint().notNull(),
+  takerStake: t.bigint().notNull(),
+  description: t.text().notNull(),
+}))
+
 export const factoryBetCreatedEvent = onchainTable(
   'factoryBetCreatedEvent',
   (t) => ({
