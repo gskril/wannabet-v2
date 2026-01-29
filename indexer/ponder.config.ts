@@ -7,7 +7,8 @@ export default createConfig({
   chains: {
     base: {
       id: base.id,
-      rpc: 'https://mainnet.base.org',
+      rpc: process.env.BASE_RPC_URL || 'https://mainnet.base.org',
+      ws: process.env.BASE_WS_URL,
     },
   },
   contracts: {
@@ -20,6 +21,12 @@ export default createConfig({
         event: parseAbiItem('event BetCreated(address indexed bet)'),
         parameter: 'bet',
       }) as any,
+    },
+    Bet2Factory: {
+      chain: 'base',
+      abi: BET_FACTORY_V2.abi,
+      startBlock: BET_FACTORY_V2.startBlock,
+      address: BET_FACTORY_V2.address,
     },
     Bet2: {
       chain: 'base',
