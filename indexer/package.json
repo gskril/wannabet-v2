@@ -12,9 +12,9 @@
     "@neynar/nodejs-sdk": "^3.117.0",
     "abitype": "^0.10.2",
     "hono": "^4.5.0",
-    "ponder": "^0.15.17",
+    "ponder": "^0.16.2",
     "shared": "workspace:*",
-    "viem": "^2.21.3"
+    "viem": "^2.45.0"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",
