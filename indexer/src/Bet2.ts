@@ -3,6 +3,8 @@ import { bet, betCreatedEvent, factoryBetCreatedEvent } from 'ponder:schema'
 import { BET_V2_ABI } from 'shared'
 
 ponder.on('Bet2Factory:BetCreated', async ({ event, context }) => {
+  console.log('Bet2Factory:BetCreated', event.args)
+
   await context.db.insert(factoryBetCreatedEvent).values({
     ...event.args,
     factory: event.log.address,
@@ -11,6 +13,8 @@ ponder.on('Bet2Factory:BetCreated', async ({ event, context }) => {
 })
 
 ponder.on('Bet2:BetCreated', async ({ event, context }) => {
+  console.log('Bet2:BetCreated', event.args)
+
   // Read judgeDeadline from the contract
   const judgeDeadline = await context.client.readContract({
     address: event.log.address,
