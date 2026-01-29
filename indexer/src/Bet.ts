@@ -1,5 +1,13 @@
 import { ponder } from 'ponder:registry'
-import { bet } from 'ponder:schema'
+import { bet, factoryBetCreatedEvent } from 'ponder:schema'
+
+ponder.on('BetFactory:BetCreated', async ({ event, context }) => {
+  await context.db.insert(factoryBetCreatedEvent).values({
+    ...event.args,
+    factory: event.log.address,
+    createdAt: Number(event.block.timestamp),
+  })
+})
 
 ponder.on('Bet:BetCreated', async ({ event, context }) => {
   // V1 ABI: 'resolveBy' was the judge deadline (no separate endsBy)

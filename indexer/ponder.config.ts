@@ -12,6 +12,12 @@ export default createConfig({
     },
   },
   contracts: {
+    BetFactory: {
+      chain: 'base',
+      abi: BET_FACTORY_V1.abi,
+      startBlock: BET_FACTORY_V1.startBlock,
+      address: BET_FACTORY_V1.address,
+    },
     Bet: {
       chain: 'base',
       abi: BET_V1_ABI,
