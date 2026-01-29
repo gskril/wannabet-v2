@@ -22,6 +22,8 @@ export const bet = onchainTable('bet', (t) => ({
 
 export const betCreatedEvent = onchainTable('betCreatedEvent', (t) => ({
   id: t.text().primaryKey(),
+  factory: t.hex().notNull(),
+  timestamp: t.integer().notNull(),
   bet: t.hex().notNull(),
   maker: t.hex().notNull(),
   taker: t.hex().notNull(),
@@ -39,6 +41,6 @@ export const factoryBetCreatedEvent = onchainTable(
   (t) => ({
     bet: t.hex().primaryKey(),
     factory: t.hex().notNull(),
-    createdAt: t.integer().notNull(),
+    timestamp: t.integer().notNull(),
   })
 )

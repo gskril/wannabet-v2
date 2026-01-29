@@ -5,7 +5,7 @@ ponder.on('BetFactory:BetCreated', async ({ event, context }) => {
   await context.db.insert(factoryBetCreatedEvent).values({
     ...event.args,
     factory: event.log.address,
-    createdAt: Number(event.block.timestamp),
+    timestamp: Number(event.block.timestamp),
   })
 })
 
@@ -18,6 +18,8 @@ ponder.on('Bet:BetCreated', async ({ event, context }) => {
     ...event.args,
     bet: event.log.address,
     id: event.id,
+    factory: event.log.address,
+    timestamp: Number(event.block.timestamp),
     endsBy: judgeDeadline,
   })
 
