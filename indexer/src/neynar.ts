@@ -143,12 +143,17 @@ export async function fetchUsersByAddresses(
       setCachedUser(address, farcasterUser)
       result.set(address.toLowerCase(), farcasterUser)
     }
-  } catch (error) {
-    console.error('Failed to fetch users from Neynar:', error)
+  } catch (error: any) {
+    // 404 "No users found" is expected for addresses without Farcaster accounts
+    const is404 = error?.response?.status === 404
+    if (!is404) {
+      console.error('Failed to fetch users from Neynar:', error?.message ?? error)
+    }
 
     // Return placeholders on error
     for (const address of addressesToFetch) {
       const placeholder = toFarcasterUser(address, null)
+      setCachedUser(address, placeholder)
       result.set(address.toLowerCase(), placeholder)
     }
   }
