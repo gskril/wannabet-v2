@@ -114,6 +114,22 @@ export default function HomePage() {
   const visibleBets = filteredBets.slice(0, visibleCount)
   const hasMore = visibleCount < filteredBets.length
 
+  // Only enable infinite scroll after the user has scrolled
+  const hasScrolled = useRef(false)
+  useEffect(() => {
+    const onScroll = () => { hasScrolled.current = true }
+    window.addEventListener('scroll', onScroll, { once: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
+  // Reset scroll flag when filters change
+  useEffect(() => {
+    hasScrolled.current = false
+    const onScroll = () => { hasScrolled.current = true }
+    window.addEventListener('scroll', onScroll, { once: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [activeFilter, statusFilter])
+
   // Infinite scroll observer
   useEffect(() => {
     const el = sentinelRef.current
@@ -121,7 +137,7 @@ export default function HomePage() {
 
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting) {
+        if (entries[0].isIntersecting && hasScrolled.current) {
           setVisibleCount((prev) => prev + PAGE_SIZE)
         }
       },
