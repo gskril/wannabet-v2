@@ -2,7 +2,7 @@
 
 import { sdk } from '@farcaster/miniapp-sdk'
 import type { FarcasterUser } from 'indexer/types'
-import { Info, Loader2, Plus, Share2 } from 'lucide-react'
+import { Loader2, Plus, Share2 } from 'lucide-react'
 import Image from 'next/image'
 import {
   type ChangeEvent,
@@ -58,7 +58,6 @@ export function CreateBetDialog() {
   const [phase, setPhase] = useState<SubmitPhase>('idle')
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [shareStatus, setShareStatus] = useState<'idle' | 'copied'>('idle')
-  const [showJudgeTip, setShowJudgeTip] = useState(false)
 
   const { address, isConnected } = useAccount()
   const { isMiniApp } = useMiniApp()
@@ -371,23 +370,8 @@ export function CreateBetDialog() {
 
               {/* Judge */}
               <UserSearch
-                label={
-                  <span className="flex items-center gap-1">
-                    Who will judge
-                    <button
-                      type="button"
-                      className="relative"
-                      onClick={(e) => { e.preventDefault(); setShowJudgeTip((v) => !v) }}
-                    >
-                      <Info className="h-3.5 w-3.5 text-wb-taupe" />
-                      {showJudgeTip && (
-                        <span className="absolute bottom-full left-1/2 z-50 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded bg-wb-brown px-2 py-1 text-xs text-white">
-                          Want to use an agent as your judge? Use @agentjudge!
-                        </span>
-                      )}
-                    </button>
-                  </span>
-                }
+                label="Who will judge"
+                placeholder="agentjudge"
                 value={formData.judge}
                 required
                 onChange={(value, user) => {

@@ -2,7 +2,7 @@
 
 import type { FarcasterUser } from 'indexer/types'
 import { Search } from 'lucide-react'
-import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -10,7 +10,7 @@ import { UserAvatar } from '@/components/user-avatar'
 import { cn } from '@/lib/utils'
 
 interface UserSearchProps {
-  label: ReactNode
+  label: string
   placeholder?: string
   helperText?: string
   required?: boolean
