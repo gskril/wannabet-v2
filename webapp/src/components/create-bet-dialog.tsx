@@ -229,11 +229,11 @@ export function CreateBetDialog() {
       </DrawerTrigger>
 
       <DrawerContent className="bg-wb-cream max-h-[85vh]">
-        <DrawerHeader>
+        <DrawerHeader className="pb-2">
           <DrawerTitle className="text-wb-brown">Create New Bet</DrawerTitle>
         </DrawerHeader>
 
-        <div className="overflow-y-auto px-6 pb-6">
+        <div className="overflow-y-auto px-6 pb-4">
           {/* Success State */}
           {phase === 'done' && (
             <div className="space-y-4 text-center">
@@ -294,7 +294,7 @@ export function CreateBetDialog() {
 
           {/* Form */}
           {phase !== 'done' && phase !== 'error' && (
-            <div className="space-y-3">
+            <div className="space-y-2">
               {/* Opponent */}
               <UserSearch
                 label="Who I'm betting"
@@ -364,7 +364,7 @@ export function CreateBetDialog() {
                   </div>
                 </div>
               </div>
-              <div className="text-right">
+              <div className="-mt-1 text-right">
                 <UsdcBalance />
               </div>
 
