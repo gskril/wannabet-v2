@@ -58,6 +58,7 @@ export function CreateBetDialog() {
   const [phase, setPhase] = useState<SubmitPhase>('idle')
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [shareStatus, setShareStatus] = useState<'idle' | 'copied'>('idle')
+  const [showJudgeTip, setShowJudgeTip] = useState(false)
 
   const { address, isConnected } = useAccount()
   const { isMiniApp } = useMiniApp()
@@ -373,12 +374,18 @@ export function CreateBetDialog() {
                 label={
                   <span className="flex items-center gap-1">
                     Who will judge
-                    <span className="group relative">
-                      <Info className="h-3.5 w-3.5 text-wb-taupe cursor-help" />
-                      <span className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded bg-wb-brown px-2 py-1 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100">
-                        Want to use an agent as your judge? Use @agentjudge!
-                      </span>
-                    </span>
+                    <button
+                      type="button"
+                      className="relative"
+                      onClick={(e) => { e.preventDefault(); setShowJudgeTip((v) => !v) }}
+                    >
+                      <Info className="h-3.5 w-3.5 text-wb-taupe" />
+                      {showJudgeTip && (
+                        <span className="absolute bottom-full left-1/2 z-50 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded bg-wb-brown px-2 py-1 text-xs text-white">
+                          Want to use an agent as your judge? Use @agentjudge!
+                        </span>
+                      )}
+                    </button>
                   </span>
                 }
                 value={formData.judge}
