@@ -16,6 +16,7 @@ const comicNeue = Comic_Neue({
 })
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://heywannabet.com'),
   title: 'WannaBet - Peer-to-Peer Betting on Farcaster',
   description: 'Create and accept friendly bets with friends on Farcaster',
   icons: {
