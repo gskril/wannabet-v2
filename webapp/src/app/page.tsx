@@ -1,6 +1,6 @@
 'use client'
 
-import { Bell, Globe, HelpCircle, User } from 'lucide-react'
+import { Bell, ChevronLeft, ChevronRight, Globe, HelpCircle, User } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useAccount } from 'wagmi'
 
@@ -59,7 +59,10 @@ export default function HomePage() {
   const [showWelcome, setShowWelcome] = useState(false)
   const [activeFilter, setActiveFilter] = useState<FilterType>('all')
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
+  const [page, setPage] = useState(0)
   const { address } = useAccount()
+
+  const PAGE_SIZE = 10
 
   // Load initial state from localStorage after client mounts
   useEffect(() => {
@@ -101,6 +104,14 @@ export default function HomePage() {
 
     return bets
   }, [betsQuery.data, activeFilter, address, statusFilter, betsRequiringAction])
+
+  // Reset page when filters change
+  useEffect(() => {
+    setPage(0)
+  }, [activeFilter, statusFilter])
+
+  const totalPages = Math.ceil(filteredBets.length / PAGE_SIZE)
+  const paginatedBets = filteredBets.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
 
   const handleCloseWelcome = (open: boolean) => {
     setShowWelcome(open)
@@ -215,7 +226,30 @@ export default function HomePage() {
             </div>
           </div>
         ) : (
-          <BetsTable bets={filteredBets} />
+          <>
+            <BetsTable bets={paginatedBets} />
+            {totalPages > 1 && (
+              <div className="flex items-center justify-center gap-3 pt-4 pb-2">
+                <button
+                  onClick={() => setPage((p) => Math.max(0, p - 1))}
+                  disabled={page === 0}
+                  className="flex h-8 w-8 items-center justify-center rounded-full bg-wb-sand text-wb-brown disabled:opacity-30"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+                <span className="text-wb-taupe text-sm">
+                  {page + 1} / {totalPages}
+                </span>
+                <button
+                  onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+                  disabled={page >= totalPages - 1}
+                  className="flex h-8 w-8 items-center justify-center rounded-full bg-wb-sand text-wb-brown disabled:opacity-30"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
+            )}
+          </>
         )}
       </main>
 
