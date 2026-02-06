@@ -1,5 +1,6 @@
 'use client'
 
+import { sdk } from '@farcaster/miniapp-sdk'
 import { format } from 'date-fns'
 import { ArrowUpRight, Loader2, Share2 } from 'lucide-react'
 import Image from 'next/image'
@@ -367,13 +368,29 @@ export function BetDetailDialog({
     winnerName: string | null
   }>({ show: false, winnerName: null })
   const { address } = useAccount()
-  const { miniAppUser } = useMiniApp()
+  const { isMiniApp, miniAppUser } = useMiniApp()
 
-  // Share bet functionality - always copy to clipboard for confirmation
-  const handleShare = useCallback(async () => {
+  // Share bet functionality with composeCast in MiniApp context
+  const handleShare = useCallback(async (context?: 'accept' | 'resolve') => {
     const betUrl = `https://farcaster.xyz/miniapps/E7dxAafMr7wy/wannabet/bet/${bet.address}`
+    const makerTag = bet.maker?.username ? `@${bet.maker.username}` : 'someone'
+    const takerTag = (bet.acceptedBy || bet.taker)?.username ? `@${(bet.acceptedBy || bet.taker).username}` : 'someone'
 
-    // Always copy to clipboard first
+    if (isMiniApp) {
+      let text: string
+      if (context === 'accept') {
+        text = `I just accepted a bet on WannaBet!\n\n"${bet.description}"\n\n${bet.amount} USDC each\n\n${makerTag} vs ${takerTag}`
+      } else if (context === 'resolve') {
+        const winnerName = showResolveSuccess.winnerName || 'someone'
+        text = `A bet was just resolved on WannaBet!\n\n"${bet.description}"\n\nWinner: @${winnerName} takes ${Number(bet.amount) * 2} USDC`
+      } else {
+        text = `Check out this bet on WannaBet!\n\n"${bet.description}"\n\n${bet.amount} USDC each\n\n${makerTag} vs ${takerTag}`
+      }
+      sdk.actions.composeCast({ text, embeds: [betUrl] })
+      return
+    }
+
+    // Fallback: copy to clipboard
     try {
       await navigator.clipboard.writeText(betUrl)
       setShareStatus('copied')
@@ -381,7 +398,7 @@ export function BetDetailDialog({
     } catch (err) {
       console.error('Failed to copy:', err)
     }
-  }, [bet.address])
+  }, [bet, isMiniApp, showResolveSuccess.winnerName])
 
   // Notification hooks
   const { notifyBetAccepted, notifyBetResolved, notifyBetCancelled } = useNotifications()
@@ -480,10 +497,10 @@ export function BetDetailDialog({
               <Button
                 className="bg-wb-coral hover:bg-wb-coral/90 w-full text-white"
                 size="lg"
-                onClick={handleShare}
+                onClick={() => handleShare('accept')}
               >
                 <Share2 className="mr-2 h-4 w-4" />
-                {shareStatus === 'copied' ? 'Copied!' : 'Share Bet'}
+                {isMiniApp ? 'Share on Farcaster' : shareStatus === 'copied' ? 'Copied!' : 'Share Bet'}
               </Button>
               <Button
                 variant="outline"
@@ -539,10 +556,10 @@ export function BetDetailDialog({
               <Button
                 className="bg-wb-coral hover:bg-wb-coral/90 w-full text-white"
                 size="lg"
-                onClick={handleShare}
+                onClick={() => handleShare('resolve')}
               >
                 <Share2 className="mr-2 h-4 w-4" />
-                {shareStatus === 'copied' ? 'Copied!' : 'Share Result'}
+                {isMiniApp ? 'Share on Farcaster' : shareStatus === 'copied' ? 'Copied!' : 'Share Result'}
               </Button>
               <Button
                 variant="outline"
@@ -564,11 +581,11 @@ export function BetDetailDialog({
           {/* Share button - Top left */}
           <button
             type="button"
-            onClick={handleShare}
+            onClick={() => handleShare()}
             className="absolute left-4 top-4 flex items-center gap-1 rounded-lg bg-wb-sand/50 px-2 py-1 text-sm text-wb-taupe transition-colors hover:bg-wb-sand hover:text-wb-brown"
           >
             <Share2 className="h-4 w-4" />
-            {shareStatus === 'copied' ? 'Copied!' : 'Share'}
+            {isMiniApp ? 'Share' : shareStatus === 'copied' ? 'Copied!' : 'Share'}
           </button>
           {/* Status Pennant - Top right */}
           <div className="absolute right-4 top-0">

@@ -144,8 +144,10 @@ export function CreateBetDialog() {
     const betUrl = `https://farcaster.xyz/miniapps/E7dxAafMr7wy/wannabet/bet/${betAddress}`
 
     if (isMiniApp) {
+      const takerTag = formData.takerUser?.username ? `@${formData.takerUser.username}` : 'someone'
+      const judgeTag = formData.judgeUser?.username ? `@${formData.judgeUser.username}` : 'a judge'
       sdk.actions.composeCast({
-        text: `I just created a bet on WannaBet!\n\n"${formData.description}"\n\n${formData.amount} USDC each`,
+        text: `I just created a bet on WannaBet!\n\n"${formData.description}"\n\n${formData.amount} USDC each\n\n${takerTag} vs me, judged by ${judgeTag}`,
         embeds: [betUrl],
       })
       return
@@ -159,7 +161,7 @@ export function CreateBetDialog() {
     } catch (err) {
       console.error('Failed to copy:', err)
     }
-  }, [betAddress, isMiniApp, formData.description, formData.amount])
+  }, [betAddress, isMiniApp, formData.description, formData.amount, formData.takerUser?.username, formData.judgeUser?.username])
 
   // Update form field
   const updateField = useCallback(
