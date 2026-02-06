@@ -3,7 +3,8 @@
 import Link from 'next/link'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import type { FarcasterUser } from '@/lib/types'
+import type { FarcasterUser } from 'indexer/types'
+import { getUsername } from '@/lib/utils'
 
 interface UserAvatarProps {
   user: FarcasterUser
@@ -25,7 +26,7 @@ export function UserAvatar({
   }
 
   const getFallbackInitials = () => {
-    const name = user.displayName || user.username || '?'
+    const name = user.displayName || getUsername(user)
     return name
       .split(' ')
       .map((n) => n[0])
@@ -37,13 +38,13 @@ export function UserAvatar({
 
   const avatar = (
     <Avatar className={sizeClasses[size]}>
-      <AvatarImage src={user.pfpUrl} alt={user.displayName || user.username} />
+      <AvatarImage src={user.pfpUrl ?? undefined} alt={user.displayName || user.username || undefined} />
       <AvatarFallback>{getFallbackInitials()}</AvatarFallback>
     </Avatar>
   )
 
-  // Don't make clickable if user doesn't have a Farcaster account (fid === 0)
-  if (!clickable || user.fid === 0) {
+  // Don't make clickable if user doesn't have a Farcaster account
+  if (!clickable || !user.fid) {
     return avatar
   }
 
@@ -51,7 +52,7 @@ export function UserAvatar({
     <Link
       href={`/profile/${user.fid}`}
       className="inline-block transition-opacity hover:opacity-80"
-      title={`@${user.username}`}
+      title={`@${getUsername(user)}`}
     >
       {avatar}
     </Link>

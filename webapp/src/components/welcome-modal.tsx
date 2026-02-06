@@ -9,7 +9,7 @@ import {
   DialogContent,
   DialogTitle,
 } from '@/components/ui/dialog'
-import type { BetStatus } from '@/lib/types'
+import { BetStatus } from 'indexer/types'
 
 interface WelcomeModalProps {
   open: boolean
@@ -17,29 +17,35 @@ interface WelcomeModalProps {
 }
 
 // Order of statuses to display in the welcome modal
-const STATUS_ORDER: BetStatus[] = ['open', 'active', 'cancelled', 'completed']
+const STATUS_ORDER: BetStatus[] = [
+  BetStatus.PENDING,
+  BetStatus.ACTIVE,
+  BetStatus.JUDGING,
+  BetStatus.CANCELLED,
+  BetStatus.RESOLVED,
+]
 
 export function WelcomeModal({ open, onOpenChange }: WelcomeModalProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-wb-sand max-w-md gap-0 overflow-hidden rounded-xl border-0 p-0 [&>button:last-child]:hidden">
+      <DialogContent className="bg-wb-sand max-h-[85vh] w-[90vw] max-w-sm gap-0 overflow-hidden rounded-xl border-0 p-0 [&>button:last-child]:hidden">
         {/* Coral Header */}
-        <div className="bg-wb-coral flex items-center justify-between px-6 py-4">
-          <DialogTitle className="text-wb-brown text-2xl font-bold">
-            How WannaBet Works
+        <div className="bg-wb-coral flex items-center justify-between px-4 py-3">
+          <DialogTitle className="text-wb-brown text-lg font-bold">
+            Info
           </DialogTitle>
           <DialogClose className="rounded-sm text-white opacity-80 transition-opacity hover:opacity-100">
-            <X className="h-7 w-7" />
+            <X className="h-6 w-6" />
             <span className="sr-only">Close</span>
           </DialogClose>
         </div>
 
-        {/* Sand Body */}
-        <div className="bg-wb-sand text-wb-brown space-y-5 px-6 py-5">
+        {/* Sand Body - Scrollable */}
+        <div className="bg-wb-sand text-wb-brown max-h-[calc(85vh-52px)] space-y-4 overflow-y-auto px-4 py-4">
           {/* What is WannaBet */}
           <section>
-            <h3 className="mb-1 text-xl font-bold">What is WannaBet?</h3>
-            <p className="text-wb-taupe">
+            <h3 className="mb-1 text-base font-bold">What is WannaBet?</h3>
+            <p className="text-wb-taupe text-sm">
               A peer-to-peer social betting app. Make trustless wagers with
               friends using smart contract escrow.
             </p>
@@ -47,13 +53,13 @@ export function WelcomeModal({ open, onOpenChange }: WelcomeModalProps) {
 
           {/* The Process */}
           <section>
-            <h3 className="mb-3 text-xl font-bold">The Process</h3>
-            <div className="space-y-3">
-              <div className="flex items-start gap-3">
-                <div className="bg-wb-coral text-wb-cream flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm font-bold">
+            <h3 className="mb-2 text-base font-bold">The Process</h3>
+            <div className="space-y-2">
+              <div className="flex items-start gap-2">
+                <div className="bg-wb-coral text-wb-cream flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold">
                   1
                 </div>
-                <p>
+                <p className="text-sm">
                   <span className="font-bold">Create a Bet</span>
                   <span className="text-wb-taupe">
                     {' '}
@@ -62,11 +68,11 @@ export function WelcomeModal({ open, onOpenChange }: WelcomeModalProps) {
                 </p>
               </div>
 
-              <div className="flex items-start gap-3">
-                <div className="bg-wb-coral text-wb-cream flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm font-bold">
+              <div className="flex items-start gap-2">
+                <div className="bg-wb-coral text-wb-cream flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold">
                   2
                 </div>
-                <p>
+                <p className="text-sm">
                   <span className="font-bold">Opponent Accepts</span>
                   <span className="text-wb-taupe">
                     {' '}
@@ -75,11 +81,11 @@ export function WelcomeModal({ open, onOpenChange }: WelcomeModalProps) {
                 </p>
               </div>
 
-              <div className="flex items-start gap-3">
-                <div className="bg-wb-coral text-wb-cream flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm font-bold">
+              <div className="flex items-start gap-2">
+                <div className="bg-wb-coral text-wb-cream flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold">
                   3
                 </div>
-                <p>
+                <p className="text-sm">
                   <span className="font-bold">Judge Settles</span>
                   <span className="text-wb-taupe">
                     {' '}
@@ -92,14 +98,14 @@ export function WelcomeModal({ open, onOpenChange }: WelcomeModalProps) {
 
           {/* Status Indicators */}
           <section>
-            <h3 className="mb-3 text-xl font-bold">Status Indicators</h3>
-            <div className="space-y-2">
+            <h3 className="mb-2 text-base font-bold">Status Indicators</h3>
+            <div className="space-y-1.5">
               {STATUS_ORDER.map((status) => {
                 const config = STATUS_CONFIG[status]
                 return (
-                  <div key={status} className="flex items-center gap-3">
-                    <StatusPennant status={status} />
-                    <p>
+                  <div key={status} className="flex items-center gap-2">
+                    <StatusPennant status={status} size="sm" />
+                    <p className="text-sm">
                       <span className="font-bold">{config.label}</span>
                       <span className="text-wb-taupe">
                         {' '}
@@ -111,6 +117,7 @@ export function WelcomeModal({ open, onOpenChange }: WelcomeModalProps) {
               })}
             </div>
           </section>
+
         </div>
       </DialogContent>
     </Dialog>

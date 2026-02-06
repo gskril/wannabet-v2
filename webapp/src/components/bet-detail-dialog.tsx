@@ -1,58 +1,214 @@
 'use client'
 
 import { format } from 'date-fns'
+import { ArrowUpRight, Loader2, Share2 } from 'lucide-react'
 import Image from 'next/image'
-import { useState } from 'react'
+import { useState, useCallback, useEffect } from 'react'
+import { useAccount } from 'wagmi'
+import type { Address } from 'viem'
 
 import { StatusPennant } from '@/components/status-pennant'
+import { UsdcBalance } from '@/components/usdc-balance'
 import { Button } from '@/components/ui/button'
-import { Drawer, DrawerContent, DrawerHeader } from '@/components/ui/drawer'
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+} from '@/components/ui/drawer'
 import { UserAvatar } from '@/components/user-avatar'
-import type { Bet, BetStatus } from '@/lib/types'
+import { useMiniApp } from '@/components/sdk-provider'
+import { useAcceptBet } from '@/hooks/useAcceptBet'
+import { useResolveBet } from '@/hooks/useResolveBet'
+import { useCancelBet } from '@/hooks/useCancelBet'
+import { useNotifications } from '@/hooks/useNotifications'
+import { BetStatus, type Bet } from 'indexer/types'
+import { getUsername } from '@/lib/utils'
+
+// Base scan URL for transaction links
+const BASE_SCAN_URL = 'https://basescan.org/address'
 
 // Helper to get ring color based on bet status
 const getStatusRingColor = (status: BetStatus) => {
-  const colors = {
-    open: 'ring-wb-yellow',
-    active: 'ring-wb-mint',
-    completed: 'ring-wb-gold',
-    cancelled: 'ring-wb-pink',
+  const colors: Record<BetStatus, string> = {
+    [BetStatus.PENDING]: 'ring-wb-yellow',
+    [BetStatus.ACTIVE]: 'ring-wb-mint',
+    [BetStatus.JUDGING]: 'ring-wb-mint',
+    [BetStatus.RESOLVED]: 'ring-wb-gold',
+    [BetStatus.CANCELLED]: 'ring-wb-pink',
   }
   return colors[status]
 }
 
 // Helper to get center badge background color based on bet status
 const getStatusBgColor = (status: BetStatus) => {
-  const colors = {
-    open: 'bg-wb-yellow',
-    active: 'bg-wb-mint',
-    completed: 'bg-wb-gold',
-    cancelled: 'bg-wb-pink',
+  const colors: Record<BetStatus, string> = {
+    [BetStatus.PENDING]: 'bg-wb-yellow',
+    [BetStatus.ACTIVE]: 'bg-wb-mint',
+    [BetStatus.JUDGING]: 'bg-wb-mint',
+    [BetStatus.RESOLVED]: 'bg-wb-gold',
+    [BetStatus.CANCELLED]: 'bg-wb-pink',
   }
   return colors[status]
 }
 
+// Timeline event component
+interface TimelineEventProps {
+  icon: '⏳' | '🤝' | '⚖️' | '❌' | '💸'
+  title: string
+  description: string
+  link?: string
+}
+
+function TimelineEvent({ icon, title, description, link }: TimelineEventProps) {
+  return (
+    <div className="bg-wb-sand/50 flex items-start gap-3 rounded-xl border px-4 py-3">
+      <span className="text-2xl">{icon}</span>
+      <div className="flex-1">
+        <p className="text-wb-brown font-semibold">{title}</p>
+        <p className="text-wb-taupe text-sm">
+          {description}
+          {link && (
+            <a
+              href={link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-wb-coral ml-1 inline-flex items-center hover:underline"
+            >
+              <ArrowUpRight className="h-3 w-3" />
+            </a>
+          )}
+        </p>
+      </div>
+    </div>
+  )
+}
+
+// Bet History component
+interface BetHistoryProps {
+  bet: Bet
+  onClose: () => void
+}
+
+function BetHistory({ bet, onClose }: BetHistoryProps) {
+  const contractLink = `${BASE_SCAN_URL}/${bet.address}`
+
+  return (
+    <div className="bg-background absolute inset-0 z-30 space-y-3 overflow-y-auto rounded-t-[10px] p-4">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <h3 className="text-wb-brown text-lg font-bold">Bet History</h3>
+      </div>
+
+      {/* Timeline Events */}
+      <div className="space-y-2">
+        {/* Bet Proposed - Always shown */}
+        <TimelineEvent
+          icon="⏳"
+          title="Bet Proposed"
+          description={`@${getUsername(bet.maker)} proposed this bet on ${format(bet.createdAt, 'MMM d, yyyy')}`}
+          link={contractLink}
+        />
+
+        {/* Bet Accepted - Show if accepted */}
+        {bet.acceptedAt && bet.acceptedBy && (
+          <TimelineEvent
+            icon="🤝"
+            title="Bet Accepted"
+            description={`@${getUsername(bet.acceptedBy)} accepted the bet on ${format(bet.acceptedAt, 'MMM d, yyyy')}`}
+            link={contractLink}
+          />
+        )}
+
+        {/* Bet Expired - Show if cancelled and never accepted */}
+        {bet.status === BetStatus.CANCELLED && !bet.acceptedAt && (
+          <TimelineEvent
+            icon="❌"
+            title="Bet Expired"
+            description={`No one accepted the bet within 7 days. Bet expired on ${format(bet.acceptBy, 'MMM d, yyyy')}`}
+          />
+        )}
+
+        {/* Winner Determined - Show if resolved */}
+        {bet.status === BetStatus.RESOLVED && bet.winner && (
+          <TimelineEvent
+            icon="⚖️"
+            title="Winner Determined"
+            description={`@${getUsername(bet.judge)} determined @${getUsername(bet.winner)} was the winner`}
+            link={contractLink}
+          />
+        )}
+
+        {/* Funds Returned - Show if cancelled */}
+        {bet.status === BetStatus.CANCELLED && (
+          <TimelineEvent
+            icon="💸"
+            title="Funds Returned"
+            description={`Funds returned to @${getUsername(bet.maker)}`}
+            link={contractLink}
+          />
+        )}
+      </div>
+
+      {/* Hide Details Link */}
+      <button
+        type="button"
+        className="text-wb-coral mx-auto block text-sm font-medium hover:underline"
+        onClick={onClose}
+      >
+        Hide Details
+      </button>
+    </div>
+  )
+}
+
 interface ActionCardProps {
   bet: Bet
+  connectedAddress?: Address
+  connectedFid?: number
   onAcceptBet: () => void
   onResolveBet: (winner: 'maker' | 'taker') => void
   onCancelBet: () => void
+  isAccepting?: boolean
+  isResolving?: boolean
+  isCancelling?: boolean
 }
 
 function ActionCard({
   bet,
+  connectedAddress,
+  connectedFid,
   onAcceptBet,
   onResolveBet,
   onCancelBet,
+  isAccepting,
+  isResolving,
+  isCancelling,
 }: ActionCardProps) {
+  const isPending = isAccepting || isResolving || isCancelling
+
+  // Normalize addresses for comparison
+  const normalizedConnected = connectedAddress?.toLowerCase()
+
+  // Check by address OR by FID (Farcaster users can have multiple addresses)
+  const isTaker =
+    normalizedConnected === bet.taker?.address?.toLowerCase() ||
+    (connectedFid && bet.taker?.fid && connectedFid === bet.taker.fid)
+  const isMaker =
+    normalizedConnected === bet.maker?.address?.toLowerCase() ||
+    (connectedFid && bet.maker?.fid && connectedFid === bet.maker.fid)
+  const isJudge =
+    normalizedConnected === bet.judge?.address?.toLowerCase() ||
+    (connectedFid && bet.judge?.fid && connectedFid === bet.judge.fid)
+
   // State 3: Resolved - Winner display
-  if (bet.status === 'completed' && bet.winner) {
+  if (bet.status === BetStatus.RESOLVED && bet.winner) {
     return (
       <div className="bg-wb-sand/50 rounded-xl border px-4 py-3">
         <div className="flex items-center justify-center gap-3">
           <span className="text-2xl">🏆</span>
           <span className="text-wb-brown text-sm">
-            @{bet.winner.username} won the bet!
+            @{getUsername(bet.winner)} won the bet!
           </span>
         </div>
       </div>
@@ -60,77 +216,129 @@ function ActionCard({
   }
 
   // State 4: Cancelled
-  if (bet.status === 'cancelled') {
+  if (bet.status === BetStatus.CANCELLED) {
     return (
       <div className="bg-wb-sand/50 rounded-xl border px-4 py-3">
         <div className="flex items-center justify-center gap-3">
           <span className="text-2xl">❌</span>
           <span className="text-wb-brown text-center text-sm">
-            @{bet.maker.username} canceled the bet and funds were returned
+            @{getUsername(bet.maker)} canceled the bet and funds were returned
           </span>
         </div>
       </div>
     )
   }
 
-  // State 2: Judge Selection (active + user is judge)
-  if (bet.status === 'active' && bet.acceptedBy) {
+  // State 2: Judge Selection (active or judging)
+  if (
+    (bet.status === BetStatus.ACTIVE || bet.status === BetStatus.JUDGING) &&
+    bet.acceptedBy
+  ) {
+    // Only judge can resolve or cancel in ACTIVE/JUDGING state
+    if (!isJudge) {
+      return (
+        <div className="bg-wb-sand/50 rounded-xl border px-4 py-3">
+          <p className="text-wb-taupe text-center text-sm">
+            Waiting for @{getUsername(bet.judge)} to pick a winner
+          </p>
+        </div>
+      )
+    }
+
     return (
       <div className="bg-wb-sand/50 space-y-3 rounded-xl border px-4 py-3">
         <p className="text-wb-taupe text-center text-xs">
-          Pick a winner (mock - any user can click)
+          Pick a winner as the judge
         </p>
         <div className="flex gap-2">
           <Button
             onClick={() => onResolveBet('maker')}
             className="bg-wb-coral hover:bg-wb-coral/80 flex-1 text-white"
+            disabled={isPending}
           >
-            @{bet.maker.username}
+            {isResolving ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              `@${getUsername(bet.maker)}`
+            )}
           </Button>
           <Button
             onClick={() => onResolveBet('taker')}
             className="bg-wb-coral hover:bg-wb-coral/80 flex-1 text-white"
+            disabled={isPending}
           >
-            @{bet.acceptedBy.username}
-          </Button>
-          <Button
-            onClick={onCancelBet}
-            className="bg-wb-coral hover:bg-wb-coral/80 flex-1 text-white"
-          >
-            Cancel
+            {isResolving ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              `@${getUsername(bet.acceptedBy)}`
+            )}
           </Button>
         </div>
-        <p className="text-wb-taupe text-center text-xs">
-          Picking a winner will send them {Number(bet.amount) * 2} USDC. Cancel
-          will split the funds evenly
-        </p>
-      </div>
-    )
-  }
-
-  // State 1: Taker Accept (open)
-  if (bet.status === 'open') {
-    return (
-      <div className="bg-wb-sand/50 space-y-3 rounded-xl border px-4 py-3">
-        <Button
-          onClick={onAcceptBet}
-          className="bg-wb-coral hover:bg-wb-coral/80 w-full text-white"
-          size="lg"
-        >
-          Accept Bet
-        </Button>
-        <p className="text-wb-taupe text-center text-xs">
-          Accepting will send {bet.amount} USDC to the bet contract. Offer ends{' '}
-          {format(bet.acceptBy, 'MMM d, yyyy')}.
-        </p>
         <Button
           onClick={onCancelBet}
           variant="outline"
           className="w-full"
           size="sm"
+          disabled={isPending}
         >
-          Cancel Bet
+          {isCancelling ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : null}
+          {isCancelling ? 'Cancelling...' : 'Cancel (Split Funds)'}
         </Button>
+        <p className="text-wb-taupe text-center text-xs">
+          Picking a winner will send them {Number(bet.amount) * 2} USDC
+        </p>
+      </div>
+    )
+  }
+
+  // State 1: Pending - Taker can accept, Maker can cancel
+  if (bet.status === BetStatus.PENDING) {
+    return (
+      <div className="bg-wb-sand/50 space-y-3 rounded-xl border px-4 py-3">
+        {isTaker ? (
+          <>
+            <Button
+              onClick={onAcceptBet}
+              className="bg-wb-coral hover:bg-wb-coral/80 w-full text-white"
+              size="lg"
+              disabled={isPending}
+            >
+              {isAccepting ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : null}
+              {isAccepting ? 'Accepting...' : 'Accept Bet'}
+            </Button>
+            <p className="text-wb-taupe text-center text-xs">
+              Accepting will send {bet.amount} USDC to the bet contract. Offer
+              ends {format(bet.acceptBy, 'MMM d, yyyy')}.
+            </p>
+          </>
+        ) : isMaker ? (
+          <>
+            <p className="text-wb-taupe text-center text-sm">
+              Waiting for @{getUsername(bet.taker)} to accept
+            </p>
+            <Button
+              onClick={onCancelBet}
+              variant="outline"
+              className="w-full"
+              size="sm"
+              disabled={isPending}
+            >
+              {isCancelling ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : null}
+              {isCancelling ? 'Cancelling...' : 'Cancel Bet'}
+            </Button>
+          </>
+        ) : (
+          <p className="text-wb-taupe text-center text-sm">
+            Waiting for @{getUsername(bet.taker)} to accept. Offer ends{' '}
+            {format(bet.acceptBy, 'MMM d, yyyy')}.
+          </p>
+        )}
       </div>
     )
   }
@@ -151,28 +359,101 @@ export function BetDetailDialog({
   onOpenChange,
 }: BetDetailDialogProps) {
   const [showDetails, setShowDetails] = useState(false)
+  const [shareStatus, setShareStatus] = useState<'idle' | 'copied'>('idle')
+  const [showAcceptSuccess, setShowAcceptSuccess] = useState(false)
+  const [showCancelSuccess, setShowCancelSuccess] = useState(false)
+  const [showResolveSuccess, setShowResolveSuccess] = useState<{
+    show: boolean
+    winnerName: string | null
+  }>({ show: false, winnerName: null })
+  const { address } = useAccount()
+  const { miniAppUser } = useMiniApp()
 
-  // Mock handlers - just log and close for now
-  const handleAcceptBet = () => {
-    // TODO: Implement real accept logic
-    console.log('Mock: Accept bet', bet.id)
-    alert('Mock: Bet accepted! (not really)')
+  // Share bet functionality - always copy to clipboard for confirmation
+  const handleShare = useCallback(async () => {
+    const betUrl = `https://farcaster.xyz/miniapps/E7dxAafMr7wy/wannabet/bet/${bet.address}`
+
+    // Always copy to clipboard first
+    try {
+      await navigator.clipboard.writeText(betUrl)
+      setShareStatus('copied')
+      setTimeout(() => setShareStatus('idle'), 2000)
+    } catch (err) {
+      console.error('Failed to copy:', err)
+    }
+  }, [bet.address])
+
+  // Notification hooks
+  const { notifyBetAccepted, notifyBetResolved, notifyBetCancelled } = useNotifications()
+
+  // Contract interaction hooks
+  const {
+    submit: submitAccept,
+    isPending: isAccepting,
+    phase: acceptPhase,
+  } = useAcceptBet(bet.address as Address, bet.amount)
+
+  const {
+    submit: submitResolve,
+    isPending: isResolving,
+  } = useResolveBet(bet.address as Address)
+
+  const {
+    submit: submitCancel,
+    isPending: isCancelling,
+  } = useCancelBet(bet.address as Address)
+
+  // Handle accept bet - just trigger the submit, useEffect handles success
+  const handleAcceptBet = async () => {
+    await submitAccept()
   }
 
-  const handleResolveBet = (winner: 'maker' | 'taker') => {
-    // TODO: Implement real resolve logic
-    console.log('Mock: Resolve bet', bet.id, 'winner:', winner)
-    alert(`Mock: ${winner === 'maker' ? bet.maker.username : bet.taker.username} wins! (not really)`)
+  // Watch for successful accept and show success state
+  useEffect(() => {
+    if (acceptPhase === 'success') {
+      notifyBetAccepted(bet)
+      setShowAcceptSuccess(true)
+    }
+  }, [acceptPhase, bet, notifyBetAccepted])
+
+  const handleResolveBet = async (winner: 'maker' | 'taker') => {
+    const winnerAddress =
+      winner === 'maker'
+        ? (bet.maker.address as Address)
+        : (bet.acceptedBy?.address as Address)
+    const winnerUser = winner === 'maker' ? bet.maker : bet.acceptedBy
+    if (winnerAddress) {
+      await submitResolve(winnerAddress)
+      // Notify winner and loser
+      notifyBetResolved({
+        ...bet,
+        winner: { address: winnerAddress },
+      })
+      // Show success state
+      setShowResolveSuccess({
+        show: true,
+        winnerName: getUsername(winnerUser),
+      })
+    }
   }
 
-  const handleCancelBet = () => {
-    // TODO: Implement real cancel logic
-    console.log('Mock: Cancel bet', bet.id)
-    alert('Mock: Bet cancelled! (not really)')
+  const handleCancelBet = async () => {
+    const success = await submitCancel()
+    // Notify taker that bet was cancelled (only if bet was PENDING)
+    if (success && bet.status === BetStatus.PENDING) {
+      notifyBetCancelled(bet)
+    }
+    // Show success state
+    if (success) {
+      setShowCancelSuccess(true)
+    }
   }
 
   const handleReset = () => {
     setShowDetails(false)
+    setShowAcceptSuccess(false)
+    setShowCancelSuccess(false)
+    setShowResolveSuccess({ show: false, winnerName: null })
   }
 
   return (
@@ -183,8 +464,112 @@ export function BetDetailDialog({
         if (!isOpen) handleReset()
       }}
     >
-      <DrawerContent className="fixed bottom-0 left-0 right-0 mx-auto flex max-h-[90dvh] max-w-3xl flex-col pb-[env(safe-area-inset-bottom)]">
+      <DrawerContent className="relative fixed bottom-0 left-0 right-0 mx-auto flex max-h-[90dvh] max-w-3xl flex-col pb-[env(safe-area-inset-bottom)]">
+        {/* Accept Success Overlay */}
+        {showAcceptSuccess && (
+          <div className="absolute inset-0 z-30 flex flex-col items-center justify-center rounded-t-[10px] bg-background/95 px-6 py-12">
+            <div className="text-4xl mb-4">🤝</div>
+            <p className="text-wb-brown text-lg font-semibold mb-2">
+              Bet Accepted!
+            </p>
+            <p className="text-wb-taupe text-sm text-center mb-6">
+              You&apos;re now in a bet with @{getUsername(bet.maker)} for {bet.amount} USDC each.
+              Good luck!
+            </p>
+            <div className="flex flex-col gap-2 w-full max-w-xs">
+              <Button
+                className="bg-wb-coral hover:bg-wb-coral/90 w-full text-white"
+                size="lg"
+                onClick={handleShare}
+              >
+                <Share2 className="mr-2 h-4 w-4" />
+                {shareStatus === 'copied' ? 'Copied!' : 'Share Bet'}
+              </Button>
+              <Button
+                variant="outline"
+                className="w-full"
+                size="lg"
+                onClick={() => {
+                  onOpenChange(false)
+                  handleReset()
+                }}
+              >
+                Done
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Cancel Success Overlay */}
+        {showCancelSuccess && (
+          <div className="absolute inset-0 z-30 flex flex-col items-center justify-center rounded-t-[10px] bg-background/95 px-6 py-12">
+            <div className="text-4xl mb-4">✅</div>
+            <p className="text-wb-brown text-lg font-semibold mb-2">
+              Bet Cancelled
+            </p>
+            <p className="text-wb-taupe text-sm text-center mb-6">
+              The bet has been cancelled and funds have been returned.
+            </p>
+            <div className="flex flex-col gap-2 w-full max-w-xs">
+              <Button
+                className="bg-wb-coral hover:bg-wb-coral/90 w-full text-white"
+                size="lg"
+                onClick={() => {
+                  onOpenChange(false)
+                  handleReset()
+                }}
+              >
+                Done
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Resolve Success Overlay */}
+        {showResolveSuccess.show && (
+          <div className="absolute inset-0 z-30 flex flex-col items-center justify-center rounded-t-[10px] bg-background/95 px-6 py-12">
+            <div className="text-4xl mb-4">🏆</div>
+            <p className="text-wb-brown text-lg font-semibold mb-2">
+              Winner Selected!
+            </p>
+            <p className="text-wb-taupe text-sm text-center mb-6">
+              @{showResolveSuccess.winnerName} has been declared the winner and will receive {Number(bet.amount) * 2} USDC.
+            </p>
+            <div className="flex flex-col gap-2 w-full max-w-xs">
+              <Button
+                className="bg-wb-coral hover:bg-wb-coral/90 w-full text-white"
+                size="lg"
+                onClick={handleShare}
+              >
+                <Share2 className="mr-2 h-4 w-4" />
+                {shareStatus === 'copied' ? 'Copied!' : 'Share Result'}
+              </Button>
+              <Button
+                variant="outline"
+                className="w-full"
+                size="lg"
+                onClick={() => {
+                  onOpenChange(false)
+                  handleReset()
+                }}
+              >
+                Done
+              </Button>
+            </div>
+          </div>
+        )}
+
         <DrawerHeader className="relative pb-2">
+          <DrawerTitle className="sr-only">Bet Details</DrawerTitle>
+          {/* Share button - Top left */}
+          <button
+            type="button"
+            onClick={handleShare}
+            className="absolute left-4 top-4 flex items-center gap-1 rounded-lg bg-wb-sand/50 px-2 py-1 text-sm text-wb-taupe transition-colors hover:bg-wb-sand hover:text-wb-brown"
+          >
+            <Share2 className="h-4 w-4" />
+            {shareStatus === 'copied' ? 'Copied!' : 'Share'}
+          </button>
           {/* Status Pennant - Top right */}
           <div className="absolute right-4 top-0">
             <StatusPennant status={bet.status} />
@@ -195,9 +580,9 @@ export function BetDetailDialog({
             {/* Maker avatar - positioned left */}
             <div
               className={`rounded-full ring-4 ${getStatusRingColor(bet.status)} z-10 ${
-                bet.status === 'completed' &&
+                bet.status === BetStatus.RESOLVED &&
                 bet.winner &&
-                bet.winner.fid !== bet.maker.fid
+                bet.winner.address?.toLowerCase() !== bet.maker.address?.toLowerCase()
                   ? 'grayscale'
                   : ''
               }`}
@@ -225,9 +610,9 @@ export function BetDetailDialog({
             {/* Taker avatar - positioned right */}
             <div
               className={`rounded-full ring-4 ${getStatusRingColor(bet.status)} ${
-                bet.status === 'completed' &&
+                bet.status === BetStatus.RESOLVED &&
                 bet.winner &&
-                bet.winner.fid !== (bet.acceptedBy || bet.taker)?.fid
+                bet.winner.address?.toLowerCase() !== (bet.acceptedBy || bet.taker)?.address?.toLowerCase()
                   ? 'grayscale'
                   : ''
               }`}
@@ -243,10 +628,10 @@ export function BetDetailDialog({
           {/* Usernames below avatars */}
           <div className="mt-2 flex justify-center gap-24">
             <span className="text-wb-brown text-sm font-medium">
-              @{bet.maker.username}
+              @{getUsername(bet.maker)}
             </span>
             <span className="text-wb-brown text-sm font-medium">
-              @{(bet.acceptedBy || bet.taker)?.username}
+              @{getUsername(bet.acceptedBy || bet.taker)}
             </span>
           </div>
         </DrawerHeader>
@@ -255,68 +640,55 @@ export function BetDetailDialog({
           {/* Bet Description */}
           <div className="text-center">
             <p className="text-wb-taupe text-sm">
-              @{bet.maker.username} bet that...
+              @{getUsername(bet.maker)} bet that...
             </p>
             <h2 className="text-wb-brown mt-1 text-2xl font-bold leading-tight">
               {bet.description}
             </h2>
             <p className="text-wb-taupe mt-2 text-sm">
               Ends: {format(bet.expiresAt, 'MMM d, yyyy')} | Judge: @
-              {bet.judge?.username || 'TBA'}
+              {getUsername(bet.judge)}
             </p>
           </div>
 
           {/* Action Card - Context Dependent */}
           <ActionCard
             bet={bet}
+            connectedAddress={address}
+            connectedFid={miniAppUser?.fid}
             onAcceptBet={handleAcceptBet}
             onResolveBet={handleResolveBet}
             onCancelBet={handleCancelBet}
+            isAccepting={isAccepting}
+            isResolving={isResolving}
+            isCancelling={isCancelling}
           />
 
-          {/* Show More Details Link */}
-          <button
-            type="button"
-            className="text-wb-coral mx-auto block text-sm font-medium hover:underline"
-            onClick={() => setShowDetails(!showDetails)}
-          >
-            {showDetails ? 'Hide Details' : 'Show More Details'}
-          </button>
+          {/* USDC Balance - Show for takers of pending bets */}
+          {bet.status === BetStatus.PENDING &&
+            (address?.toLowerCase() === bet.taker.address?.toLowerCase() ||
+              miniAppUser?.fid === bet.taker.fid) && (
+              <div className="-mt-2 text-center">
+                <UsdcBalance />
+              </div>
+            )}
 
-          {/* Collapsible Details Section */}
-          {showDetails && (
-            <div className="bg-wb-sand/30 space-y-2 rounded-lg p-3 text-sm">
-              <div className="flex justify-between">
-                <span className="text-wb-taupe">Contract</span>
-                <span className="text-wb-brown font-mono">
-                  {bet.id.slice(0, 10)}...{bet.id.slice(-8)}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-wb-taupe">Judge</span>
-                <span className="text-wb-brown">@{bet.judge.username}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-wb-taupe">Created</span>
-                <span className="text-wb-brown">
-                  {format(bet.createdAt, 'MMM d, yyyy')}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-wb-taupe">Accept by</span>
-                <span className="text-wb-brown">
-                  {format(bet.acceptBy, 'MMM d, yyyy')}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-wb-taupe">Judge deadline</span>
-                <span className="text-wb-brown">
-                  {format(bet.resolveBy, 'MMM d, yyyy')}
-                </span>
-              </div>
-            </div>
+          {/* Show More Details Link */}
+          {!showDetails && (
+            <button
+              type="button"
+              className="text-wb-coral mx-auto block text-sm font-medium hover:underline"
+              onClick={() => setShowDetails(true)}
+            >
+              Show More Details
+            </button>
           )}
         </div>
+
+        {/* Bet History Overlay */}
+        {showDetails && (
+          <BetHistory bet={bet} onClose={() => setShowDetails(false)} />
+        )}
       </DrawerContent>
     </Drawer>
   )

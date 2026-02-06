@@ -1,12 +1,12 @@
 'use client'
 
+import type { FarcasterUser } from 'indexer/types'
 import { Search } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { UserAvatar } from '@/components/user-avatar'
-import type { FarcasterUser } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
 interface UserSearchProps {
@@ -23,12 +23,19 @@ interface UserSearchProps {
 
 const EMPTY_ARRAY: number[] = []
 
-// TODO: Replace with real Farcaster user search via Neynar API
+function stripLeadingAt(query: string): string {
+  return query.startsWith('@') ? query.slice(1) : query
+}
+
 async function searchUsers(query: string): Promise<FarcasterUser[]> {
-  // Placeholder - returns empty array
-  // In production, this would call the Neynar search API
-  console.log('TODO: Implement user search for query:', query)
-  return []
+  const response = await fetch(
+    `/api/users/search?q=${encodeURIComponent(query)}`
+  )
+  if (!response.ok) {
+    throw new Error('Search failed')
+  }
+  const data = await response.json()
+  return data.users || []
 }
 
 export function UserSearch({
@@ -53,7 +60,7 @@ export function UserSearch({
   // Search function
   const performSearch = useCallback(
     async (query: string) => {
-      const trimmedQuery = query.trim()
+      const trimmedQuery = stripLeadingAt(query.trim())
 
       if (
         !trimmedQuery ||
@@ -69,7 +76,7 @@ export function UserSearch({
       try {
         const results = await searchUsers(trimmedQuery)
         const filtered = results.filter(
-          (user) => !excludeFids.includes(user.fid)
+          (user) => user.fid !== null && !excludeFids.includes(user.fid)
         )
         setUsers(filtered.slice(0, 10))
       } catch (error) {
@@ -84,7 +91,8 @@ export function UserSearch({
 
   // Debounced search effect
   useEffect(() => {
-    if (!searchQuery.trim() || searchQuery.trim().length < 2) {
+    const stripped = stripLeadingAt(searchQuery.trim())
+    if (!stripped || stripped.length < 2) {
       setUsers([])
       lastSearchRef.current = ''
       return
@@ -128,34 +136,29 @@ export function UserSearch({
   }
 
   return (
-    <div className="space-y-2">
-      <Label htmlFor="user-search" className={cn('text-base', labelClassName)}>
+    <div className="space-y-1">
+      <Label htmlFor="user-search" className={cn(labelClassName)}>
         {label}
       </Label>
 
       {/* Show avatar card if user is selected, otherwise show search input */}
       {selectedUser ? (
-        <div className="border-primary bg-primary/10 flex min-h-[72px] items-center justify-between gap-3 rounded-lg border-2 p-3">
-          <div className="flex items-center gap-3">
-            <UserAvatar user={selectedUser} size="md" clickable={false} />
-            <div>
-              <p className="font-semibold">{selectedUser.displayName}</p>
-              <p className="text-muted-foreground text-sm">
-                @{selectedUser.username}
-              </p>
-            </div>
+        <div className="border-primary bg-primary/10 flex h-10 items-center justify-between gap-2 rounded-md border-2 px-3">
+          <div className="flex items-center gap-2">
+            <UserAvatar user={selectedUser} size="sm" clickable={false} />
+            <p className="text-sm font-medium">@{selectedUser.username}</p>
           </div>
           <button
             type="button"
             onClick={handleClearSelection}
-            className="text-muted-foreground hover:text-foreground rounded-lg px-3 py-1.5 text-sm font-medium transition-colors"
+            className="text-muted-foreground hover:text-foreground text-xs font-medium transition-colors"
           >
             Change
           </button>
         </div>
       ) : (
-        <div className="relative min-h-[72px]">
-          <Search className="text-muted-foreground absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2" />
+        <div className="relative">
+          <Search className="text-muted-foreground absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" />
           <Input
             id="user-search"
             type="text"
@@ -168,11 +171,11 @@ export function UserSearch({
               setTimeout(() => setIsFocused(false), 200)
             }}
             required={required}
-            className={cn('h-[72px] pl-10 text-base', inputClassName)}
+            className={cn('h-10 pl-9', inputClassName)}
           />
 
           {/* Dropdown with user suggestions */}
-          {isFocused && searchQuery.trim().length >= 2 && (
+          {isFocused && stripLeadingAt(searchQuery.trim()).length >= 2 && (
             <div className="bg-background absolute top-full z-50 mt-1 max-h-[280px] w-full overflow-y-auto rounded-lg border shadow-lg">
               {isLoading ? (
                 <div className="text-muted-foreground p-4 text-center text-sm">
@@ -181,7 +184,7 @@ export function UserSearch({
               ) : users.length > 0 ? (
                 users.map((user) => (
                   <button
-                    key={user.fid}
+                    key={user.fid ?? user.address}
                     type="button"
                     onClick={() => handleUserSelect(user)}
                     className="hover:bg-farcaster-brand/20 flex w-full items-center gap-3 border-b p-3 text-left transition-colors last:border-b-0"
@@ -199,7 +202,7 @@ export function UserSearch({
                 ))
               ) : (
                 <div className="text-muted-foreground p-4 text-center text-sm">
-                  No users found (search not implemented yet)
+                  No users found
                 </div>
               )}
             </div>

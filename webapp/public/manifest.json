@@ -5,5 +5,14 @@
   "iconUrl": "/img/bettingmutt.png",
   "splashImageUrl": "/img/bettingmutt.png",
   "splashBackgroundColor": "#fefce8",
-  "homeUrl": "/"
+  "homeUrl": "/",
+  "frame": {
+    "version": "1",
+    "name": "WannaBet",
+    "iconUrl": "/img/bettingmutt.png",
+    "splashImageUrl": "/img/bettingmutt.png",
+    "splashBackgroundColor": "#fefce8",
+    "homeUrl": "https://heywannabet.com",
+    "webhookUrl": "https://api.neynar.com/f/app/817e51c1-3c90-452c-9bc7-aa1510944494/event"
+  }
 }

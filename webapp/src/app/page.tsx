@@ -8,31 +8,58 @@ import { BetsTable } from '@/components/bets-table'
 import { ConnectWalletButton } from '@/components/connect-wallet-button'
 import { WelcomeModal } from '@/components/welcome-modal'
 import { useBets } from '@/hooks/useBets'
+import { BetStatus, type Bet } from 'indexer/types'
 
 type FilterType = 'all' | 'my' | 'notifications'
+
+// Helper to check if a bet requires action from the user
+function betRequiresAction(bet: Bet, userAddress: string): boolean {
+  const addr = userAddress.toLowerCase()
+  const needsAccept =
+    bet.taker.address?.toLowerCase() === addr && bet.status === BetStatus.PENDING
+  const needsJudgment =
+    bet.judge.address?.toLowerCase() === addr && bet.status === BetStatus.JUDGING
+  return needsAccept || needsJudgment
+}
+type StatusFilter = BetStatus | 'all'
+
+const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
+  { value: 'all', label: 'All' },
+  { value: BetStatus.PENDING, label: 'Pending' },
+  { value: BetStatus.ACTIVE, label: 'Live' },
+  { value: BetStatus.JUDGING, label: 'Judging' },
+  { value: BetStatus.RESOLVED, label: 'Resolved' },
+  { value: BetStatus.CANCELLED, label: 'Cancelled' },
+]
 
 const WELCOME_DISMISSED_KEY = 'welcomeDismissed'
 
 const getEmptyStateMessage = (
   filter: FilterType,
-  hasAddress: boolean
+  hasAddress: boolean,
+  statusFilter: StatusFilter
 ): string => {
   if (filter === 'my') {
-    return hasAddress
-      ? 'No bets where you are a participant'
-      : 'Connect your wallet to see your bets'
+    if (!hasAddress) return 'Connect your wallet to see your bets'
+    if (statusFilter !== 'all') {
+      const label = STATUS_FILTERS.find((f) => f.value === statusFilter)?.label
+      return `No ${label?.toLowerCase()} bets where you are a participant`
+    }
+    return 'No bets where you are a participant'
   }
   if (filter === 'notifications') return 'No pending actions'
+  if (statusFilter !== 'all') {
+    const label = STATUS_FILTERS.find((f) => f.value === statusFilter)?.label
+    return `No ${label?.toLowerCase()} bets found`
+  }
   return 'No bets found. Create one to get started!'
 }
 
 export default function HomePage() {
   const [showWelcome, setShowWelcome] = useState(false)
   const [activeFilter, setActiveFilter] = useState<FilterType>('all')
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
   const { address } = useAccount()
-
-  // Dummy: number of pending notifications (bets requiring action)
-  const pendingNotifications = 2
 
   // Load initial state from localStorage after client mounts
   useEffect(() => {
@@ -43,28 +70,37 @@ export default function HomePage() {
   // Fetch bets data
   const betsQuery = useBets()
 
-  // Filter bets based on active filter
+  // Bets requiring action (for notifications tab and badge)
+  const betsRequiringAction = useMemo(() => {
+    if (!betsQuery.data || !address) return []
+    return betsQuery.data.filter((bet) => betRequiresAction(bet, address))
+  }, [betsQuery.data, address])
+
+  // Filter and sort bets
   const filteredBets = useMemo(() => {
     if (!betsQuery.data) return []
 
-    switch (activeFilter) {
-      case 'my':
-        // Show bets where user is maker, taker, or judge
-        if (!address) return []
-        return betsQuery.data.filter(
-          (bet) =>
-            bet.makerAddress?.toLowerCase() === address.toLowerCase() ||
-            bet.takerAddress?.toLowerCase() === address.toLowerCase() ||
-            bet.judgeAddress?.toLowerCase() === address.toLowerCase()
-        )
-      case 'notifications':
-        // Dummy: for now just show first 2 bets as "requiring action"
-        return betsQuery.data.slice(0, 2)
-      case 'all':
-      default:
-        return betsQuery.data
+    // Tab filter
+    let bets = betsQuery.data
+    if (activeFilter === 'notifications') {
+      bets = betsRequiringAction
+    } else if (activeFilter === 'my') {
+      if (!address) return []
+      bets = bets.filter(
+        (bet) =>
+          bet.maker.address?.toLowerCase() === address.toLowerCase() ||
+          bet.taker.address?.toLowerCase() === address.toLowerCase() ||
+          bet.judge.address?.toLowerCase() === address.toLowerCase()
+      )
     }
-  }, [betsQuery.data, activeFilter, address])
+
+    // Status filter
+    if (statusFilter !== 'all') {
+      bets = bets.filter((bet) => bet.status === statusFilter)
+    }
+
+    return bets
+  }, [betsQuery.data, activeFilter, address, statusFilter, betsRequiringAction])
 
   const handleCloseWelcome = (open: boolean) => {
     setShowWelcome(open)
@@ -81,7 +117,7 @@ export default function HomePage() {
           <div className="flex items-center">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="/img/bettingmutt.png"
+              src="/img/logo.png"
               alt="WannaBet"
               className="h-16 w-16 md:h-20 md:w-20"
             />
@@ -112,7 +148,7 @@ export default function HomePage() {
       {/* Filter Navigation Bar */}
       <div className="bg-background flex items-center justify-center gap-6 border-b px-4 py-4">
         <button
-          onClick={() => setActiveFilter('notifications')}
+          onClick={() => { setActiveFilter('notifications'); setStatusFilter('all') }}
           className={`relative flex items-center justify-center rounded-full p-2 transition-colors ${
             activeFilter === 'notifications'
               ? 'bg-wb-coral text-white'
@@ -120,14 +156,14 @@ export default function HomePage() {
           }`}
         >
           <Bell className="h-5 w-5" />
-          {pendingNotifications > 0 && (
+          {betsRequiringAction.length > 0 && (
             <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
-              {pendingNotifications}
+              {betsRequiringAction.length}
             </span>
           )}
         </button>
         <button
-          onClick={() => setActiveFilter('my')}
+          onClick={() => { setActiveFilter('my'); setStatusFilter('all') }}
           className={`flex items-center justify-center rounded-full p-2 transition-colors ${
             activeFilter === 'my'
               ? 'bg-wb-coral text-white'
@@ -137,7 +173,7 @@ export default function HomePage() {
           <User className="h-5 w-5" />
         </button>
         <button
-          onClick={() => setActiveFilter('all')}
+          onClick={() => { setActiveFilter('all'); setStatusFilter('all') }}
           className={`flex items-center justify-center rounded-full p-2 transition-colors ${
             activeFilter === 'all'
               ? 'bg-wb-coral text-white'
@@ -146,6 +182,22 @@ export default function HomePage() {
         >
           <Globe className="h-5 w-5" />
         </button>
+      </div>
+      {/* Status Filter Pills */}
+      <div className="bg-background flex items-center gap-1.5 overflow-x-auto px-4 py-2 no-scrollbar">
+        {STATUS_FILTERS.map((filter) => (
+          <button
+            key={filter.value}
+            onClick={() => setStatusFilter(filter.value)}
+            className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors ${
+              statusFilter === filter.value
+                ? 'bg-wb-brown text-white'
+                : 'bg-wb-sand text-wb-brown'
+            }`}
+          >
+            {filter.label}
+          </button>
+        ))}
       </div>
       <main className="container mx-auto px-4 py-6 md:py-8">
         {betsQuery.isLoading ? (
@@ -159,7 +211,7 @@ export default function HomePage() {
         ) : filteredBets.length === 0 ? (
           <div className="flex items-center justify-center py-12">
             <div className="text-muted-foreground">
-              {getEmptyStateMessage(activeFilter, !!address)}
+              {getEmptyStateMessage(activeFilter, !!address, statusFilter)}
             </div>
           </div>
         ) : (

@@ -2,7 +2,7 @@
 
 import type { Context as MiniAppContext } from '@farcaster/miniapp-core'
 import { type ReadyOptions, sdk } from '@farcaster/miniapp-sdk'
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useState } from 'react'
 
 interface MiniAppProviderProps extends React.PropsWithChildren {
   config?: ReadyOptions
@@ -10,16 +10,39 @@ interface MiniAppProviderProps extends React.PropsWithChildren {
 
 type UserContext = MiniAppContext.UserContext
 
-const Context = createContext<UserContext | undefined>(undefined)
+type MiniAppState = {
+  user: UserContext | undefined
+  notificationsEnabled: boolean
+}
+
+const Context = createContext<MiniAppState>({ user: undefined, notificationsEnabled: false })
 
 export function SdkProvider({ children, config }: MiniAppProviderProps) {
   const [isFrameSDKLoaded, setIsFrameSDKLoaded] = useState(false)
-  const [context, setContext] = useState<UserContext>()
+  const [state, setState] = useState<MiniAppState>({ user: undefined, notificationsEnabled: false })
 
   useEffect(() => {
     const load = async () => {
-      await sdk.actions.ready(config)
-      setContext((await sdk.context)?.user || undefined)
+      const [, ctx] = await Promise.all([
+        sdk.actions.ready(config),
+        sdk.context,
+      ])
+      const user = ctx?.user || undefined
+      const notificationsEnabled = !!ctx?.client?.notificationDetails
+      setState({ user, notificationsEnabled })
+
+      // Auto-trigger addFrame on first visit in MiniApp
+      if (user) {
+        try {
+          const alreadyAdded = localStorage.getItem('wannabet-frame-added')
+          if (!alreadyAdded) {
+            await sdk.actions.addFrame()
+            localStorage.setItem('wannabet-frame-added', 'true')
+          }
+        } catch {
+          // User dismissed or error - will re-prompt next visit
+        }
+      }
     }
 
     if (sdk && !isFrameSDKLoaded) {
@@ -29,11 +52,11 @@ export function SdkProvider({ children, config }: MiniAppProviderProps) {
   }, [isFrameSDKLoaded])
 
   return (
-    <Context.Provider value={context}>
+    <Context.Provider value={state}>
       {process.env.NODE_ENV === 'development' && (
         <div className="fixed right-0 top-0 z-50 bg-black/80 p-2 text-xs text-white">
-          {context?.fid
-            ? `✅ Viewing in MiniApp: FID ${context.fid} (${context.username || 'loading...'})`
+          {state.user?.fid
+            ? `✅ MiniApp: FID ${state.user.fid} | Notifs: ${state.notificationsEnabled ? 'ON' : 'OFF'}`
             : '❌ Not in MiniApp'}
         </div>
       )}
@@ -44,6 +67,27 @@ export function SdkProvider({ children, config }: MiniAppProviderProps) {
 }
 
 export function useMiniApp() {
-  const context = useContext(Context)
-  return { isMiniApp: !!context, miniAppUser: context }
+  const state = useContext(Context)
+
+  const enableNotifications = useCallback(async () => {
+    try {
+      const result = await sdk.actions.addFrame()
+      // If notificationDetails exists, notifications were enabled
+      if (result.notificationDetails) {
+        return { success: true, enabled: true }
+      }
+      // Miniapp was added but notifications were not enabled
+      return { success: true, enabled: false }
+    } catch (error) {
+      console.error('[MiniApp] Failed to enable notifications:', error)
+      return { success: false, enabled: false }
+    }
+  }, [])
+
+  return {
+    isMiniApp: !!state.user,
+    miniAppUser: state.user,
+    notificationsEnabled: state.notificationsEnabled,
+    enableNotifications,
+  }
 }

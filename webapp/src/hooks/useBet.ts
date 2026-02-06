@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 
 import { fetchBetById } from '@/lib/indexer'
-import type { Bet } from '@/lib/types'
+import type { Bet } from 'indexer/types'
 
 export function useBet(id: string | undefined) {
   return useQuery<Bet | null>({

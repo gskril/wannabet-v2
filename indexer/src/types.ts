@@ -1,5 +1,16 @@
-import { ReplaceBigInts } from 'ponder'
+import { getEnrichedBets } from './api/handlers/bets'
 
-import { bet } from '../ponder.schema'
+// Re-export base types
+export { BetStatus, SUPPORTED_ASSETS, type Asset, type FarcasterUser } from './lib/constants'
 
-export type Bet = ReplaceBigInts<typeof bet.$inferSelect, string>
+// Helper type to convert bigints to strings (matches JSON serialization)
+type ReplaceBigInts<T> = T extends bigint
+  ? string
+  : T extends Array<infer U>
+    ? Array<ReplaceBigInts<U>>
+    : T extends object
+      ? { [K in keyof T]: ReplaceBigInts<T[K]> }
+      : T
+
+// Bet type - inferred from the enriched API response with bigints converted to strings
+export type Bet = ReplaceBigInts<Awaited<ReturnType<typeof getEnrichedBets>>[number]>

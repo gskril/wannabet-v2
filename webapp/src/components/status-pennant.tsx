@@ -1,4 +1,4 @@
-import type { BetStatus } from '@/lib/types'
+import { BetStatus } from 'indexer/types'
 
 const PENNANT_CLIP = 'polygon(0 0, 100% 0, 100% 100%, 50% 85%, 0 100%)'
 
@@ -12,25 +12,31 @@ export const STATUS_CONFIG: Record<
     emojiSize?: string
   }
 > = {
-  open: {
+  [BetStatus.PENDING]: {
     bg: 'bg-wb-yellow',
     emoji: '⏳',
     label: 'Pending',
     description: 'Waiting for opponent to accept',
   },
-  active: {
+  [BetStatus.ACTIVE]: {
     bg: 'bg-wb-mint',
     emoji: '🤝',
     label: 'Live',
     description: 'Bet is active',
   },
-  completed: {
+  [BetStatus.JUDGING]: {
+    bg: 'bg-wb-lavender',
+    emoji: '⚖️',
+    label: 'Judging',
+    description: 'Waiting for judge to decide',
+  },
+  [BetStatus.RESOLVED]: {
     bg: 'bg-wb-gold',
     emoji: '🏆',
     label: 'Resolved',
     description: 'Winner was decided',
   },
-  cancelled: {
+  [BetStatus.CANCELLED]: {
     bg: 'bg-wb-pink',
     emoji: '❌',
     label: 'Not Live',
@@ -41,16 +47,20 @@ export const STATUS_CONFIG: Record<
 
 interface StatusPennantProps {
   status: BetStatus
+  size?: 'sm' | 'md'
 }
 
-export function StatusPennant({ status }: StatusPennantProps) {
+export function StatusPennant({ status, size = 'md' }: StatusPennantProps) {
   const config = STATUS_CONFIG[status]
+  const sizeClasses = size === 'sm' ? 'h-7 w-6 pb-1' : 'h-10 w-8 pb-2'
+  const emojiSize = size === 'sm' ? 'text-base' : (config.emojiSize ?? 'text-2xl')
+
   return (
     <div
-      className={`${config.bg} flex h-10 w-8 items-center justify-center pb-2`}
+      className={`${config.bg} flex ${sizeClasses} shrink-0 items-center justify-center`}
       style={{ clipPath: PENNANT_CLIP }}
     >
-      <span className={config.emojiSize ?? 'text-2xl'}>{config.emoji}</span>
+      <span className={emojiSize}>{config.emoji}</span>
     </div>
   )
 }
