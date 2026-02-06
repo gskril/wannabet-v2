@@ -2,7 +2,7 @@
 
 import { sdk } from '@farcaster/miniapp-sdk'
 import type { FarcasterUser } from 'indexer/types'
-import { Loader2, Plus, Share2 } from 'lucide-react'
+import { Info, Loader2, Plus, Share2 } from 'lucide-react'
 import Image from 'next/image'
 import {
   type ChangeEvent,
@@ -370,7 +370,17 @@ export function CreateBetDialog() {
 
               {/* Judge */}
               <UserSearch
-                label="Who will judge"
+                label={
+                  <span className="flex items-center gap-1">
+                    Who will judge
+                    <span className="group relative">
+                      <Info className="h-3.5 w-3.5 text-wb-taupe cursor-help" />
+                      <span className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded bg-wb-brown px-2 py-1 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100">
+                        Want to use an agent as your judge? Use @agentjudge!
+                      </span>
+                    </span>
+                  </span>
+                }
                 value={formData.judge}
                 required
                 onChange={(value, user) => {

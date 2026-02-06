@@ -184,12 +184,12 @@ export default function HomePage() {
         </button>
       </div>
       {/* Status Filter Pills */}
-      <div className="bg-background flex items-center gap-1.5 overflow-x-auto px-4 py-2 no-scrollbar">
+      <div className="bg-background flex items-center gap-1.5 px-4 py-2">
         {STATUS_FILTERS.map((filter) => (
           <button
             key={filter.value}
             onClick={() => setStatusFilter(filter.value)}
-            className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors ${
+            className={`flex-1 rounded-full py-0.5 text-xs font-medium transition-colors ${
               statusFilter === filter.value
                 ? 'bg-wb-brown text-white'
                 : 'bg-wb-sand text-wb-brown'
