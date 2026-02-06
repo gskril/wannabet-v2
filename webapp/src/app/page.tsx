@@ -1,7 +1,7 @@
 'use client'
 
-import { Bell, ChevronLeft, ChevronRight, Globe, HelpCircle, User } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { Bell, Globe, HelpCircle, Loader2, User } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useAccount } from 'wagmi'
 
 import { BetsTable } from '@/components/bets-table'
@@ -59,7 +59,8 @@ export default function HomePage() {
   const [showWelcome, setShowWelcome] = useState(false)
   const [activeFilter, setActiveFilter] = useState<FilterType>('all')
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
-  const [page, setPage] = useState(0)
+  const [visibleCount, setVisibleCount] = useState(10)
+  const sentinelRef = useRef<HTMLDivElement>(null)
   const { address } = useAccount()
 
   const PAGE_SIZE = 10
@@ -105,13 +106,30 @@ export default function HomePage() {
     return bets
   }, [betsQuery.data, activeFilter, address, statusFilter, betsRequiringAction])
 
-  // Reset page when filters change
+  // Reset visible count when filters change
   useEffect(() => {
-    setPage(0)
+    setVisibleCount(PAGE_SIZE)
   }, [activeFilter, statusFilter])
 
-  const totalPages = Math.ceil(filteredBets.length / PAGE_SIZE)
-  const paginatedBets = filteredBets.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
+  const visibleBets = filteredBets.slice(0, visibleCount)
+  const hasMore = visibleCount < filteredBets.length
+
+  // Infinite scroll observer
+  useEffect(() => {
+    const el = sentinelRef.current
+    if (!el || !hasMore) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setVisibleCount((prev) => prev + PAGE_SIZE)
+        }
+      },
+      { rootMargin: '200px' }
+    )
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [hasMore])
 
   const handleCloseWelcome = (open: boolean) => {
     setShowWelcome(open)
@@ -227,26 +245,10 @@ export default function HomePage() {
           </div>
         ) : (
           <>
-            <BetsTable bets={paginatedBets} />
-            {totalPages > 1 && (
-              <div className="flex items-center justify-center gap-3 pt-4 pb-2">
-                <button
-                  onClick={() => setPage((p) => Math.max(0, p - 1))}
-                  disabled={page === 0}
-                  className="flex h-8 w-8 items-center justify-center rounded-full bg-wb-sand text-wb-brown disabled:opacity-30"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </button>
-                <span className="text-wb-taupe text-sm">
-                  {page + 1} / {totalPages}
-                </span>
-                <button
-                  onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
-                  disabled={page >= totalPages - 1}
-                  className="flex h-8 w-8 items-center justify-center rounded-full bg-wb-sand text-wb-brown disabled:opacity-30"
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </button>
+            <BetsTable bets={visibleBets} />
+            {hasMore && (
+              <div ref={sentinelRef} className="flex items-center justify-center py-4">
+                <Loader2 className="h-5 w-5 animate-spin text-wb-taupe" />
               </div>
             )}
           </>
