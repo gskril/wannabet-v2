@@ -372,7 +372,7 @@ export function BetDetailDialog({
 
   // Share bet functionality with composeCast in MiniApp context
   const handleShare = useCallback(async (context?: 'accept' | 'resolve') => {
-    const betUrl = `https://farcaster.xyz/miniapps/E7dxAafMr7wy/wannabet/bet/${bet.address}`
+    const betUrl = `https://farcaster.xyz/miniapps/DcAH-ONddWoH/wannabet/bet/${bet.address}`
     const makerTag = bet.maker?.username ? `@${bet.maker.username}` : 'someone'
     const takerTag = (bet.acceptedBy || bet.taker)?.username ? `@${(bet.acceptedBy || bet.taker).username}` : 'someone'
 

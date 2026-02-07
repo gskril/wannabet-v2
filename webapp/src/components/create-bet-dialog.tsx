@@ -141,7 +141,7 @@ export function CreateBetDialog() {
   // Share bet functionality
   const handleShare = useCallback(async () => {
     if (!betAddress) return
-    const betUrl = `https://farcaster.xyz/miniapps/E7dxAafMr7wy/wannabet/bet/${betAddress}`
+    const betUrl = `https://farcaster.xyz/miniapps/DcAH-ONddWoH/wannabet/bet/${betAddress}`
 
     if (isMiniApp) {
       const takerTag = formData.takerUser?.username ? `@${formData.takerUser.username}` : 'someone'

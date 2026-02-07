@@ -46,7 +46,7 @@ export function useNotifications() {
           `${bet.maker.username || 'Someone'} challenged you to bet ${bet.amount} USDC: ${bet.description}`,
           128
         ),
-        targetUrl: `https://farcaster.xyz/miniapps/E7dxAafMr7wy/wannabet/bet/${bet.address}`,
+        targetUrl: `https://farcaster.xyz/miniapps/DcAH-ONddWoH/wannabet/bet/${bet.address}`,
       })
     },
     []
@@ -68,7 +68,7 @@ export function useNotifications() {
           `${bet.taker.username || 'Someone'} accepted your bet: ${bet.description}`,
           128
         ),
-        targetUrl: `https://farcaster.xyz/miniapps/E7dxAafMr7wy/wannabet/bet/${bet.address}`,
+        targetUrl: `https://farcaster.xyz/miniapps/DcAH-ONddWoH/wannabet/bet/${bet.address}`,
       })
     },
     []
@@ -91,7 +91,7 @@ export function useNotifications() {
           `Bet between ${bet.maker.username || 'Someone'} and ${bet.taker.username || 'Someone'}: ${bet.description}`,
           128
         ),
-        targetUrl: `https://farcaster.xyz/miniapps/E7dxAafMr7wy/wannabet/bet/${bet.address}`,
+        targetUrl: `https://farcaster.xyz/miniapps/DcAH-ONddWoH/wannabet/bet/${bet.address}`,
       })
     },
     []
@@ -121,7 +121,7 @@ export function useNotifications() {
           targetFids: [winnerFid],
           title: 'You won!',
           body: truncate(`You won ${bet.amount} USDC on: ${bet.description}`, 128),
-          targetUrl: `https://farcaster.xyz/miniapps/E7dxAafMr7wy/wannabet/bet/${bet.address}`,
+          targetUrl: `https://farcaster.xyz/miniapps/DcAH-ONddWoH/wannabet/bet/${bet.address}`,
         })
       }
 
@@ -131,7 +131,7 @@ export function useNotifications() {
           targetFids: [loserFid],
           title: 'Bet settled',
           body: truncate(`You lost your bet: ${bet.description}`, 128),
-          targetUrl: `https://farcaster.xyz/miniapps/E7dxAafMr7wy/wannabet/bet/${bet.address}`,
+          targetUrl: `https://farcaster.xyz/miniapps/DcAH-ONddWoH/wannabet/bet/${bet.address}`,
         })
       }
     },
@@ -154,7 +154,7 @@ export function useNotifications() {
           `${bet.maker.username || 'Someone'} cancelled the bet: ${bet.description}`,
           128
         ),
-        targetUrl: `https://farcaster.xyz/miniapps/E7dxAafMr7wy/wannabet/bet/${bet.address}`,
+        targetUrl: `https://farcaster.xyz/miniapps/DcAH-ONddWoH/wannabet/bet/${bet.address}`,
       })
     },
     []
