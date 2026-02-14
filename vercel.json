@@ -2,5 +2,12 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "buildCommand": "pnpm run build:shared && pnpm run build:indexer && cd webapp && pnpm run build",
   "outputDirectory": "webapp/.next",
-  "installCommand": "pnpm install"
+  "installCommand": "pnpm install",
+  "redirects": [
+    {
+      "source": "/.well-known/farcaster.json",
+      "destination": "https://api.farcaster.xyz/miniapps/hosted-manifest/019c5990-c2ca-a047-5f1c-f8a1e7e88158",
+      "statusCode": 307
+    }
+  ]
 }
