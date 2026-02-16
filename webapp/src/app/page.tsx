@@ -308,32 +308,34 @@ export default function HomePage() {
 
       {/* Status Filters + Sort */}
       <section className="relative z-20 mx-auto max-w-[680px] px-3 sm:px-6">
-        <div className="no-scrollbar mb-3 flex gap-1.5 overflow-x-auto sm:mb-5 sm:flex-wrap">
-          {STATUS_FILTERS.map((f) => {
-            const active = activeStatuses.has(f.value)
-            return (
-              <button
-                key={f.value}
-                onClick={() => toggleStatus(f.value)}
-                className="shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold transition-all sm:px-3.5 sm:py-1.5 sm:text-xs"
-                style={{
-                  background: active
-                    ? '#c4654a'
-                    : 'rgba(139,125,107,0.08)',
-                  color: active ? 'white' : '#8b7d6b',
-                }}
-              >
-                {f.label}
-              </button>
-            )
-          })}
+        <div className="mb-3 flex items-center gap-2 sm:mb-5">
+          <div className="no-scrollbar flex flex-1 gap-1.5 overflow-x-auto sm:flex-wrap">
+            {STATUS_FILTERS.map((f) => {
+              const active = activeStatuses.has(f.value)
+              return (
+                <button
+                  key={f.value}
+                  onClick={() => toggleStatus(f.value)}
+                  className="shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold transition-all sm:px-3.5 sm:py-1.5 sm:text-xs"
+                  style={{
+                    background: active
+                      ? '#c4654a'
+                      : 'rgba(139,125,107,0.08)',
+                    color: active ? 'white' : '#8b7d6b',
+                  }}
+                >
+                  {f.label}
+                </button>
+              )
+            })}
+          </div>
           <div className="relative shrink-0" ref={sortRef}>
             <button
               onClick={() => setSortOpen((v) => !v)}
               className="flex items-center justify-center rounded-full p-1.5 transition-all sm:p-2"
               style={{
-                background: 'rgba(139,125,107,0.08)',
-                color: '#8b7d6b',
+                background: sortBy !== 'created' ? 'rgba(196,101,74,0.12)' : 'rgba(139,125,107,0.08)',
+                color: sortBy !== 'created' ? '#c4654a' : '#8b7d6b',
               }}
               aria-label="Sort"
             >
@@ -344,14 +346,14 @@ export default function HomePage() {
                 className="absolute right-0 top-full z-50 mt-1 overflow-hidden rounded-xl bg-white py-1"
                 style={{
                   boxShadow: '0 4px 16px rgba(139,125,107,0.18)',
-                  minWidth: 120,
+                  minWidth: 130,
                 }}
               >
                 {(
                   [
-                    ['created', 'Newest'],
-                    ['ends', 'Ending soon'],
+                    ['created', 'Most recent'],
                     ['value', 'Highest value'],
+                    ['ends', 'Ending soon'],
                   ] as const
                 ).map(([key, label]) => (
                   <button
