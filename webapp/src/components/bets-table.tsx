@@ -45,14 +45,13 @@ export function BetsTable({ bets }: BetsTableProps) {
                     }`}
                   >
                     <UserAvatar user={bet.maker} size="sm" clickable={false} />
-                    {bet.status === BetStatus.RESOLVED &&
-                      bet.winner?.address?.toLowerCase() === bet.maker.address?.toLowerCase() && (
-                        <span className="absolute -bottom-1 -right-1 text-sm">
-                          🏆
-                        </span>
-                      )}
                   </div>
-                  <span className="text-sm font-bold text-wb-brown">
+                  <span className={`text-sm font-bold text-wb-brown ${
+                    bet.status === BetStatus.RESOLVED &&
+                    bet.winner?.address?.toLowerCase() === bet.maker.address?.toLowerCase()
+                      ? 'underline decoration-wb-gold decoration-2 underline-offset-2'
+                      : ''
+                  }`}>
                     {getUsername(bet.maker)}
                   </span>
                 </div>
@@ -75,14 +74,13 @@ export function BetsTable({ bets }: BetsTableProps) {
                     }`}
                   >
                     <UserAvatar user={bet.taker} size="sm" clickable={false} />
-                    {bet.status === BetStatus.RESOLVED &&
-                      bet.winner?.address?.toLowerCase() === bet.taker.address?.toLowerCase() && (
-                        <span className="absolute -bottom-1 -right-1 text-sm">
-                          🏆
-                        </span>
-                      )}
                   </div>
-                  <span className="text-sm font-bold text-wb-brown">
+                  <span className={`text-sm font-bold text-wb-brown ${
+                    bet.status === BetStatus.RESOLVED &&
+                    bet.winner?.address?.toLowerCase() === bet.taker.address?.toLowerCase()
+                      ? 'underline decoration-wb-gold decoration-2 underline-offset-2'
+                      : ''
+                  }`}>
                     {getUsername(bet.taker)}
                   </span>
                 </div>
