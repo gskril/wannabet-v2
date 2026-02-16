@@ -207,9 +207,8 @@ function ActionCard({
     return (
       <div className="bg-white rounded-xl border px-4 py-3">
         <div className="flex items-center justify-center gap-3">
-          <span className="text-2xl">🏆</span>
           <span className="text-wb-brown text-sm">
-            @{getUsername(bet.winner)} won the bet!
+            <span className="font-bold underline decoration-wb-gold decoration-2 underline-offset-2">@{getUsername(bet.winner)}</span> won the bet!
           </span>
         </div>
       </div>
@@ -545,7 +544,6 @@ export function BetDetailDialog({
         {/* Resolve Success Overlay */}
         {showResolveSuccess.show && (
           <div className="absolute inset-0 z-30 flex flex-col items-center justify-center rounded-t-[10px] bg-background/95 px-6 py-12">
-            <div className="text-4xl mb-4">🏆</div>
             <p className="text-wb-brown text-lg font-semibold mb-2">
               Winner Selected!
             </p>
