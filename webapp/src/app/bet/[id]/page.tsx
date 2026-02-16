@@ -122,17 +122,17 @@ export default function BetPage() {
       />
 
       {/* Header */}
-      <header className="relative z-10 mx-auto max-w-[680px] px-6 pt-6">
-        <div className="mb-5 flex items-center justify-between">
-          <div className="flex items-center gap-2">
+      <header className="relative z-10 mx-auto max-w-[680px] px-3 pt-3 sm:px-6 sm:pt-6">
+        <div className="mb-3 flex items-center justify-between sm:mb-5">
+          <div className="flex items-center gap-1.5">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/img/logo.png"
               alt="WannaBet"
-              className="h-10 w-10"
+              className="h-8 w-8 sm:h-10 sm:w-10"
             />
             <span
-              className="text-[24px] font-bold"
+              className="text-[20px] font-bold sm:text-[24px]"
               style={{ letterSpacing: '-0.01em' }}
             >
               Wanna<span className="text-wb-coral">Bet</span>
@@ -148,24 +148,26 @@ export default function BetPage() {
             {/* Help button */}
             <button
               onClick={() => setShowWelcome(true)}
-              className="flex items-center gap-1.5 rounded-full px-4 py-2 text-[13px] font-bold transition-all hover:-translate-y-0.5"
+              className="flex items-center gap-1 rounded-full px-2.5 py-1.5 text-[12px] font-bold transition-all hover:-translate-y-0.5 sm:gap-1.5 sm:px-4 sm:py-2 sm:text-[13px]"
               style={{
                 background: 'rgba(139,125,107,0.08)',
                 color: '#8b7d6b',
               }}
               aria-label="How it works"
             >
-              <HelpCircle size={16} />
-              What is this?
+              <HelpCircle size={14} className="sm:hidden" />
+              <HelpCircle size={16} className="hidden sm:block" />
+              <span className="hidden sm:inline">What is this?</span>
+              <span className="sm:hidden">Info</span>
             </button>
           </div>
         </div>
       </header>
 
       {/* Segmented Control Navigation */}
-      <section className="relative z-10 mx-auto max-w-[680px] px-6">
+      <section className="relative z-10 mx-auto max-w-[680px] px-3 sm:px-6">
         <div
-          className="mb-4 flex rounded-xl p-0.5"
+          className="mb-3 flex rounded-xl p-0.5 sm:mb-4"
           style={{ background: 'rgba(139,125,107,0.08)' }}
         >
           {navItems.map((item) => {
@@ -174,7 +176,7 @@ export default function BetPage() {
               <button
                 key={item.key}
                 onClick={() => setActiveFilter(item.key)}
-                className="flex flex-1 items-center justify-center gap-1.5 rounded-[10px] py-2 text-[12px] font-bold transition-all"
+                className="flex flex-1 items-center justify-center gap-1 rounded-[10px] py-1.5 text-[11px] font-bold transition-all sm:gap-1.5 sm:py-2 sm:text-[12px]"
                 style={{
                   background: isActive ? 'white' : 'transparent',
                   color: isActive ? '#2d2a26' : '#8b7d6b',
@@ -183,7 +185,7 @@ export default function BetPage() {
                     : 'none',
                 }}
               >
-                <item.icon size={15} />
+                <item.icon size={14} />
                 {item.label}
                 {item.badge && (
                   <span
@@ -199,7 +201,7 @@ export default function BetPage() {
         </div>
       </section>
 
-      <main className="relative z-10 mx-auto max-w-[680px] px-6 py-6 md:py-8">
+      <main className="relative z-10 mx-auto max-w-[680px] px-3 py-4 sm:px-6 md:py-8">
         {betsQuery.isLoading ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="h-6 w-6 animate-spin text-wb-taupe" />

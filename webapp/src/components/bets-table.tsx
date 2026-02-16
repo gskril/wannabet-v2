@@ -18,18 +18,18 @@ export function BetsTable({ bets }: BetsTableProps) {
 
   return (
     <>
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-2.5 sm:gap-3">
         {bets.map((bet, index) => (
           <div
             key={bet.address}
-            className="animate-card-mount cursor-pointer rounded-3xl border-0 bg-white p-6 shadow-clay transition-all hover:-translate-y-[3px]"
+            className="animate-card-mount cursor-pointer rounded-2xl border-0 bg-white p-3.5 shadow-clay transition-all hover:-translate-y-[3px] sm:rounded-3xl sm:p-6"
             style={{ animationDelay: `${50 + index * 50}ms` }}
             onClick={() => setSelectedBet(bet)}
           >
             {/* Header row: Avatars + names + status badge */}
-            <div className="mb-3.5 flex items-start justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="flex items-center gap-2">
+            <div className="mb-2.5 flex items-start justify-between sm:mb-3.5">
+              <div className="flex items-center gap-1.5 sm:gap-2.5">
+                <div className="flex items-center gap-1.5 sm:gap-2">
                   <div
                     className={`relative rounded-full ring-2 ${
                       bet.status === BetStatus.RESOLVED &&
@@ -46,7 +46,7 @@ export function BetsTable({ bets }: BetsTableProps) {
                   >
                     <UserAvatar user={bet.maker} size="sm" clickable={false} />
                   </div>
-                  <span className={`text-sm font-bold text-wb-brown ${
+                  <span className={`text-xs font-bold text-wb-brown sm:text-sm ${
                     bet.status === BetStatus.RESOLVED &&
                     bet.winner?.address?.toLowerCase() === bet.maker.address?.toLowerCase()
                       ? 'underline decoration-wb-gold decoration-2 underline-offset-2'
@@ -55,10 +55,10 @@ export function BetsTable({ bets }: BetsTableProps) {
                     {getUsername(bet.maker)}
                   </span>
                 </div>
-                <span className="text-[13px] font-bold" style={{ color: '#d4c5a9' }}>
+                <span className="text-[11px] font-bold sm:text-[13px]" style={{ color: '#d4c5a9' }}>
                   vs
                 </span>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 sm:gap-2">
                   <div
                     className={`relative rounded-full ring-2 ${
                       bet.status === BetStatus.RESOLVED &&
@@ -75,7 +75,7 @@ export function BetsTable({ bets }: BetsTableProps) {
                   >
                     <UserAvatar user={bet.taker} size="sm" clickable={false} />
                   </div>
-                  <span className={`text-sm font-bold text-wb-brown ${
+                  <span className={`text-xs font-bold text-wb-brown sm:text-sm ${
                     bet.status === BetStatus.RESOLVED &&
                     bet.winner?.address?.toLowerCase() === bet.taker.address?.toLowerCase()
                       ? 'underline decoration-wb-gold decoration-2 underline-offset-2'
@@ -85,32 +85,32 @@ export function BetsTable({ bets }: BetsTableProps) {
                   </span>
                 </div>
               </div>
-              <StatusPennant status={bet.status} />
+              <StatusPennant status={bet.status} size="sm" />
             </div>
 
             {/* Description */}
             <p
-              className="line-clamp-2 text-[17px] font-bold leading-snug text-wb-brown"
+              className="line-clamp-2 text-[14px] font-bold leading-snug text-wb-brown sm:text-[17px]"
               style={{ letterSpacing: '-0.01em' }}
             >
               {bet.description}
             </p>
 
             {/* Amount and date */}
-            <div className="mt-3 flex items-center justify-between">
-              <div className="flex items-center gap-1.5">
-                <span className="text-[20px] font-bold text-wb-coral">
+            <div className="mt-2 flex items-center justify-between sm:mt-3">
+              <div className="flex items-center gap-1">
+                <span className="text-[16px] font-bold text-wb-coral sm:text-[20px]">
                   {bet.amount}
                 </span>
                 <Image
                   src="/img/usdc.png"
                   alt="USDC"
-                  width={18}
-                  height={18}
-                  className="rounded-full"
+                  width={16}
+                  height={16}
+                  className="rounded-full sm:h-[18px] sm:w-[18px]"
                 />
               </div>
-              <span className="text-xs font-semibold text-wb-taupe">
+              <span className="text-[10px] font-semibold text-wb-taupe sm:text-xs">
                 Ends{' '}
                 {new Intl.DateTimeFormat('en-US', {
                   month: 'short',

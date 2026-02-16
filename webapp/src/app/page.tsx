@@ -228,17 +228,17 @@ export default function HomePage() {
       />
 
       {/* Header */}
-      <header className="relative z-10 mx-auto max-w-[680px] px-6 pt-6">
-        <div className="mb-5 flex items-center justify-between">
-          <div className="flex items-center gap-2">
+      <header className="relative z-10 mx-auto max-w-[680px] px-3 pt-3 sm:px-6 sm:pt-6">
+        <div className="mb-3 flex items-center justify-between sm:mb-5">
+          <div className="flex items-center gap-1.5">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/img/logo.png"
               alt="WannaBet"
-              className="h-10 w-10"
+              className="h-8 w-8 sm:h-10 sm:w-10"
             />
             <span
-              className="text-[24px] font-bold"
+              className="text-[20px] font-bold sm:text-[24px]"
               style={{ letterSpacing: '-0.01em' }}
             >
               Wanna<span className="text-wb-coral">Bet</span>
@@ -254,24 +254,26 @@ export default function HomePage() {
             {/* Help button */}
             <button
               onClick={() => setShowWelcome(true)}
-              className="flex items-center gap-1.5 rounded-full px-4 py-2 text-[13px] font-bold transition-all hover:-translate-y-0.5"
+              className="flex items-center gap-1 rounded-full px-2.5 py-1.5 text-[12px] font-bold transition-all hover:-translate-y-0.5 sm:gap-1.5 sm:px-4 sm:py-2 sm:text-[13px]"
               style={{
                 background: 'rgba(139,125,107,0.08)',
                 color: '#8b7d6b',
               }}
               aria-label="How it works"
             >
-              <HelpCircle size={16} />
-              What is this?
+              <HelpCircle size={14} className="sm:hidden" />
+              <HelpCircle size={16} className="hidden sm:block" />
+              <span className="hidden sm:inline">What is this?</span>
+              <span className="sm:hidden">Info</span>
             </button>
           </div>
         </div>
       </header>
 
       {/* Segmented Control Navigation */}
-      <section className="relative z-10 mx-auto max-w-[680px] px-6">
+      <section className="relative z-10 mx-auto max-w-[680px] px-3 sm:px-6">
         <div
-          className="mb-4 flex rounded-xl p-0.5"
+          className="mb-3 flex rounded-xl p-0.5 sm:mb-4"
           style={{ background: 'rgba(139,125,107,0.08)' }}
         >
           {navItems.map((item) => {
@@ -280,7 +282,7 @@ export default function HomePage() {
               <button
                 key={item.key}
                 onClick={() => setActiveFilter(item.key)}
-                className="flex flex-1 items-center justify-center gap-1.5 rounded-[10px] py-2 text-[12px] font-bold transition-all"
+                className="flex flex-1 items-center justify-center gap-1 rounded-[10px] py-1.5 text-[11px] font-bold transition-all sm:gap-1.5 sm:py-2 sm:text-[12px]"
                 style={{
                   background: isActive ? 'white' : 'transparent',
                   color: isActive ? '#2d2a26' : '#8b7d6b',
@@ -289,7 +291,7 @@ export default function HomePage() {
                     : 'none',
                 }}
               >
-                <item.icon size={15} />
+                <item.icon size={14} />
                 {item.label}
                 {item.badge && (
                   <span
@@ -306,16 +308,16 @@ export default function HomePage() {
       </section>
 
       {/* Status Filters + Sort */}
-      <section className="relative z-20 mx-auto max-w-[680px] px-6">
-        <div className="mb-5 flex items-center justify-between">
-          <div className="flex flex-wrap gap-1.5">
+      <section className="relative z-20 mx-auto max-w-[680px] px-3 sm:px-6">
+        <div className="mb-3 flex items-center gap-2 sm:mb-5">
+          <div className="no-scrollbar -mx-3 flex flex-1 gap-1.5 overflow-x-auto px-3 sm:mx-0 sm:flex-wrap sm:px-0">
             {STATUS_FILTERS.map((f) => {
               const active = activeStatuses.has(f.value)
               return (
                 <button
                   key={f.value}
                   onClick={() => toggleStatus(f.value)}
-                  className="rounded-full px-3.5 py-1.5 text-xs font-bold transition-all"
+                  className="shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold transition-all sm:px-3.5 sm:py-1.5 sm:text-xs"
                   style={{
                     background: active
                       ? '#c4654a'
@@ -328,23 +330,23 @@ export default function HomePage() {
               )
             })}
           </div>
-          <div className="relative" ref={sortRef}>
+          <div className="relative shrink-0" ref={sortRef}>
             <button
               onClick={() => setSortOpen((v) => !v)}
-              className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold transition-all"
+              className="flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-bold transition-all sm:gap-1.5 sm:px-3 sm:py-1.5 sm:text-[11px]"
               style={{
                 background: 'rgba(139,125,107,0.08)',
                 color: '#8b7d6b',
               }}
             >
-              <ArrowDownUp size={12} />
+              <ArrowDownUp size={11} />
               {sortBy === 'created'
-                ? 'Newest'
+                ? 'New'
                 : sortBy === 'ends'
-                  ? 'Ending'
-                  : 'Value'}
+                  ? 'End'
+                  : 'Val'}
               <ChevronDown
-                size={12}
+                size={11}
                 style={{
                   transform: sortOpen ? 'rotate(180deg)' : 'none',
                   transition: 'transform 0.2s',
@@ -391,7 +393,7 @@ export default function HomePage() {
       </section>
 
       {/* Main Content */}
-      <main className="relative z-10 mx-auto max-w-[680px] px-6">
+      <main className="relative z-10 mx-auto max-w-[680px] px-3 sm:px-6">
         {betsQuery.isLoading ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="h-6 w-6 animate-spin text-wb-taupe" />
