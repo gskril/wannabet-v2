@@ -3,7 +3,6 @@
 import {
   ArrowDownUp,
   Bell,
-  ChevronDown,
   Globe,
   HelpCircle,
   Loader2,
@@ -335,25 +334,14 @@ export default function HomePage() {
           <div className="relative shrink-0" ref={sortRef}>
             <button
               onClick={() => setSortOpen((v) => !v)}
-              className="flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold transition-all sm:px-3 sm:py-1.5 sm:text-[11px]"
+              className="flex items-center justify-center rounded-full p-1.5 transition-all sm:p-2"
               style={{
                 background: 'rgba(139,125,107,0.08)',
                 color: '#8b7d6b',
               }}
+              aria-label="Sort"
             >
-              <ArrowDownUp size={11} />
-              {sortBy === 'created'
-                ? 'New'
-                : sortBy === 'ends'
-                  ? 'End'
-                  : 'Val'}
-              <ChevronDown
-                size={11}
-                style={{
-                  transform: sortOpen ? 'rotate(180deg)' : 'none',
-                  transition: 'transform 0.2s',
-                }}
-              />
+              <ArrowDownUp size={14} />
             </button>
             {sortOpen && (
               <div
