@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { useState } from 'react'
 
 import { BetDetailDialog } from '@/components/bet-detail-dialog'
@@ -103,7 +104,13 @@ export function BetsTable({ bets }: BetsTableProps) {
                 <span className="text-[20px] font-bold text-wb-coral">
                   {bet.amount}
                 </span>
-                <span className="text-xs font-bold text-wb-taupe">USDC</span>
+                <Image
+                  src="/img/usdc.png"
+                  alt="USDC"
+                  width={18}
+                  height={18}
+                  className="rounded-full"
+                />
               </div>
               <span className="text-xs font-semibold text-wb-taupe">
                 Ends{' '}
