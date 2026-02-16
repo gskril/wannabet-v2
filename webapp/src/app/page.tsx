@@ -13,7 +13,6 @@ import { useAccount } from 'wagmi'
 
 import { BetsTable } from '@/components/bets-table'
 import { ConnectWalletButton } from '@/components/connect-wallet-button'
-import { useMiniApp } from '@/components/sdk-provider'
 import { WelcomeModal } from '@/components/welcome-modal'
 import { useBets } from '@/hooks/useBets'
 import { BetStatus, type Bet } from 'indexer/types'
@@ -76,7 +75,6 @@ export default function HomePage() {
   const [visibleCount, setVisibleCount] = useState(10)
   const sentinelRef = useRef<HTMLDivElement>(null)
   const { address } = useAccount()
-  const { isMiniApp } = useMiniApp()
 
   const PAGE_SIZE = 10
 
@@ -228,53 +226,51 @@ export default function HomePage() {
         }}
       />
 
-      {/* Header - hidden in MiniApp since Farcaster frame already shows app name */}
-      {!isMiniApp && (
-        <header className="relative z-10 mx-auto max-w-[680px] px-3 pt-3 sm:px-6 sm:pt-6">
-          <div className="mb-3 flex items-center justify-between sm:mb-5">
-            <div className="flex items-center gap-1.5">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/img/logo.png"
-                alt="WannaBet"
-                className="h-8 w-8 sm:h-10 sm:w-10"
-              />
-              <span
-                className="text-[20px] font-bold sm:text-[24px]"
-                style={{ letterSpacing: '-0.01em' }}
-              >
-                Wanna<span className="text-wb-coral">Bet</span>
-              </span>
-            </div>
-
-            <div className="flex items-center gap-2">
-              {/* Connect Wallet Button */}
-              <div className="hidden md:block">
-                <ConnectWalletButton />
-              </div>
-
-              {/* Help button */}
-              <button
-                onClick={() => setShowWelcome(true)}
-                className="flex items-center gap-1 rounded-full px-2.5 py-1.5 text-[12px] font-bold transition-all hover:-translate-y-0.5 sm:gap-1.5 sm:px-4 sm:py-2 sm:text-[13px]"
-                style={{
-                  background: 'rgba(139,125,107,0.08)',
-                  color: '#8b7d6b',
-                }}
-                aria-label="How it works"
-              >
-                <HelpCircle size={14} className="sm:hidden" />
-                <HelpCircle size={16} className="hidden sm:block" />
-                <span className="hidden sm:inline">What is this?</span>
-                <span className="sm:hidden">Info</span>
-              </button>
-            </div>
+      {/* Header */}
+      <header className="relative z-10 mx-auto max-w-[680px] px-3 pt-3 sm:px-6 sm:pt-6">
+        <div className="mb-3 flex items-center justify-between sm:mb-5">
+          <div className="flex items-center gap-1.5">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/img/logo.png"
+              alt="WannaBet"
+              className="h-8 w-8 sm:h-10 sm:w-10"
+            />
+            <span
+              className="text-[20px] font-bold sm:text-[24px]"
+              style={{ letterSpacing: '-0.01em' }}
+            >
+              Wanna<span className="text-wb-coral">Bet</span>
+            </span>
           </div>
-        </header>
-      )}
+
+          <div className="flex items-center gap-2">
+            {/* Connect Wallet Button */}
+            <div className="hidden md:block">
+              <ConnectWalletButton />
+            </div>
+
+            {/* Help button */}
+            <button
+              onClick={() => setShowWelcome(true)}
+              className="flex items-center gap-1 rounded-full px-2.5 py-1.5 text-[12px] font-bold transition-all hover:-translate-y-0.5 sm:gap-1.5 sm:px-4 sm:py-2 sm:text-[13px]"
+              style={{
+                background: 'rgba(139,125,107,0.08)',
+                color: '#8b7d6b',
+              }}
+              aria-label="How it works"
+            >
+              <HelpCircle size={14} className="sm:hidden" />
+              <HelpCircle size={16} className="hidden sm:block" />
+              <span className="hidden sm:inline">What is this?</span>
+              <span className="sm:hidden">Info</span>
+            </button>
+          </div>
+        </div>
+      </header>
 
       {/* Segmented Control Navigation */}
-      <section className={`relative z-10 mx-auto max-w-[680px] px-3 sm:px-6 ${isMiniApp ? 'pt-2' : ''}`}>
+      <section className="relative z-10 mx-auto max-w-[680px] px-3 sm:px-6">
         <div
           className="mb-3 flex rounded-xl p-0.5 sm:mb-4"
           style={{ background: 'rgba(139,125,107,0.08)' }}
