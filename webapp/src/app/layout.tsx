@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { Comic_Neue } from 'next/font/google'
+import { Quicksand } from 'next/font/google'
 
 import { BottomNav } from '@/components/bottom-nav'
 import { SdkProvider } from '@/components/sdk-provider'
@@ -8,9 +8,8 @@ import { WagmiProvider } from '@/components/wagmi-provider'
 
 import './globals.css'
 
-const comicNeue = Comic_Neue({
-  weight: ['300', '400', '700'],
-  style: ['normal', 'italic'],
+const quicksand = Quicksand({
+  weight: ['400', '500', '600', '700'],
   subsets: ['latin'],
   display: 'swap',
 })
@@ -47,7 +46,7 @@ export default function RootLayout({
         <link rel="preconnect" href="https://auth.farcaster.xyz" />
         <link rel="manifest" href="/manifest.json" />
       </head>
-      <body className={`${comicNeue.className} antialiased`}>
+      <body className={`${quicksand.className} antialiased`}>
         <ThemeProvider defaultTheme="light" storageKey="wannabet-theme">
           <SdkProvider>
             <WagmiProvider>

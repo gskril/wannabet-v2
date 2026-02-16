@@ -1,11 +1,9 @@
 'use client'
 
-import Image from 'next/image'
 import { useState } from 'react'
 
 import { BetDetailDialog } from '@/components/bet-detail-dialog'
 import { StatusPennant } from '@/components/status-pennant'
-import { Card } from '@/components/ui/card'
 import { UserAvatar } from '@/components/user-avatar'
 import { BetStatus, type Bet } from 'indexer/types'
 import { getUsername } from '@/lib/utils'
@@ -19,104 +17,104 @@ export function BetsTable({ bets }: BetsTableProps) {
 
   return (
     <>
-      <div className="space-y-3">
-        {bets.map((bet) => (
-          <Card
+      <div className="flex flex-col gap-3">
+        {bets.map((bet, index) => (
+          <div
             key={bet.address}
-            className="bg-wb-sand relative cursor-pointer border-0 p-4 transition-all hover:shadow-md"
+            className="animate-card-mount cursor-pointer rounded-3xl border-0 bg-white p-6 shadow-clay transition-all hover:-translate-y-[3px]"
+            style={{ animationDelay: `${50 + index * 50}ms` }}
             onClick={() => setSelectedBet(bet)}
           >
-            {/* Status pennant positioned absolutely in top-right */}
-            <div className="absolute right-2 top-0">
+            {/* Header row: Avatars + names + status badge */}
+            <div className="mb-3.5 flex items-start justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="flex items-center gap-2">
+                  <div
+                    className={`relative rounded-full ring-2 ${
+                      bet.status === BetStatus.RESOLVED &&
+                      bet.winner?.address?.toLowerCase() === bet.maker.address?.toLowerCase()
+                        ? 'ring-wb-gold'
+                        : 'ring-wb-taupe/30'
+                    } ${
+                      bet.status === BetStatus.RESOLVED &&
+                      bet.winner &&
+                      bet.winner.address?.toLowerCase() !== bet.maker.address?.toLowerCase()
+                        ? 'grayscale'
+                        : ''
+                    }`}
+                  >
+                    <UserAvatar user={bet.maker} size="sm" clickable={false} />
+                    {bet.status === BetStatus.RESOLVED &&
+                      bet.winner?.address?.toLowerCase() === bet.maker.address?.toLowerCase() && (
+                        <span className="absolute -bottom-1 -right-1 text-sm">
+                          🏆
+                        </span>
+                      )}
+                  </div>
+                  <span className="text-sm font-bold text-wb-brown">
+                    {getUsername(bet.maker)}
+                  </span>
+                </div>
+                <span className="text-[13px] font-bold" style={{ color: '#d4c5a9' }}>
+                  vs
+                </span>
+                <div className="flex items-center gap-2">
+                  <div
+                    className={`relative rounded-full ring-2 ${
+                      bet.status === BetStatus.RESOLVED &&
+                      bet.winner?.address?.toLowerCase() === bet.taker.address?.toLowerCase()
+                        ? 'ring-wb-gold'
+                        : 'ring-wb-taupe/30'
+                    } ${
+                      bet.status === BetStatus.RESOLVED &&
+                      bet.winner &&
+                      bet.winner.address?.toLowerCase() !== bet.taker.address?.toLowerCase()
+                        ? 'grayscale'
+                        : ''
+                    }`}
+                  >
+                    <UserAvatar user={bet.taker} size="sm" clickable={false} />
+                    {bet.status === BetStatus.RESOLVED &&
+                      bet.winner?.address?.toLowerCase() === bet.taker.address?.toLowerCase() && (
+                        <span className="absolute -bottom-1 -right-1 text-sm">
+                          🏆
+                        </span>
+                      )}
+                  </div>
+                  <span className="text-sm font-bold text-wb-brown">
+                    {getUsername(bet.taker)}
+                  </span>
+                </div>
+              </div>
               <StatusPennant status={bet.status} />
             </div>
 
-            <div className="flex flex-col gap-3">
-              {/* Line 1: Avatars and usernames */}
-              <div className="flex items-center gap-2">
-                <div
-                  className={`relative rounded-full ring-2 ${
-                    bet.status === BetStatus.RESOLVED &&
-                    bet.winner?.address?.toLowerCase() === bet.maker.address?.toLowerCase()
-                      ? 'ring-wb-gold'
-                      : 'ring-wb-taupe'
-                  } ${
-                    bet.status === BetStatus.RESOLVED &&
-                    bet.winner &&
-                    bet.winner.address?.toLowerCase() !== bet.maker.address?.toLowerCase()
-                      ? 'grayscale'
-                      : ''
-                  }`}
-                >
-                  <UserAvatar user={bet.maker} size="sm" clickable={false} />
-                  {bet.status === BetStatus.RESOLVED &&
-                    bet.winner?.address?.toLowerCase() === bet.maker.address?.toLowerCase() && (
-                      <span className="absolute -bottom-1 -right-1 text-sm">
-                        🏆
-                      </span>
-                    )}
-                </div>
-                <span className="text-wb-brown text-sm font-semibold">
-                  {getUsername(bet.maker)}
-                </span>
-                <span className="text-wb-taupe text-sm">vs</span>
-                <div
-                  className={`relative rounded-full ring-2 ${
-                    bet.status === BetStatus.RESOLVED &&
-                    bet.winner?.address?.toLowerCase() === bet.taker.address?.toLowerCase()
-                      ? 'ring-wb-gold'
-                      : 'ring-wb-taupe'
-                  } ${
-                    bet.status === BetStatus.RESOLVED &&
-                    bet.winner &&
-                    bet.winner.address?.toLowerCase() !== bet.taker.address?.toLowerCase()
-                      ? 'grayscale'
-                      : ''
-                  }`}
-                >
-                  <UserAvatar user={bet.taker} size="sm" clickable={false} />
-                  {bet.status === BetStatus.RESOLVED &&
-                    bet.winner?.address?.toLowerCase() === bet.taker.address?.toLowerCase() && (
-                      <span className="absolute -bottom-1 -right-1 text-sm">
-                        🏆
-                      </span>
-                    )}
-                </div>
-                <span className="text-wb-brown text-sm font-semibold">
-                  {getUsername(bet.taker)}
-                </span>
-              </div>
+            {/* Description */}
+            <p
+              className="line-clamp-2 text-[17px] font-bold leading-snug text-wb-brown"
+              style={{ letterSpacing: '-0.01em' }}
+            >
+              {bet.description}
+            </p>
 
-              {/* Line 2: Description */}
-              <p className="text-wb-brown line-clamp-2 text-base font-medium leading-snug">
-                {bet.description}
-              </p>
-
-              {/* Line 3: Amount and date */}
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-1">
-                  <span className="text-wb-brown text-sm font-bold">
-                    {bet.amount}
-                  </span>
-                  <Image
-                    src="/img/usdc.png"
-                    alt="USDC"
-                    width={16}
-                    height={16}
-                    className="rounded-full"
-                  />
-                </div>
-                <span className="text-wb-taupe text-sm">
-                  Ends:{' '}
-                  {new Intl.DateTimeFormat('en-US', {
-                    month: 'short',
-                    day: 'numeric',
-                    year: 'numeric',
-                  }).format(bet.expiresAt)}
+            {/* Amount and date */}
+            <div className="mt-3 flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <span className="text-[20px] font-bold text-wb-coral">
+                  {bet.amount}
                 </span>
+                <span className="text-xs font-bold text-wb-taupe">USDC</span>
               </div>
+              <span className="text-xs font-semibold text-wb-taupe">
+                Ends{' '}
+                {new Intl.DateTimeFormat('en-US', {
+                  month: 'short',
+                  day: 'numeric',
+                  year: 'numeric',
+                }).format(bet.expiresAt)}
+              </span>
             </div>
-          </Card>
+          </div>
         ))}
       </div>
 

@@ -32,11 +32,11 @@ const BASE_SCAN_URL = 'https://basescan.org/address'
 // Helper to get ring color based on bet status
 const getStatusRingColor = (status: BetStatus) => {
   const colors: Record<BetStatus, string> = {
-    [BetStatus.PENDING]: 'ring-wb-yellow',
-    [BetStatus.ACTIVE]: 'ring-wb-mint',
-    [BetStatus.JUDGING]: 'ring-wb-mint',
-    [BetStatus.RESOLVED]: 'ring-wb-gold',
-    [BetStatus.CANCELLED]: 'ring-wb-pink',
+    [BetStatus.PENDING]: 'ring-wb-status-pending',
+    [BetStatus.ACTIVE]: 'ring-wb-status-active',
+    [BetStatus.JUDGING]: 'ring-wb-status-judging',
+    [BetStatus.RESOLVED]: 'ring-wb-status-resolved',
+    [BetStatus.CANCELLED]: 'ring-wb-status-cancelled',
   }
   return colors[status]
 }
@@ -44,11 +44,11 @@ const getStatusRingColor = (status: BetStatus) => {
 // Helper to get center badge background color based on bet status
 const getStatusBgColor = (status: BetStatus) => {
   const colors: Record<BetStatus, string> = {
-    [BetStatus.PENDING]: 'bg-wb-yellow',
-    [BetStatus.ACTIVE]: 'bg-wb-mint',
-    [BetStatus.JUDGING]: 'bg-wb-mint',
-    [BetStatus.RESOLVED]: 'bg-wb-gold',
-    [BetStatus.CANCELLED]: 'bg-wb-pink',
+    [BetStatus.PENDING]: 'bg-wb-status-pending',
+    [BetStatus.ACTIVE]: 'bg-wb-status-active',
+    [BetStatus.JUDGING]: 'bg-wb-status-judging',
+    [BetStatus.RESOLVED]: 'bg-wb-status-resolved',
+    [BetStatus.CANCELLED]: 'bg-wb-status-cancelled',
   }
   return colors[status]
 }
@@ -63,7 +63,7 @@ interface TimelineEventProps {
 
 function TimelineEvent({ icon, title, description, link }: TimelineEventProps) {
   return (
-    <div className="bg-wb-sand/50 flex items-start gap-3 rounded-xl border px-4 py-3">
+    <div className="bg-white flex items-start gap-3 rounded-xl border px-4 py-3">
       <span className="text-2xl">{icon}</span>
       <div className="flex-1">
         <p className="text-wb-brown font-semibold">{title}</p>
@@ -205,7 +205,7 @@ function ActionCard({
   // State 3: Resolved - Winner display
   if (bet.status === BetStatus.RESOLVED && bet.winner) {
     return (
-      <div className="bg-wb-sand/50 rounded-xl border px-4 py-3">
+      <div className="bg-white rounded-xl border px-4 py-3">
         <div className="flex items-center justify-center gap-3">
           <span className="text-2xl">🏆</span>
           <span className="text-wb-brown text-sm">
@@ -219,7 +219,7 @@ function ActionCard({
   // State 4: Cancelled
   if (bet.status === BetStatus.CANCELLED) {
     return (
-      <div className="bg-wb-sand/50 rounded-xl border px-4 py-3">
+      <div className="bg-white rounded-xl border px-4 py-3">
         <div className="flex items-center justify-center gap-3">
           <span className="text-2xl">❌</span>
           <span className="text-wb-brown text-center text-sm">
@@ -238,7 +238,7 @@ function ActionCard({
     // Only judge can resolve or cancel in ACTIVE/JUDGING state
     if (!isJudge) {
       return (
-        <div className="bg-wb-sand/50 rounded-xl border px-4 py-3">
+        <div className="bg-white rounded-xl border px-4 py-3">
           <p className="text-wb-taupe text-center text-sm">
             Waiting for @{getUsername(bet.judge)} to pick a winner
           </p>
@@ -247,7 +247,7 @@ function ActionCard({
     }
 
     return (
-      <div className="bg-wb-sand/50 space-y-3 rounded-xl border px-4 py-3">
+      <div className="bg-white space-y-3 rounded-xl border px-4 py-3">
         <p className="text-wb-taupe text-center text-xs">
           Pick a winner as the judge
         </p>
@@ -297,7 +297,7 @@ function ActionCard({
   // State 1: Pending - Taker can accept, Maker can cancel
   if (bet.status === BetStatus.PENDING) {
     return (
-      <div className="bg-wb-sand/50 space-y-3 rounded-xl border px-4 py-3">
+      <div className="bg-white space-y-3 rounded-xl border px-4 py-3">
         {isTaker ? (
           <>
             <Button
@@ -582,7 +582,7 @@ export function BetDetailDialog({
           <button
             type="button"
             onClick={() => handleShare()}
-            className="absolute left-4 top-4 flex items-center gap-1 rounded-lg bg-wb-sand/50 px-2 py-1 text-sm text-wb-taupe transition-colors hover:bg-wb-sand hover:text-wb-brown"
+            className="absolute left-4 top-4 flex items-center gap-1 rounded-lg bg-white px-2 py-1 text-sm text-wb-taupe transition-colors hover:bg-wb-sand hover:text-wb-brown"
           >
             <Share2 className="h-4 w-4" />
             {isMiniApp ? 'Share' : shareStatus === 'copied' ? 'Copied!' : 'Share'}

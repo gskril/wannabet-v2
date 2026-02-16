@@ -1,73 +1,59 @@
 @import 'tailwindcss';
 
 :root {
-  /* Light theme - Warm amber for betting vibe */
-  --background: #fefce8; /* amber-50 */
-  --foreground: #171717;
+  /* Soft Clay palette */
+  --background: #faf5ef;
+  --foreground: #2d2a26;
   --card: #ffffff;
-  --card-foreground: #171717;
-  --primary: #fbbf24; /* amber-400 */
-  --primary-foreground: #000000;
-  --accent: #38bdf8; /* sky-400 */
-  --muted: #a3a3a3; /* neutral-400 */
-  --border: #e5e5e5; /* zinc-200 */
+  --card-foreground: #2d2a26;
+  --primary: #c4654a;
+  --primary-foreground: #ffffff;
+  --accent: #5a7a5e;
+  --muted: #a09686;
+  --border: #e8e0d4;
 
   /* Brand colors */
   --farcaster-brand: #7f5fc7; /* Farcaster purple */
 
   /* Status colors */
-  --success: #22c55e; /* green-500 for open bets */
-  --warning: #eab308; /* yellow-500 for active bets */
-  --danger: #ef4444; /* red-500 */
-}
-
-.dark {
-  /* Dark theme - Keep the warm amber accents */
-  --background: #0a0a0a;
-  --foreground: #fafafa;
-  --card: #171717;
-  --card-foreground: #fafafa;
-  --primary: #fbbf24; /* Keep amber primary */
-  --primary-foreground: #000000;
-  --accent: #38bdf8; /* Keep sky accent */
-  --muted: #737373; /* neutral-500 */
-  --border: #262626; /* neutral-800 */
-
-  /* Brand colors */
-  --farcaster-brand: #7f5fc7; /* Farcaster purple */
-
-  /* Status colors stay the same */
-  --success: #22c55e;
-  --warning: #eab308;
-  --danger: #ef4444;
+  --success: #5a7a5e;
+  --warning: #d4a04a;
+  --danger: #c4654a;
 }
 
 @theme inline {
-  --color-background: #fefce8;
-  --color-foreground: #171717;
+  --color-background: #faf5ef;
+  --color-foreground: #2d2a26;
   --color-card: #ffffff;
-  --color-card-foreground: #171717;
-  --color-primary: #fbbf24;
-  --color-primary-foreground: #000000;
-  --color-accent: #38bdf8;
-  --color-muted: #a3a3a3;
-  --color-border: #e5e5e5;
+  --color-card-foreground: #2d2a26;
+  --color-primary: #c4654a;
+  --color-primary-foreground: #ffffff;
+  --color-accent: #5a7a5e;
+  --color-muted: #a09686;
+  --color-border: #e8e0d4;
   --color-farcaster-brand: #7f5fc7;
-  --color-success: #22c55e;
-  --color-warning: #eab308;
-  --color-danger: #ef4444;
+  --color-success: #5a7a5e;
+  --color-warning: #d4a04a;
+  --color-danger: #c4654a;
 
   /* WannaBet brand palette */
-  --color-wb-mint: #72d397;
-  --color-wb-brown: #774e38;
-  --color-wb-taupe: #9a7b6b;
-  --color-wb-coral: #e08e79;
-  --color-wb-cream: #ede5ce;
-  --color-wb-sand: #f0d4ae;
-  --color-wb-gold: #fcc900;
-  --color-wb-yellow: #fde68b;
-  --color-wb-pink: #ffa3a2;
-  --color-wb-lavender: #c4b5fd;
+  --color-wb-mint: #5a7a5e;
+  --color-wb-brown: #2d2a26;
+  --color-wb-taupe: #8b7d6b;
+  --color-wb-coral: #c4654a;
+  --color-wb-cream: #faf5ef;
+  --color-wb-sand: #f2ebe2;
+  --color-wb-gold: #d4a04a;
+  --color-wb-yellow: #d4a04a;
+  --color-wb-pink: #a09686;
+  --color-wb-lavender: #8b6baa;
+
+  /* Status tokens */
+  --color-wb-status-active: #5a7a5e;
+  --color-wb-status-pending: #d4a04a;
+  --color-wb-status-judging: #8b6baa;
+  --color-wb-status-resolved: #c4654a;
+  --color-wb-status-cancelled: #a09686;
 }
 
 body {
@@ -89,4 +75,25 @@ body {
 .no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+/* Soft Clay shadow */
+.shadow-clay {
+  box-shadow: 0 2px 12px rgba(139, 125, 107, 0.12);
+}
+
+/* Card mount animation */
+@keyframes card-mount {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.animate-card-mount {
+  animation: card-mount 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }

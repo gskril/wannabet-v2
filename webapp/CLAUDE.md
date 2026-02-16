@@ -7,6 +7,7 @@ Next.js frontend for the WannaBet peer-to-peer betting app. Runs as a Farcaster 
 - **Framework:** Next.js 16, React 19, TypeScript, App Router
 - **Web3:** wagmi 2.18, viem 2.38, Base mainnet
 - **UI:** Tailwind v4, Radix UI, vaul (drawers), lucide-react icons
+- **Font:** Quicksand (weights 400, 500, 600, 700)
 - **Data:** React Query, Ponder indexer (direct fetch)
 - **MiniApp:** @farcaster/miniapp-sdk for Farcaster frame integration
 
@@ -25,7 +26,7 @@ src/
 │   ├── bet-detail-dialog.tsx # Full bet view + actions (Drawer)
 │   ├── create-bet-dialog.tsx # Create bet form (Drawer)
 │   ├── bet-status-badge.tsx  # Status badge component
-│   ├── status-pennant.tsx    # Alternate status display
+│   ├── status-pennant.tsx    # Status pill badge (rounded-full, solid color)
 │   ├── user-avatar.tsx       # Avatar with fallback
 │   ├── user-search.tsx       # Farcaster user autocomplete
 │   ├── connect-wallet-button.tsx
@@ -46,37 +47,46 @@ src/
     └── useFarcasterProfile.ts
 ```
 
-## Color Palette
+## Color Palette — Soft Clay
 
 CSS variables defined in `globals.css`. Use via Tailwind classes like `bg-primary`, `text-muted`, `bg-wb-mint`.
 
 ### Theme Variables
 
-| Variable          | Light       | Dark        | Usage               |
-| ----------------- | ----------- | ----------- | ------------------- |
-| `background`      | amber-50    | #0a0a0a     | Page background     |
-| `foreground`      | #171717     | #fafafa     | Primary text        |
-| `primary`         | amber-400   | amber-400   | Buttons, CTAs       |
-| `accent`          | sky-400     | sky-400     | Highlights          |
-| `muted`           | neutral-400 | neutral-500 | Secondary text      |
-| `success`         | green-500   | green-500   | Open/pending status |
-| `warning`         | yellow-500  | yellow-500  | Active status       |
-| `danger`          | red-500     | red-500     | Error states        |
-| `farcaster-brand` | #7f5fc7     | #7f5fc7     | Farcaster purple    |
+| Variable          | Value   | Usage               |
+| ----------------- | ------- | ------------------- |
+| `background`      | #faf5ef | Page background     |
+| `foreground`      | #2d2a26 | Primary text        |
+| `primary`         | #c4654a | Buttons, CTAs       |
+| `accent`          | #5a7a5e | Highlights          |
+| `muted`           | #a09686 | Secondary text      |
+| `border`          | #e8e0d4 | Borders             |
+| `farcaster-brand` | #7f5fc7 | Farcaster purple    |
 
 ### WannaBet Brand Colors (wb-\*)
 
-| Token       | Hex     | Usage              |
-| ----------- | ------- | ------------------ |
-| `wb-mint`   | #72d397 | Active/Live status |
-| `wb-brown`  | #774e38 | Primary text       |
-| `wb-taupe`  | #9a7b6b | Secondary text     |
-| `wb-coral`  | #e08e79 | Buttons            |
-| `wb-cream`  | #ede5ce | Light backgrounds  |
-| `wb-sand`   | #f0d4ae | Card backgrounds   |
-| `wb-gold`   | #fcc900 | Winner/completed   |
-| `wb-yellow` | #fde68b | Pending status     |
-| `wb-pink`   | #ffa3a2 | Cancelled status   |
+| Token       | Hex     | Usage                |
+| ----------- | ------- | -------------------- |
+| `wb-mint`   | #5a7a5e | Active/Live status   |
+| `wb-brown`  | #2d2a26 | Primary text         |
+| `wb-taupe`  | #8b7d6b | Secondary text       |
+| `wb-coral`  | #c4654a | Buttons, CTAs        |
+| `wb-cream`  | #faf5ef | Light backgrounds    |
+| `wb-sand`   | #f2ebe2 | Card/control bg      |
+| `wb-gold`   | #d4a04a | Winner/pending       |
+| `wb-yellow` | #d4a04a | Alias for gold       |
+| `wb-pink`   | #a09686 | Cancelled status     |
+| `wb-lavender` | #8b6baa | Judging status     |
+
+### Status Tokens (wb-status-\*)
+
+| Token                | Hex     | Status    |
+| -------------------- | ------- | --------- |
+| `wb-status-active`   | #5a7a5e | Live      |
+| `wb-status-pending`  | #d4a04a | Pending   |
+| `wb-status-judging`  | #8b6baa | Judging   |
+| `wb-status-resolved` | #c4654a | Settled   |
+| `wb-status-cancelled`| #a09686 | Cancelled |
 
 ## Provider Hierarchy
 
@@ -100,8 +110,9 @@ CSS variables defined in `globals.css`. Use via Tailwind classes like `bg-primar
 - **Dialogs:** Use vaul `Drawer` for mobile-optimized sheets (CreateBetDialog, BetDetailDialog)
 - **Forms:** Local `useState` + `updateField()` pattern, `isFormValid` derived via useMemo
 - **User Selection:** `UserSearch` component with debounced search
-- **Status Display:** `BetStatusBadge` or `StatusPennant` for consistent badge rendering
+- **Status Display:** `StatusPennant` renders solid color rounded-full pill badges with white text
 - **Winner Display:** Gold ring + small trophy overlay on avatar, grayscale on loser
+- **Cards:** White bg, rounded-3xl, shadow-clay, hover lift effect, staggered mount animation
 
 ## Environment Variables
 

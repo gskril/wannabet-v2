@@ -108,7 +108,7 @@ export default function ProfilePage() {
 
   if (betsQuery.isLoading) {
     return (
-      <div className="bg-background min-h-screen pb-20 sm:pb-4">
+      <div className="min-h-screen pb-20 sm:pb-4" style={{ background: '#faf5ef' }}>
         <main className="container mx-auto px-4 py-6 md:py-8">
           <Link href="/">
             <Button variant="ghost" size="sm" className="mb-4">
@@ -126,7 +126,7 @@ export default function ProfilePage() {
 
   if (betsQuery.error || !user || !stats) {
     return (
-      <div className="bg-background min-h-screen pb-20 sm:pb-4">
+      <div className="min-h-screen pb-20 sm:pb-4" style={{ background: '#faf5ef' }}>
         <main className="container mx-auto px-4 py-6 md:py-8">
           <Link href="/">
             <Button variant="ghost" size="sm" className="mb-4">
@@ -148,7 +148,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="bg-background min-h-screen pb-20 sm:pb-4">
+    <div className="min-h-screen pb-20 sm:pb-4" style={{ background: '#faf5ef' }}>
       <main className="container mx-auto px-4 py-6 md:py-8">
         <div className="mb-6">
           <Link href="/">

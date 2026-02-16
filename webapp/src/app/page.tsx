@@ -1,6 +1,14 @@
 'use client'
 
-import { Bell, Globe, HelpCircle, Loader2, User } from 'lucide-react'
+import {
+  ArrowDownUp,
+  Bell,
+  ChevronDown,
+  Globe,
+  HelpCircle,
+  Loader2,
+  User,
+} from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useAccount } from 'wagmi'
 
@@ -21,49 +29,65 @@ function betRequiresAction(bet: Bet, userAddress: string): boolean {
     bet.judge.address?.toLowerCase() === addr && bet.status === BetStatus.JUDGING
   return needsAccept || needsJudgment
 }
-type StatusFilter = BetStatus | 'all'
+
+type StatusFilter = BetStatus
 
 const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
-  { value: 'all', label: 'All' },
   { value: BetStatus.PENDING, label: 'Pending' },
   { value: BetStatus.ACTIVE, label: 'Live' },
   { value: BetStatus.JUDGING, label: 'Judging' },
-  { value: BetStatus.RESOLVED, label: 'Resolved' },
+  { value: BetStatus.RESOLVED, label: 'Settled' },
   { value: BetStatus.CANCELLED, label: 'Cancelled' },
 ]
+
+const DEFAULT_STATUSES = new Set<StatusFilter>([
+  BetStatus.PENDING,
+  BetStatus.ACTIVE,
+  BetStatus.JUDGING,
+  BetStatus.RESOLVED,
+])
 
 const WELCOME_DISMISSED_KEY = 'welcomeDismissed'
 
 const getEmptyStateMessage = (
   filter: FilterType,
   hasAddress: boolean,
-  statusFilter: StatusFilter
+  activeStatuses: Set<StatusFilter>
 ): string => {
   if (filter === 'my') {
     if (!hasAddress) return 'Connect your wallet to see your bets'
-    if (statusFilter !== 'all') {
-      const label = STATUS_FILTERS.find((f) => f.value === statusFilter)?.label
-      return `No ${label?.toLowerCase()} bets where you are a participant`
-    }
     return 'No bets where you are a participant'
   }
   if (filter === 'notifications') return 'No pending actions'
-  if (statusFilter !== 'all') {
-    const label = STATUS_FILTERS.find((f) => f.value === statusFilter)?.label
-    return `No ${label?.toLowerCase()} bets found`
-  }
+  if (activeStatuses.size === 0) return 'Select a status filter to see bets'
   return 'No bets found. Create one to get started!'
 }
+
+type SortOption = 'created' | 'ends' | 'value'
 
 export default function HomePage() {
   const [showWelcome, setShowWelcome] = useState(false)
   const [activeFilter, setActiveFilter] = useState<FilterType>('all')
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
+  const [activeStatuses, setActiveStatuses] =
+    useState<Set<StatusFilter>>(DEFAULT_STATUSES)
+  const [sortBy, setSortBy] = useState<SortOption>('created')
+  const [sortOpen, setSortOpen] = useState(false)
+  const sortRef = useRef<HTMLDivElement>(null)
   const [visibleCount, setVisibleCount] = useState(10)
   const sentinelRef = useRef<HTMLDivElement>(null)
   const { address } = useAccount()
 
   const PAGE_SIZE = 10
+
+  // Close sort dropdown on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (sortRef.current && !sortRef.current.contains(e.target as Node))
+        setSortOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
 
   // Load initial state from localStorage after client mounts
   useEffect(() => {
@@ -79,6 +103,19 @@ export default function HomePage() {
     if (!betsQuery.data || !address) return []
     return betsQuery.data.filter((bet) => betRequiresAction(bet, address))
   }, [betsQuery.data, address])
+
+  // Toggle a status filter on/off
+  const toggleStatus = useCallback((status: StatusFilter) => {
+    setActiveStatuses((prev) => {
+      const next = new Set(prev)
+      if (next.has(status)) {
+        next.delete(status)
+      } else {
+        next.add(status)
+      }
+      return next
+    })
+  }, [])
 
   // Filter and sort bets
   const filteredBets = useMemo(() => {
@@ -98,18 +135,28 @@ export default function HomePage() {
       )
     }
 
-    // Status filter
-    if (statusFilter !== 'all') {
-      bets = bets.filter((bet) => bet.status === statusFilter)
-    }
+    // Status filter (multi-select)
+    bets = bets.filter((bet) => activeStatuses.has(bet.status))
+
+    // Sort
+    bets = [...bets].sort((a, b) => {
+      if (sortBy === 'ends') {
+        return new Date(a.expiresAt).getTime() - new Date(b.expiresAt).getTime()
+      }
+      if (sortBy === 'value') {
+        return parseFloat(b.amount) - parseFloat(a.amount)
+      }
+      // 'created' - newest first (default from API)
+      return 0
+    })
 
     return bets
-  }, [betsQuery.data, activeFilter, address, statusFilter, betsRequiringAction])
+  }, [betsQuery.data, activeFilter, address, activeStatuses, betsRequiringAction, sortBy])
 
   // Reset visible count when filters change
   useEffect(() => {
     setVisibleCount(PAGE_SIZE)
-  }, [activeFilter, statusFilter])
+  }, [activeFilter, activeStatuses, sortBy])
 
   const visibleBets = filteredBets.slice(0, visibleCount)
   const hasMore = visibleCount < filteredBets.length
@@ -117,7 +164,9 @@ export default function HomePage() {
   // Only enable infinite scroll after the user has scrolled
   const hasScrolled = useRef(false)
   useEffect(() => {
-    const onScroll = () => { hasScrolled.current = true }
+    const onScroll = () => {
+      hasScrolled.current = true
+    }
     window.addEventListener('scroll', onScroll, { once: true })
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
@@ -125,10 +174,12 @@ export default function HomePage() {
   // Reset scroll flag when filters change
   useEffect(() => {
     hasScrolled.current = false
-    const onScroll = () => { hasScrolled.current = true }
+    const onScroll = () => {
+      hasScrolled.current = true
+    }
     window.addEventListener('scroll', onScroll, { once: true })
     return () => window.removeEventListener('scroll', onScroll)
-  }, [activeFilter, statusFilter])
+  }, [activeFilter, activeStatuses, sortBy])
 
   // Infinite scroll observer
   useEffect(() => {
@@ -154,23 +205,44 @@ export default function HomePage() {
     }
   }
 
+  const navItems = [
+    {
+      key: 'notifications' as FilterType,
+      icon: Bell,
+      label: 'Alerts',
+      badge: betsRequiringAction.length > 0 ? betsRequiringAction.length : undefined,
+    },
+    { key: 'my' as FilterType, icon: User, label: 'My Bets' },
+    { key: 'all' as FilterType, icon: Globe, label: 'All Bets' },
+  ]
+
   return (
-    <div className="bg-background min-h-screen pb-20 sm:pb-4">
-      {/* Top Navbar - full width */}
-      <div className="bg-wb-brown">
-        <div className="container mx-auto flex items-center justify-between gap-3 px-4 py-2">
-          <div className="flex items-center">
+    <div className="relative min-h-screen pb-20 sm:pb-4" style={{ background: '#faf5ef' }}>
+      {/* Subtle radial gradient overlay */}
+      <div
+        className="pointer-events-none fixed inset-0 z-0"
+        style={{
+          background:
+            'radial-gradient(ellipse 70% 50% at 20% 10%, rgba(196,101,74,0.05) 0%, transparent 60%), radial-gradient(ellipse 60% 40% at 80% 90%, rgba(90,122,94,0.04) 0%, transparent 50%)',
+        }}
+      />
+
+      {/* Header */}
+      <header className="relative z-10 mx-auto max-w-[680px] px-6 pt-6">
+        <div className="mb-5 flex items-center justify-between">
+          <div className="flex items-center gap-2">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/img/logo.png"
               alt="WannaBet"
-              className="h-16 w-16 md:h-20 md:w-20"
+              className="h-10 w-10"
             />
-            <div>
-              <h1 className="text-balance text-3xl font-bold text-white md:text-4xl">
-                WannaBet?
-              </h1>
-            </div>
+            <span
+              className="text-[24px] font-bold"
+              style={{ letterSpacing: '-0.01em' }}
+            >
+              Wanna<span className="text-wb-coral">Bet</span>
+            </span>
           </div>
 
           <div className="flex items-center gap-2">
@@ -182,88 +254,168 @@ export default function HomePage() {
             {/* Help button */}
             <button
               onClick={() => setShowWelcome(true)}
-              className="flex h-10 w-10 items-center justify-center transition-opacity hover:opacity-70"
+              className="flex items-center gap-1.5 rounded-full px-4 py-2 text-[13px] font-bold transition-all hover:-translate-y-0.5"
+              style={{
+                background: 'rgba(139,125,107,0.08)',
+                color: '#8b7d6b',
+              }}
               aria-label="How it works"
             >
-              <HelpCircle className="h-8 w-8 text-white" />
+              <HelpCircle size={16} />
+              What is this?
             </button>
           </div>
         </div>
-      </div>
-      {/* Filter Navigation Bar */}
-      <div className="bg-background flex items-center justify-center gap-6 border-b px-4 py-4">
-        <button
-          onClick={() => { setActiveFilter('notifications'); setStatusFilter('all') }}
-          className={`relative flex items-center justify-center rounded-full p-2 transition-colors ${
-            activeFilter === 'notifications'
-              ? 'bg-wb-coral text-white'
-              : 'hover:bg-wb-coral/10'
-          }`}
+      </header>
+
+      {/* Segmented Control Navigation */}
+      <section className="relative z-10 mx-auto max-w-[680px] px-6">
+        <div
+          className="mb-4 flex rounded-xl p-0.5"
+          style={{ background: 'rgba(139,125,107,0.08)' }}
         >
-          <Bell className="h-5 w-5" />
-          {betsRequiringAction.length > 0 && (
-            <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
-              {betsRequiringAction.length}
-            </span>
-          )}
-        </button>
-        <button
-          onClick={() => { setActiveFilter('my'); setStatusFilter('all') }}
-          className={`flex items-center justify-center rounded-full p-2 transition-colors ${
-            activeFilter === 'my'
-              ? 'bg-wb-coral text-white'
-              : 'hover:bg-wb-coral/10'
-          }`}
-        >
-          <User className="h-5 w-5" />
-        </button>
-        <button
-          onClick={() => { setActiveFilter('all'); setStatusFilter('all') }}
-          className={`flex items-center justify-center rounded-full p-2 transition-colors ${
-            activeFilter === 'all'
-              ? 'bg-wb-coral text-white'
-              : 'hover:bg-wb-coral/10'
-          }`}
-        >
-          <Globe className="h-5 w-5" />
-        </button>
-      </div>
-      {/* Status Filter Pills */}
-      <div className="bg-background flex items-center gap-1.5 px-4 py-2">
-        {STATUS_FILTERS.map((filter) => (
-          <button
-            key={filter.value}
-            onClick={() => setStatusFilter(filter.value)}
-            className={`flex-1 rounded-full py-0.5 text-xs font-medium transition-colors ${
-              statusFilter === filter.value
-                ? 'bg-wb-brown text-white'
-                : 'bg-wb-sand text-wb-brown'
-            }`}
-          >
-            {filter.label}
-          </button>
-        ))}
-      </div>
-      <main className="container mx-auto px-4 py-6 md:py-8">
+          {navItems.map((item) => {
+            const isActive = activeFilter === item.key
+            return (
+              <button
+                key={item.key}
+                onClick={() => setActiveFilter(item.key)}
+                className="flex flex-1 items-center justify-center gap-1.5 rounded-[10px] py-2 text-[12px] font-bold transition-all"
+                style={{
+                  background: isActive ? 'white' : 'transparent',
+                  color: isActive ? '#2d2a26' : '#8b7d6b',
+                  boxShadow: isActive
+                    ? '0 1px 6px rgba(139,125,107,0.15)'
+                    : 'none',
+                }}
+              >
+                <item.icon size={15} />
+                {item.label}
+                {item.badge && (
+                  <span
+                    className="flex h-[16px] min-w-[16px] items-center justify-center rounded-full px-0.5 text-[9px] font-bold text-white"
+                    style={{ background: '#c4654a' }}
+                  >
+                    {item.badge}
+                  </span>
+                )}
+              </button>
+            )
+          })}
+        </div>
+      </section>
+
+      {/* Status Filters + Sort */}
+      <section className="relative z-20 mx-auto max-w-[680px] px-6">
+        <div className="mb-5 flex items-center justify-between">
+          <div className="flex flex-wrap gap-1.5">
+            {STATUS_FILTERS.map((f) => {
+              const active = activeStatuses.has(f.value)
+              return (
+                <button
+                  key={f.value}
+                  onClick={() => toggleStatus(f.value)}
+                  className="rounded-full px-3.5 py-1.5 text-xs font-bold transition-all"
+                  style={{
+                    background: active
+                      ? '#c4654a'
+                      : 'rgba(139,125,107,0.08)',
+                    color: active ? 'white' : '#8b7d6b',
+                  }}
+                >
+                  {f.label}
+                </button>
+              )
+            })}
+          </div>
+          <div className="relative" ref={sortRef}>
+            <button
+              onClick={() => setSortOpen((v) => !v)}
+              className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold transition-all"
+              style={{
+                background: 'rgba(139,125,107,0.08)',
+                color: '#8b7d6b',
+              }}
+            >
+              <ArrowDownUp size={12} />
+              {sortBy === 'created'
+                ? 'Newest'
+                : sortBy === 'ends'
+                  ? 'Ending'
+                  : 'Value'}
+              <ChevronDown
+                size={12}
+                style={{
+                  transform: sortOpen ? 'rotate(180deg)' : 'none',
+                  transition: 'transform 0.2s',
+                }}
+              />
+            </button>
+            {sortOpen && (
+              <div
+                className="absolute right-0 top-full z-50 mt-1 overflow-hidden rounded-xl bg-white py-1"
+                style={{
+                  boxShadow: '0 4px 16px rgba(139,125,107,0.18)',
+                  minWidth: 120,
+                }}
+              >
+                {(
+                  [
+                    ['created', 'Newest'],
+                    ['ends', 'Ending soon'],
+                    ['value', 'Highest value'],
+                  ] as const
+                ).map(([key, label]) => (
+                  <button
+                    key={key}
+                    onClick={() => {
+                      setSortBy(key)
+                      setSortOpen(false)
+                    }}
+                    className="flex w-full items-center px-3.5 py-2 text-left text-[12px] font-bold transition-colors"
+                    style={{
+                      color: sortBy === key ? '#c4654a' : '#2d2a26',
+                      background:
+                        sortBy === key
+                          ? 'rgba(196,101,74,0.06)'
+                          : 'transparent',
+                    }}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* Main Content */}
+      <main className="relative z-10 mx-auto max-w-[680px] px-6">
         {betsQuery.isLoading ? (
           <div className="flex items-center justify-center py-12">
-            <div className="text-muted-foreground">Loading bets...</div>
+            <Loader2 className="h-6 w-6 animate-spin text-wb-taupe" />
           </div>
         ) : betsQuery.error ? (
           <div className="flex items-center justify-center py-12">
-            <div className="text-destructive">Error: {betsQuery.error.message}</div>
+            <div className="text-[15px] font-semibold text-wb-taupe">
+              Error loading bets
+            </div>
           </div>
         ) : filteredBets.length === 0 ? (
           <div className="flex items-center justify-center py-12">
-            <div className="text-muted-foreground">
-              {getEmptyStateMessage(activeFilter, !!address, statusFilter)}
+            <div className="text-[15px] font-semibold text-wb-taupe">
+              {getEmptyStateMessage(activeFilter, !!address, activeStatuses)}
             </div>
           </div>
         ) : (
           <>
             <BetsTable bets={visibleBets} />
             {hasMore && (
-              <div ref={sentinelRef} className="flex items-center justify-center py-4">
+              <div
+                ref={sentinelRef}
+                className="flex items-center justify-center py-4"
+              >
                 <Loader2 className="h-5 w-5 animate-spin text-wb-taupe" />
               </div>
             )}

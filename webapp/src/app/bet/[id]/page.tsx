@@ -99,23 +99,44 @@ export default function BetPage() {
     router.push('/')
   }
 
+  const navItems = [
+    {
+      key: 'notifications' as FilterType,
+      icon: Bell,
+      label: 'Alerts',
+      badge: betsRequiringAction.length > 0 ? betsRequiringAction.length : undefined,
+    },
+    { key: 'my' as FilterType, icon: User, label: 'My Bets' },
+    { key: 'all' as FilterType, icon: Globe, label: 'All Bets' },
+  ]
+
   return (
-    <div className="bg-background min-h-screen pb-20 sm:pb-4">
-      {/* Top Navbar - full width */}
-      <div className="bg-wb-brown">
-        <div className="container mx-auto flex items-center justify-between gap-3 px-4 py-2">
-          <div className="flex items-center">
+    <div className="relative min-h-screen pb-20 sm:pb-4" style={{ background: '#faf5ef' }}>
+      {/* Subtle radial gradient overlay */}
+      <div
+        className="pointer-events-none fixed inset-0 z-0"
+        style={{
+          background:
+            'radial-gradient(ellipse 70% 50% at 20% 10%, rgba(196,101,74,0.05) 0%, transparent 60%), radial-gradient(ellipse 60% 40% at 80% 90%, rgba(90,122,94,0.04) 0%, transparent 50%)',
+        }}
+      />
+
+      {/* Header */}
+      <header className="relative z-10 mx-auto max-w-[680px] px-6 pt-6">
+        <div className="mb-5 flex items-center justify-between">
+          <div className="flex items-center gap-2">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/img/logo.png"
               alt="WannaBet"
-              className="h-16 w-16 md:h-20 md:w-20"
+              className="h-10 w-10"
             />
-            <div>
-              <h1 className="text-balance text-3xl font-bold text-white md:text-4xl">
-                WannaBet?
-              </h1>
-            </div>
+            <span
+              className="text-[24px] font-bold"
+              style={{ letterSpacing: '-0.01em' }}
+            >
+              Wanna<span className="text-wb-coral">Bet</span>
+            </span>
           </div>
 
           <div className="flex items-center gap-2">
@@ -127,66 +148,71 @@ export default function BetPage() {
             {/* Help button */}
             <button
               onClick={() => setShowWelcome(true)}
-              className="flex h-10 w-10 items-center justify-center transition-opacity hover:opacity-70"
+              className="flex items-center gap-1.5 rounded-full px-4 py-2 text-[13px] font-bold transition-all hover:-translate-y-0.5"
+              style={{
+                background: 'rgba(139,125,107,0.08)',
+                color: '#8b7d6b',
+              }}
               aria-label="How it works"
             >
-              <HelpCircle className="h-8 w-8 text-white" />
+              <HelpCircle size={16} />
+              What is this?
             </button>
           </div>
         </div>
-      </div>
+      </header>
 
-      {/* Filter Navigation Bar */}
-      <div className="bg-background flex items-center justify-center gap-6 border-b px-4 py-4">
-        <button
-          onClick={() => setActiveFilter('notifications')}
-          className={`relative flex items-center justify-center rounded-full p-2 transition-colors ${
-            activeFilter === 'notifications'
-              ? 'bg-wb-coral text-white'
-              : 'hover:bg-wb-coral/10'
-          }`}
+      {/* Segmented Control Navigation */}
+      <section className="relative z-10 mx-auto max-w-[680px] px-6">
+        <div
+          className="mb-4 flex rounded-xl p-0.5"
+          style={{ background: 'rgba(139,125,107,0.08)' }}
         >
-          <Bell className="h-5 w-5" />
-          {betsRequiringAction.length > 0 && (
-            <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
-              {betsRequiringAction.length}
-            </span>
-          )}
-        </button>
-        <button
-          onClick={() => setActiveFilter('my')}
-          className={`flex items-center justify-center rounded-full p-2 transition-colors ${
-            activeFilter === 'my'
-              ? 'bg-wb-coral text-white'
-              : 'hover:bg-wb-coral/10'
-          }`}
-        >
-          <User className="h-5 w-5" />
-        </button>
-        <button
-          onClick={() => setActiveFilter('all')}
-          className={`flex items-center justify-center rounded-full p-2 transition-colors ${
-            activeFilter === 'all'
-              ? 'bg-wb-coral text-white'
-              : 'hover:bg-wb-coral/10'
-          }`}
-        >
-          <Globe className="h-5 w-5" />
-        </button>
-      </div>
+          {navItems.map((item) => {
+            const isActive = activeFilter === item.key
+            return (
+              <button
+                key={item.key}
+                onClick={() => setActiveFilter(item.key)}
+                className="flex flex-1 items-center justify-center gap-1.5 rounded-[10px] py-2 text-[12px] font-bold transition-all"
+                style={{
+                  background: isActive ? 'white' : 'transparent',
+                  color: isActive ? '#2d2a26' : '#8b7d6b',
+                  boxShadow: isActive
+                    ? '0 1px 6px rgba(139,125,107,0.15)'
+                    : 'none',
+                }}
+              >
+                <item.icon size={15} />
+                {item.label}
+                {item.badge && (
+                  <span
+                    className="flex h-[16px] min-w-[16px] items-center justify-center rounded-full px-0.5 text-[9px] font-bold text-white"
+                    style={{ background: '#c4654a' }}
+                  >
+                    {item.badge}
+                  </span>
+                )}
+              </button>
+            )
+          })}
+        </div>
+      </section>
 
-      <main className="container mx-auto px-4 py-6 md:py-8">
+      <main className="relative z-10 mx-auto max-w-[680px] px-6 py-6 md:py-8">
         {betsQuery.isLoading ? (
           <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-wb-coral" />
+            <Loader2 className="h-6 w-6 animate-spin text-wb-taupe" />
           </div>
         ) : betsQuery.error ? (
           <div className="flex items-center justify-center py-12">
-            <div className="text-destructive">Error: {betsQuery.error.message}</div>
+            <div className="text-[15px] font-semibold text-wb-taupe">
+              Error loading bets
+            </div>
           </div>
         ) : filteredBets.length === 0 ? (
           <div className="flex items-center justify-center py-12">
-            <div className="text-muted-foreground">
+            <div className="text-[15px] font-semibold text-wb-taupe">
               {getEmptyStateMessage(activeFilter, !!address)}
             </div>
           </div>

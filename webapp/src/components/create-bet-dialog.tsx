@@ -224,7 +224,8 @@ export function CreateBetDialog() {
       <DrawerTrigger asChild>
         <Button
           size="icon"
-          className="bg-wb-coral hover:bg-wb-coral/90 fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full text-white shadow-lg [&_svg]:size-8"
+          className="bg-wb-coral hover:bg-wb-coral/90 fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full text-white [&_svg]:size-8"
+          style={{ boxShadow: '0 4px 20px rgba(196,101,74,0.35)' }}
         >
           <Plus className="h-8 w-8" />
         </Button>
