@@ -11,9 +11,14 @@
     "description": "Take trust out of betting and verify your opponent agrees and has the funds. Escrow USDC in WannaBet smart contracts.",
     "iconUrl": "https://fc.heywannabet.com/img/logo-icon.png",
     "splashImageUrl": "https://fc.heywannabet.com/img/logo.png",
-    "splashBackgroundColor": "#FEFCE8",
+    "splashBackgroundColor": "#FAF4EE",
     "homeUrl": "https://fc.heywannabet.com",
     "webhookUrl": "https://api.neynar.com/f/app/817e51c1-3c90-452c-9bc7-aa1510944494/event",
-    "primaryCategory": "games"
+    "primaryCategory": "games",
+    "tags": ["bet", "wanna", "wager", "base", "betting"],
+    "ogTitle": "WannaBet",
+    "ogDescription": "Trustless 1v1 bets on Base. Create wagers with USDC smart contract escrow on Farcaster.",
+    "ogImageUrl": "https://fc.heywannabet.com/img/og.png",
+    "heroImageUrl": "https://fc.heywannabet.com/img/og.png"
   }
 }
