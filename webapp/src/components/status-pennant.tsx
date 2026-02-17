@@ -11,7 +11,7 @@ export const STATUS_CONFIG: Record<
   [BetStatus.PENDING]: {
     bg: 'bg-wb-status-pending',
     label: 'Pending',
-    description: 'Waiting for opponent to accept',
+    description: 'Waiting for opponent',
   },
   [BetStatus.ACTIVE]: {
     bg: 'bg-wb-status-active',
@@ -30,7 +30,7 @@ export const STATUS_CONFIG: Record<
   },
   [BetStatus.CANCELLED]: {
     bg: 'bg-wb-status-cancelled',
-    label: 'Not Live',
+    label: 'Cancelled',
     description: 'Bet was canceled or expired',
   },
 }
