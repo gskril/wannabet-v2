@@ -1,28 +1,25 @@
 import { parseAbiItem } from 'abitype'
 import { createConfig, factory } from 'ponder'
 import { BET_FACTORY_V1, BET_FACTORY_V2, BET_V1_ABI, BET_V2_ABI } from 'shared'
+import { fallback, webSocket } from 'viem'
 import { base } from 'viem/chains'
-
-const rpcUrls: string[] = []
 
 const BASE_RPC_URL = process.env.BASE_RPC_URL
 
-if (BASE_RPC_URL) {
-  rpcUrls.push(BASE_RPC_URL)
-} else {
-  const fallbackUrls = [
-    'https://base-rpc.publicnode.com',
-    'https://base.llamarpc.com',
-  ]
-  rpcUrls.push(...fallbackUrls)
-}
+// Prefer dedicated RPC, fall back to public endpoints
+const rpcUrls = BASE_RPC_URL
+  ? [BASE_RPC_URL, 'https://base-rpc.publicnode.com', 'https://base.llamarpc.com']
+  : ['https://base-rpc.publicnode.com', 'https://base.llamarpc.com']
+
+// Derive WebSocket URL from HTTP URL (works for Alchemy, Infura, etc.)
+const wsUrl = BASE_RPC_URL?.replace('https://', 'wss://') ?? 'wss://base-rpc.publicnode.com'
 
 export default createConfig({
   chains: {
     base: {
       id: base.id,
       rpc: rpcUrls,
-      ws: process.env.BASE_WS_URL,
+      ws: wsUrl,
     },
   },
   contracts: {
