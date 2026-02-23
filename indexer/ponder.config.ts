@@ -3,25 +3,11 @@ import { createConfig, factory } from 'ponder'
 import { BET_FACTORY_V1, BET_FACTORY_V2, BET_V1_ABI, BET_V2_ABI } from 'shared'
 import { base } from 'viem/chains'
 
-const rpcUrls: string[] = []
-
-const BASE_RPC_URL = process.env.BASE_RPC_URL
-
-if (BASE_RPC_URL) {
-  rpcUrls.push(BASE_RPC_URL)
-} else {
-  const fallbackUrls = [
-    'https://base-rpc.publicnode.com',
-    'https://base.llamarpc.com',
-  ]
-  rpcUrls.push(...fallbackUrls)
-}
-
 export default createConfig({
   chains: {
     base: {
       id: base.id,
-      rpc: rpcUrls,
+      rpc: process.env.BASE_RPC_URL,
       ws: process.env.BASE_WS_URL,
     },
   },
