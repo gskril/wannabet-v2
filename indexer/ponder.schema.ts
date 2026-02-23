@@ -18,7 +18,6 @@ export const bet = onchainTable('bet', (t) => ({
   description: t.text().notNull(),
   createdAt: t.integer().notNull(),
   version: t.integer().notNull(),
-  blockNumber: t.integer().notNull(),
 }))
 
 export const betCreatedEvent = onchainTable('betCreatedEvent', (t) => ({
