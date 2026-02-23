@@ -1,7 +1,6 @@
 import { ponder } from 'ponder:registry'
 import { bet, betCreatedEvent, factoryBetCreatedEvent } from 'ponder:schema'
-
-const JUDGING_WINDOW = 30 * 24 * 60 * 60 // 30 days in seconds
+import { BET_V2_ABI } from 'shared'
 
 ponder.on('Bet2Factory:BetCreated', async ({ event, context }) => {
   await context.db.insert(factoryBetCreatedEvent).values({
@@ -12,8 +11,12 @@ ponder.on('Bet2Factory:BetCreated', async ({ event, context }) => {
 })
 
 ponder.on('Bet2:BetCreated', async ({ event, context }) => {
-  // Compute judgeDeadline from event args: endsBy + 30 days (matches contract logic)
-  const judgeDeadline = Number(event.args.endsBy) + JUDGING_WINDOW
+  // Read judgeDeadline from the contract
+  const judgeDeadline = await context.client.readContract({
+    address: event.log.address,
+    abi: BET_V2_ABI,
+    functionName: 'judgingDeadline',
+  })
 
   await context.db.insert(betCreatedEvent).values({
     ...event.args,
