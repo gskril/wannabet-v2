@@ -1,4 +1,4 @@
-import { desc } from 'ponder'
+import { desc, eq } from 'ponder'
 import { db } from 'ponder:api'
 import schema from 'ponder:schema'
 
@@ -6,13 +6,12 @@ import { BetStatus, FarcasterUser, SUPPORTED_ASSETS } from '../../lib/constants'
 import { fetchUsersByAddresses } from '../../neynar'
 
 // Raw bets from the database
-export async function getBets() {
-  const bets = await db
+export async function getBets(options?: { source?: string }) {
+  return db
     .select()
     .from(schema.bet)
+    .where(options?.source ? eq(schema.bet.source, options.source) : undefined)
     .orderBy(desc(schema.bet.createdAt))
-
-  return bets
 }
 
 // Create a placeholder user from an address
@@ -72,8 +71,8 @@ function toMs(seconds: number): number {
 }
 
 // Enriched bets with derived status, Farcaster user data, and asset metadata
-export async function getEnrichedBets() {
-  const bets = await getBets()
+export async function getEnrichedBets(options?: { source?: string }) {
+  const bets = await getBets(options)
 
   // Collect all unique addresses to fetch
   const allAddresses = new Set<string>()
@@ -107,6 +106,7 @@ export async function getEnrichedBets() {
       asset,
       amount,
       status: deriveBetStatus(bet),
+      source: bet.source,
       createdAt: toMs(bet.createdAt),
       expiresAt: toMs(bet.endsBy),
       acceptBy: toMs(bet.acceptBy),

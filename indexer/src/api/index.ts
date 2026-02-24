@@ -14,7 +14,8 @@ app.use('/', graphql({ db, schema }))
 app.use('/graphql', graphql({ db, schema }))
 
 app.get('/bets', async (c) => {
-  const bets = await getEnrichedBets()
+  const source = c.req.query('source')
+  const bets = await getEnrichedBets(source ? { source } : undefined)
   return c.json(replaceBigInts(bets, (b) => b.toString()))
 })
 

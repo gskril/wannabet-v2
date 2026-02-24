@@ -14,8 +14,23 @@ const quicksand = Quicksand({
   display: 'swap',
 })
 
+const fcMiniAppEmbed = JSON.stringify({
+  version: '1',
+  imageUrl: 'https://x.heywannabet.com/img/og.png',
+  button: {
+    title: 'Open WannaBet',
+    action: {
+      type: 'launch_frame',
+      name: 'WannaBet',
+      url: 'https://x.heywannabet.com',
+      splashImageUrl: 'https://x.heywannabet.com/img/logo.png',
+      splashBackgroundColor: '#FAF4EE',
+    },
+  },
+})
+
 export const metadata: Metadata = {
-  metadataBase: new URL('https://fc.heywannabet.com'),
+  metadataBase: new URL('https://x.heywannabet.com'),
   title: 'WannaBet - Peer-to-Peer Betting on Farcaster',
   description: 'Create and accept friendly bets with friends on Farcaster',
   icons: {
@@ -32,6 +47,10 @@ export const metadata: Metadata = {
     title: 'WannaBet - Peer-to-Peer Betting on Farcaster',
     description: 'Create and accept friendly bets with friends on Farcaster',
     images: ['/img/og.png'],
+  },
+  other: {
+    'fc:miniapp': fcMiniAppEmbed,
+    'fc:frame': fcMiniAppEmbed,
   },
 }
 

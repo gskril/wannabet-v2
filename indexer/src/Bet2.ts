@@ -1,6 +1,21 @@
 import { ponder } from 'ponder:registry'
 import { bet, betCreatedEvent, factoryBetCreatedEvent } from 'ponder:schema'
-import { BET_V2_ABI } from 'shared'
+import { BET_FACTORY_V1, BET_FACTORY_V2, BET_V2_ABI } from 'shared'
+
+const FACTORY_ADDRESSES = new Set([
+  BET_FACTORY_V1.address.toLowerCase(),
+  BET_FACTORY_V2.address.toLowerCase(),
+])
+
+const ENTRYPOINT_V07 = '0x0000000071727de22e5e9d8baf0edac6f37da032'
+
+function detectSource(txTo: string | null): string | null {
+  if (!txTo) return null
+  const to = txTo.toLowerCase()
+  if (FACTORY_ADDRESSES.has(to)) return 'fc'
+  if (to === ENTRYPOINT_V07) return 'x'
+  return null
+}
 
 ponder.on('Bet2Factory:BetCreated', async ({ event, context }) => {
   await context.db.insert(factoryBetCreatedEvent).values({
@@ -32,6 +47,7 @@ ponder.on('Bet2:BetCreated', async ({ event, context }) => {
     createdAt: Number(event.block.timestamp),
     judgeDeadline,
     version: 2,
+    source: detectSource(event.transaction.to),
   })
 })
 
