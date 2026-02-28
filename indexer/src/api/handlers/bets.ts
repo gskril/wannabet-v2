@@ -1,9 +1,15 @@
-import { desc, eq, sql } from 'ponder'
+import pg from 'pg'
+import { desc, eq } from 'ponder'
 import { db } from 'ponder:api'
 import schema from 'ponder:schema'
 
 import { BetStatus, FarcasterUser, SUPPORTED_ASSETS } from '../../lib/constants'
 import { fetchUsersByAddresses } from '../../neynar'
+
+// Direct PostgreSQL connection for reading source overrides
+const readPool = process.env.DATABASE_URL
+  ? new pg.Pool({ connectionString: process.env.DATABASE_URL })
+  : null
 
 // Raw bets from the database
 export async function getBets(options?: { source?: string }) {
@@ -16,10 +22,11 @@ export async function getBets(options?: { source?: string }) {
 
 // Fetch source overrides from the separate source_override table
 async function getSourceOverrides(): Promise<Map<string, string>> {
+  if (!readPool) return new Map()
   try {
-    const rows = await db.execute(sql`SELECT bet_address, source FROM source_override`)
+    const result = await readPool.query('SELECT bet_address, source FROM source_override')
     const map = new Map<string, string>()
-    for (const row of rows.rows) {
+    for (const row of result.rows) {
       map.set((row.bet_address as string).toLowerCase(), row.source as string)
     }
     return map

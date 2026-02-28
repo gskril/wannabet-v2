@@ -1,5 +1,6 @@
 import { Hono } from 'hono'
-import { client, graphql, replaceBigInts, sql } from 'ponder'
+import pg from 'pg'
+import { client, graphql, replaceBigInts } from 'ponder'
 import { db } from 'ponder:api'
 import schema from 'ponder:schema'
 
@@ -8,13 +9,15 @@ import { fetchUserByAddress } from '../neynar'
 
 const VALID_SOURCES = new Set(['fc', 'x', 'web'])
 
-const app = new Hono()
+// Direct PostgreSQL connection for writes (bypasses Ponder's read-only API db)
+const writePool = process.env.DATABASE_URL
+  ? new pg.Pool({ connectionString: process.env.DATABASE_URL })
+  : null
 
-// Ensure the source_override table exists (runs once on first request)
 let tableCreated = false
 async function ensureSourceOverrideTable() {
-  if (tableCreated) return
-  await db.execute(sql`
+  if (tableCreated || !writePool) return
+  await writePool.query(`
     CREATE TABLE IF NOT EXISTS source_override (
       bet_address TEXT PRIMARY KEY,
       source TEXT NOT NULL
@@ -22,6 +25,8 @@ async function ensureSourceOverrideTable() {
   `)
   tableCreated = true
 }
+
+const app = new Hono()
 
 app.use('/sql/*', client({ db, schema }))
 
@@ -35,6 +40,10 @@ app.get('/bets', async (c) => {
 })
 
 app.post('/bets/:address/source', async (c) => {
+  if (!writePool) {
+    return c.json({ error: 'DATABASE_URL not configured' }, 500)
+  }
+
   const address = c.req.param('address').toLowerCase()
   const body = await c.req.json()
   const source = body?.source
@@ -44,11 +53,12 @@ app.post('/bets/:address/source', async (c) => {
   }
 
   await ensureSourceOverrideTable()
-  await db.execute(sql`
-    INSERT INTO source_override (bet_address, source)
-    VALUES (${address}, ${source})
-    ON CONFLICT (bet_address) DO UPDATE SET source = ${source}
-  `)
+  await writePool.query(
+    `INSERT INTO source_override (bet_address, source)
+     VALUES ($1, $2)
+     ON CONFLICT (bet_address) DO UPDATE SET source = $2`,
+    [address, source]
+  )
 
   return c.json({ ok: true })
 })
