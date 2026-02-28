@@ -1,4 +1,4 @@
-import { desc, eq } from 'ponder'
+import { desc, eq, sql } from 'ponder'
 import { db } from 'ponder:api'
 import schema from 'ponder:schema'
 
@@ -12,6 +12,21 @@ export async function getBets(options?: { source?: string }) {
     .from(schema.bet)
     .where(options?.source ? eq(schema.bet.source, options.source) : undefined)
     .orderBy(desc(schema.bet.createdAt))
+}
+
+// Fetch source overrides from the separate source_override table
+async function getSourceOverrides(): Promise<Map<string, string>> {
+  try {
+    const rows = await db.execute(sql`SELECT bet_address, source FROM source_override`)
+    const map = new Map<string, string>()
+    for (const row of rows.rows) {
+      map.set((row.bet_address as string).toLowerCase(), row.source as string)
+    }
+    return map
+  } catch {
+    // Table may not exist yet if no overrides have been written
+    return new Map()
+  }
 }
 
 // Create a placeholder user from an address
@@ -72,7 +87,11 @@ function toMs(seconds: number): number {
 
 // Enriched bets with derived status, Farcaster user data, and asset metadata
 export async function getEnrichedBets(options?: { source?: string }) {
-  const bets = await getBets(options)
+  // Fetch bets and source overrides in parallel
+  const [bets, sourceOverrides] = await Promise.all([
+    getBets(),
+    getSourceOverrides(),
+  ])
 
   // Collect all unique addresses to fetch
   const allAddresses = new Set<string>()
@@ -92,10 +111,12 @@ export async function getEnrichedBets(options?: { source?: string }) {
   const getUser = (address: string): FarcasterUser =>
     usersMap.get(address.toLowerCase()) ?? createPlaceholderUser(address)
 
-  return bets.map((bet) => {
+  const enriched = bets.map((bet) => {
     const asset = getAsset(bet.asset)
     const amount = (Number(bet.makerStake) / 10 ** asset.decimals).toString()
     const taker = getUser(bet.taker)
+    // Apply source override if one exists (e.g. web dapp tagging)
+    const source = sourceOverrides.get(bet.address.toLowerCase()) ?? bet.source
 
     return {
       address: bet.address,
@@ -106,7 +127,7 @@ export async function getEnrichedBets(options?: { source?: string }) {
       asset,
       amount,
       status: deriveBetStatus(bet),
-      source: bet.source,
+      source,
       createdAt: toMs(bet.createdAt),
       expiresAt: toMs(bet.endsBy),
       acceptBy: toMs(bet.acceptBy),
@@ -116,4 +137,11 @@ export async function getEnrichedBets(options?: { source?: string }) {
       acceptedBy: bet.acceptedAt ? taker : null,
     }
   })
+
+  // Apply source filter after overrides so web-tagged bets filter correctly
+  if (options?.source) {
+    return enriched.filter((bet) => bet.source === options.source)
+  }
+
+  return enriched
 }
