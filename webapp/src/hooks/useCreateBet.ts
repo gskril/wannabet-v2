@@ -15,6 +15,7 @@ import {
   BET_FACTORY_ADDRESS,
   BET_FACTORY_ABI,
 } from '@/lib/contracts'
+import { tagBetSource } from '@/lib/indexer'
 
 export type CreateBetParams = {
   taker: Address
@@ -167,14 +168,17 @@ export function useCreateBet() {
           )
         })
 
+        let finalBetAddress: Address
         if (betCreatedLog && betCreatedLog.topics[1]) {
-          const newBetAddress = ('0x' +
+          finalBetAddress = ('0x' +
             betCreatedLog.topics[1].slice(26)) as Address
-          setBetAddress(newBetAddress)
         } else {
-          // Use predicted address as fallback
-          setBetAddress(predictedBetAddress)
+          finalBetAddress = predictedBetAddress
         }
+        setBetAddress(finalBetAddress)
+
+        // Tag this bet as created from the Farcaster mini-app
+        tagBetSource(finalBetAddress, 'fc')
 
         // Wait for indexer to pick up the new bet before refreshing
         await new Promise((resolve) => setTimeout(resolve, 5000))

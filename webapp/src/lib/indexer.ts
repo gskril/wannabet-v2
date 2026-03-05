@@ -2,6 +2,18 @@ import type { Bet, FarcasterUser } from 'indexer/types'
 
 const INDEXER_URL = 'https://wannabet-v2-production.up.railway.app'
 
+export async function tagBetSource(betAddress: string, source: string) {
+  try {
+    await fetch(`${INDEXER_URL}/bets/${betAddress.toLowerCase()}/source`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ source }),
+    })
+  } catch (err) {
+    console.warn('Failed to tag bet source:', err)
+  }
+}
+
 export async function fetchBets(): Promise<Bet[]> {
   const response = await fetch(`${INDEXER_URL}/bets?source=fc`)
 
