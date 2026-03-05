@@ -15,7 +15,7 @@ export async function tagBetSource(betAddress: string, source: string) {
 }
 
 export async function fetchBets(): Promise<Bet[]> {
-  const response = await fetch(`${INDEXER_URL}/bets?source=fc`)
+  const response = await fetch(`${INDEXER_URL}/bets`)
 
   if (!response.ok) {
     throw new Error(`Failed to fetch bets: ${response.status}`)
