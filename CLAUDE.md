@@ -8,10 +8,9 @@ WannaBet is a peer-to-peer betting app on Farcaster + Base blockchain. Users cre
 
 ## Monorepo Structure
 
-This is a pnpm monorepo with four packages:
+This is a pnpm monorepo with three packages:
 
 - **webapp/** - Next.js 16 frontend (React 19, Tailwind v4, wagmi)
-- **indexer/** - Ponder indexer for on-chain events
 - **contracts/** - Hardhat 3 smart contracts (Solidity)
 - **shared/** - Shared types and contract ABIs
 
@@ -25,13 +24,11 @@ pnpm install
 pnpm dev              # Run webapp + shared in watch mode
 pnpm dev:web          # Webapp only (Next.js)
 pnpm dev:shared       # Shared package watch mode
-pnpm dev:indexer      # Run Ponder indexer
 
 # Build
 pnpm build            # Build all packages
 pnpm build:web        # Webapp only
 pnpm build:shared     # Shared package
-pnpm build:indexer    # Indexer package
 
 # Contracts
 pnpm --filter contracts test      # Run contract tests
@@ -46,18 +43,22 @@ pnpm prettier         # Format all files
 ### Data Flow
 
 ```
-On-chain events → Ponder Indexer → /api/bets → Neynar enrichment → React Query → UI
+On-chain events → Goldsky Subgraph → webapp/lib/indexer.ts → Neynar enrichment → React Query → UI
 ```
 
 ### Type System
 
-Types are centralized in the `indexer` package and re-exported:
+Types are defined in `webapp/src/lib/constants.ts`:
 
 - `BetStatus` enum: PENDING, ACTIVE, JUDGING, RESOLVED, CANCELLED
-- `Bet` type: inferred from indexer API response
+- `Bet` type: enriched bet with Farcaster user data
 - `FarcasterUser`: address + Farcaster profile data (fid, username, pfpUrl)
 
-Import from `indexer/types` or `indexer/utils`.
+Import from `@/lib/constants`.
+
+### Subgraph
+
+On-chain data is indexed by a Goldsky subgraph (see `subgraph/`). The GraphQL endpoint is in `webapp/src/lib/subgraph.ts`. Neynar enrichment (Farcaster user data) happens server-side in `webapp/src/lib/indexer.ts`.
 
 ### Smart Contracts (Base Mainnet)
 
