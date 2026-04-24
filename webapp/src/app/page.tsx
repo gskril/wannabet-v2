@@ -15,7 +15,7 @@ import { BetsTable } from '@/components/bets-table'
 import { ConnectWalletButton } from '@/components/connect-wallet-button'
 import { WelcomeModal } from '@/components/welcome-modal'
 import { useBets } from '@/hooks/useBets'
-import { BetStatus, type Bet } from 'indexer/types'
+import { BetStatus, type Bet } from '@/lib/constants'
 
 type FilterType = 'all' | 'my' | 'notifications'
 

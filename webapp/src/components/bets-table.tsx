@@ -6,7 +6,7 @@ import { useState } from 'react'
 import { BetDetailDialog } from '@/components/bet-detail-dialog'
 import { StatusPennant } from '@/components/status-pennant'
 import { UserAvatar } from '@/components/user-avatar'
-import { BetStatus, type Bet } from 'indexer/types'
+import { BetStatus, type Bet } from '@/lib/constants'
 import { getUsername } from '@/lib/utils'
 
 interface BetsTableProps {

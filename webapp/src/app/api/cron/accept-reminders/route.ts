@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { fetchBets } from '@/lib/indexer'
 import { sendNotification, notifications } from '@/lib/notifications'
-import { BetStatus } from 'indexer/types'
+import { BetStatus } from '@/lib/constants'
 
 // Cron job to remind takers before their accept deadline passes
 // Should be called every few hours (e.g., via Vercel Cron or external service)

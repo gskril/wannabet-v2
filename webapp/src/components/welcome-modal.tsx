@@ -9,7 +9,7 @@ import {
   DialogContent,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { BetStatus } from 'indexer/types'
+import { BetStatus } from '@/lib/constants'
 
 interface WelcomeModalProps {
   open: boolean

@@ -1,6 +1,6 @@
 import { Configuration, NeynarAPIClient } from '@neynar/nodejs-sdk'
 
-import { FarcasterUser } from './lib/constants'
+import { FarcasterUser } from '@/lib/constants'
 
 // =============================================================================
 // Neynar Client (lazy initialization)

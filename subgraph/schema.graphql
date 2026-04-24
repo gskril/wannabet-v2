@@ -1,0 +1,43 @@
+type Bet @entity {
+  id: ID! # bet contract address
+  maker: Bytes!
+  taker: Bytes!
+  judge: Bytes!
+  winner: Bytes
+  asset: Bytes!
+  makerStake: BigInt!
+  takerStake: BigInt!
+  acceptBy: Int!
+  acceptedAt: Int
+  cancelledAt: Int
+  endsBy: Int!
+  judgeDeadline: Int!
+  resolvedAt: Int
+  description: String!
+  createdAt: Int!
+  version: Int!
+  source: String # 'fc' | 'x' | null
+}
+
+type BetCreatedEvent @entity {
+  id: ID! # txHash-logIndex
+  factory: Bytes!
+  timestamp: Int!
+  bet: Bytes!
+  maker: Bytes!
+  taker: Bytes!
+  judge: Bytes!
+  asset: Bytes!
+  acceptBy: Int!
+  endsBy: Int!
+  makerStake: BigInt!
+  takerStake: BigInt!
+  description: String!
+}
+
+type FactoryBetCreatedEvent @entity {
+  id: ID! # bet address (primary key, one per bet)
+  factory: Bytes!
+  timestamp: Int!
+  bet: Bytes!
+}

@@ -1,4 +1,4 @@
-import { BetStatus } from 'indexer/types'
+import { BetStatus } from '@/lib/constants'
 
 export const STATUS_CONFIG: Record<
   BetStatus,

@@ -1,5 +1,5 @@
 // =============================================================================
-// BetStatus - matches IBet.sol Status enum
+// BetStatus
 // =============================================================================
 export enum BetStatus {
   PENDING = 'PENDING',
@@ -10,7 +10,7 @@ export enum BetStatus {
 }
 
 // =============================================================================
-// Asset - supported betting assets
+// Assets
 // =============================================================================
 export const SUPPORTED_ASSETS = {
   USDC: {
@@ -27,7 +27,7 @@ export type Asset = {
 }
 
 // =============================================================================
-// FarcasterUser - enriched user data (will be populated via Neynar later)
+// Farcaster
 // =============================================================================
 export type FarcasterUser = {
   address: string
@@ -35,4 +35,26 @@ export type FarcasterUser = {
   username: string | null
   displayName: string | null
   pfpUrl: string | null
+}
+
+// =============================================================================
+// Bet
+// =============================================================================
+export type Bet = {
+  address: string
+  description: string
+  maker: FarcasterUser
+  taker: FarcasterUser
+  judge: FarcasterUser
+  asset: Asset
+  amount: string // human-readable (e.g. "100")
+  status: BetStatus
+  source: string | null // 'fc' | 'x' | null
+  createdAt: number // ms
+  expiresAt: number // ms (endsBy)
+  acceptBy: number // ms
+  judgeDeadline: number // ms
+  winner: FarcasterUser | null
+  acceptedAt: number | null // ms
+  acceptedBy: FarcasterUser | null
 }
