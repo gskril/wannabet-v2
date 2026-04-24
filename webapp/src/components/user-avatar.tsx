@@ -3,7 +3,7 @@
 import Link from 'next/link'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import type { FarcasterUser } from 'indexer/types'
+import type { FarcasterUser } from '@/lib/constants'
 import { getUsername } from '@/lib/utils'
 
 interface UserAvatarProps {

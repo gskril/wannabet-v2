@@ -23,7 +23,7 @@ import { useAcceptBet } from '@/hooks/useAcceptBet'
 import { useResolveBet } from '@/hooks/useResolveBet'
 import { useCancelBet } from '@/hooks/useCancelBet'
 import { useNotifications } from '@/hooks/useNotifications'
-import { BetStatus, type Bet } from 'indexer/types'
+import { BetStatus, type Bet } from '@/lib/constants'
 import { getUsername } from '@/lib/utils'
 
 // Base scan URL for transaction links

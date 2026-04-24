@@ -1,4 +1,4 @@
-import type { FarcasterUser } from 'indexer/types'
+import type { FarcasterUser } from '@/lib/constants'
 import { type ClassValue, clsx } from 'clsx'
 import { twMerge } from 'tailwind-merge'
 

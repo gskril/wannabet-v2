@@ -1,7 +1,7 @@
 'use client'
 
 import { sdk } from '@farcaster/miniapp-sdk'
-import type { FarcasterUser } from 'indexer/types'
+import type { FarcasterUser } from '@/lib/constants'
 import { Loader2, Plus, Share2 } from 'lucide-react'
 import Image from 'next/image'
 import {

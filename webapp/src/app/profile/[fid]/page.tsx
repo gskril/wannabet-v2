@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { UserAvatar } from '@/components/user-avatar'
 import { useBets } from '@/hooks/useBets'
-import { BetStatus, type Bet, type FarcasterUser } from 'indexer/types'
+import { BetStatus, type Bet, type FarcasterUser } from '@/lib/constants'
 import { getUsername } from '@/lib/utils'
 
 interface UserStats {

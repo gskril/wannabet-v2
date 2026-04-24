@@ -1,6 +1,6 @@
 'use client'
 
-import type { FarcasterUser } from 'indexer/types'
+import type { FarcasterUser } from '@/lib/constants'
 import { Search } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 

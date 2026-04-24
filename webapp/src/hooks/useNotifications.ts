@@ -1,5 +1,5 @@
 import { useCallback } from 'react'
-import type { Bet } from 'indexer/types'
+import type { Bet } from '@/lib/constants'
 
 type NotificationPayload = {
   targetFids: number[]
