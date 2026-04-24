@@ -1,0 +1,95 @@
+specVersion: 0.0.5
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum
+    name: BetFactoryV1
+    network: base
+    source:
+      address: "0x0F0A585aF686397d94428825D8cCfa2589b159A0"
+      abi: BetFactoryV1
+      startBlock: 37339202
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - FactoryBetCreatedEvent
+      abis:
+        - name: BetFactoryV1
+          file: ./abis/BetFactoryV1.json
+      eventHandlers:
+        - event: BetCreated(indexed address)
+          handler: handleBetFactoryV1BetCreated
+      file: ./src/betFactoryV1.ts
+  - kind: ethereum
+    name: BetFactoryV2
+    network: base
+    source:
+      address: "0x252B30995510703D09cB4f3597b098D4a96b4E62"
+      abi: BetFactoryV2
+      startBlock: 40402624
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - FactoryBetCreatedEvent
+      abis:
+        - name: BetFactoryV2
+          file: ./abis/BetFactoryV2.json
+      eventHandlers:
+        - event: BetCreated(indexed address)
+          handler: handleBetFactoryV2BetCreated
+      file: ./src/betFactoryV2.ts
+templates:
+  - kind: ethereum
+    name: BetV1
+    network: base
+    source:
+      abi: BetV1
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - Bet
+        - BetCreatedEvent
+      abis:
+        - name: BetV1
+          file: ./abis/BetV1.json
+      eventHandlers:
+        - event: BetCreated(indexed address,indexed address,indexed address,address,uint40,uint40,uint256,uint256,string)
+          handler: handleBetV1Created
+        - event: BetAccepted()
+          handler: handleBetV1Accepted
+        - event: BetResolved(indexed address,uint256)
+          handler: handleBetV1Resolved
+        - event: BetCancelled()
+          handler: handleBetV1Cancelled
+      file: ./src/betV1.ts
+  - kind: ethereum
+    name: BetV2
+    network: base
+    source:
+      abi: BetV2
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - Bet
+        - BetCreatedEvent
+      abis:
+        - name: BetV2
+          file: ./abis/BetV2.json
+      eventHandlers:
+        - event: BetCreated(indexed address,indexed address,indexed address,address,uint40,uint40,uint256,uint256,string)
+          handler: handleBetV2Created
+        - event: BetAccepted()
+          handler: handleBetV2Accepted
+        - event: BetResolved(indexed address,uint256)
+          handler: handleBetV2Resolved
+        - event: BetCancelled()
+          handler: handleBetV2Cancelled
+      file: ./src/betV2.ts

@@ -1,0 +1,17 @@
+{
+  "name": "@wannabet/subgraph",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "codegen": "graph codegen",
+    "build": "graph build",
+    "deploy": "graph deploy --node https://api.goldsky.com/api/public/project_<YOUR_PROJECT_ID>/subgraphs/wannabet/1.0.0/gn wannabet/1.0.0",
+    "goldsky:deploy": "goldsky subgraph deploy wannabet/1.0.0 --path ."
+  },
+  "dependencies": {
+    "@graphprotocol/graph-ts": "^0.35.1"
+  },
+  "devDependencies": {
+    "@graphprotocol/graph-cli": "^0.82.0"
+  }
+}
