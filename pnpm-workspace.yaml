@@ -2,6 +2,7 @@ packages:
   - webapp
   - shared
   - contracts
+  - subgraph
 
 catalog:
   '@types/node': 22.18.10
